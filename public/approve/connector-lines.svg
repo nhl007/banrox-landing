@@ -1,0 +1,30 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="536" height="219" viewBox="0 0 536 219" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 2147230196">
+<path id="Line 114" d="M4.37114e-08 113.5L81.9047 113.5C81.9047 113.5 81.9048 113.5 81.9048 113.5C81.9048 113.5 81.9048 113.5 81.9048 113.5L160 113.5" stroke="white" stroke-opacity="0.4" stroke-dasharray="3 3"/>
+<path id="Line 122" d="M536 0.500001L465.5 0.500007C452.245 0.500007 441.5 11.2452 441.5 24.5L441.5 44.5C441.5 57.7548 430.755 68.5 417.5 68.5L374 68.5" stroke="white" stroke-opacity="0.4" stroke-dasharray="3 3"/>
+<path id="Line 124" d="M536 218.5L465.5 218.5C452.245 218.5 441.5 207.755 441.5 194.5L441.5 180.5C441.5 167.245 430.755 156.5 417.5 156.5L374 156.5" stroke="white" stroke-opacity="0.4" stroke-dasharray="3 3"/>
+<path id="Line 123" d="M536 112.5L442.667 112.5C442.667 112.5 442.667 112.5 442.667 112.5C442.667 112.5 442.667 112.5 442.667 112.5L376 112.5" stroke="white" stroke-opacity="0.4" stroke-dasharray="3 3"/>
+<path id="Line 117" d="M26 113.5H41" stroke="url(#paint0_linear_0_4)" stroke-linecap="round"/>
+<path id="Line 120" d="M493 0.5H478" stroke="url(#paint1_linear_0_4)" stroke-linecap="round"/>
+<path id="Line 125" d="M535 112.5H520" stroke="url(#paint2_linear_0_4)" stroke-linecap="round"/>
+<path id="Line 126" d="M515 218.5H500" stroke="url(#paint3_linear_0_4)" stroke-linecap="round"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_4" x1="25.5" y1="115" x2="41.5" y2="115" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_4" x1="493.5" y1="1" x2="477.5" y2="1" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<linearGradient id="paint2_linear_0_4" x1="535.5" y1="113" x2="519.5" y2="113" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+<linearGradient id="paint3_linear_0_4" x1="515.5" y1="219" x2="499.5" y2="219" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0"/>
+<stop offset="1" stop-color="white"/>
+</linearGradient>
+</defs>
+</svg>

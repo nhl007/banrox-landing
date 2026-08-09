@@ -1,26 +1,190 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Page — the landing page is dark by design, not theme-dependent */
+  --color-background: #080814;
+  --color-foreground: #ffffff;
+
+  /* Ink — text sitting on light surfaces (the nav pill) */
+  --color-ink: #141c24;
+
+  /* Brand ramp — the four stops of the CTA radial gradient */
+  --color-brand-lighter: #8585e9;
+  --color-brand-mid: #5668f4;
+  --color-brand: #3e5afa;
+  --color-brand-deep: #264bff;
+
+  /* Surfaces */
+  --color-card: #0d143d;
+  --color-hairline: #e2e6ff;
+
+  /* Status */
+  --color-positive: #38c793;
+  --color-positive-strong: #09b285;
+  --color-warning: #f2ae40;
+  --color-negative: #df1c41;
+  /* Distinct from --color-positive: the approval green is its own value. */
+  --color-success: #22c55e;
+  /* Distinct from --color-warning (#f2ae40, used on the passport cards):
+     the vote/pending amber is its own value too. */
+  --color-pending: #f59e0b;
+  /* Distinct from --color-negative (#df1c41): Figma labels this one "danger"
+     and uses it only for the "Poor" credit-score rating. */
+  --color-danger: #ff4242;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-ink: var(--color-ink);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand-lighter: var(--color-brand-lighter);
+  --color-brand-mid: var(--color-brand-mid);
+  --color-brand: var(--color-brand);
+  --color-brand-deep: var(--color-brand-deep);
+
+  --color-card: var(--color-card);
+  --color-hairline: var(--color-hairline);
+
+  --color-positive: var(--color-positive);
+  --color-positive-strong: var(--color-positive-strong);
+  --color-warning: var(--color-warning);
+  --color-negative: var(--color-negative);
+  --color-success: var(--color-success);
+  --color-pending: var(--color-pending);
+  --color-danger: var(--color-danger);
+
+  /* Tailwind's default radius scale already matches the design (lg 8, xl 12,
+     2xl 16, 4xl 32), so it is left untouched. */
+
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-inter-tight);
+  --font-display: var(--font-zt-formom);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/*
+ * CTA gradient. Figma paints this as a radial fill whose ellipse is centred on
+ * the button with semi-axes of ~1.05x the half-width and ~3.5x the half-height,
+ * so the left/right edges land on the darkest stop while the top/bottom edges
+ * barely leave the lightest one. Expressed as fractions of the box, that is
+ * 52.5%/175% — size-independent, so one rule serves every button size.
+ */
+.bg-brand-radial {
+  background-image: radial-gradient(
+    ellipse 53% 176% at 50% 50%,
+    var(--color-brand-lighter) 0%,
+    var(--color-brand-mid) 50%,
+    var(--color-brand) 75%,
+    var(--color-brand-deep) 100%
+  );
+}
+
+/* The nav pill: white at the top edge fading to lavender at the bottom. */
+.bg-nav-pill {
+  background-image: linear-gradient(180deg, #ffffff 0%, #e3e7ff 100%);
+}
+
+/*
+ * The step cards and score badges each carry a near-invisible vignette (a
+ * radial fill at 4% opacity, darkest at the edges) plus a background blur.
+ * Figma re-exports the exact radial-gradient matrix per instance size, but at
+ * this opacity the size-independent approximation below is indistinguishable
+ * and works at every box size these appear at.
+ */
+.bg-vignette {
+  background-image: radial-gradient(
+    ellipse at center,
+    rgba(33, 33, 33, 0.004) 0%,
+    rgba(33, 33, 33, 0.04) 100%
+  );
+  backdrop-filter: blur(2px);
+}
+
+/* Section badges — a barely-there wash over the dark page. */
+.bg-badge {
+  background-image: linear-gradient(
+    184.41deg,
+    rgba(226, 230, 255, 0.04) 9.68%,
+    rgba(133, 133, 233, 0.04) 79.28%
+  );
+}
+
+/*
+ * Credit-bureau score numerals and the metric readouts use a left-running
+ * white gradient rather than flat white.
+ */
+.text-gradient-score {
+  background-image: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.5) 0%,
+    #ffffff 100%
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+/* Bureau wordmarks (Experian / TransUnion / Equifax). */
+.text-gradient-bureau {
+  background-image: linear-gradient(
+    191.86deg,
+    #e2e6ff 3.7%,
+    var(--color-brand-lighter) 51.9%
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+/* Filled portion of a score meter. */
+.bg-score-meter {
+  background-image: linear-gradient(13.35deg, #2b58fa 10.84%, #89a3ff 84.75%);
+}
+
+/*
+ * The card fan is authored at a fixed 1262x516. Scale it to the container
+ * rather than reflowing, so the overlap geometry survives; below the floor the
+ * viewport scrolls horizontally instead of shrinking into illegibility.
+ */
+/*
+ * Fixed-geometry "stages". Sections whose overlap geometry must survive (the
+ * card fan, the comparison panels) are authored at their artboard size and
+ * scaled to the container rather than reflowed. Callers set --stage-w,
+ * --stage-h (unitless px) and --stage-min on the sizer.
+ *
+ * --stage-scale has to be declared on a descendant of the container, since cq
+ * units resolve against the nearest *ancestor* container, never the element's
+ * own. The sizer reserves the scaled height; the stage does the scaling.
+ * Scaling from the top-left means a shrunk stage exactly fills the container,
+ * while at scale 1 the auto margins centre it. Below --stage-min the viewport
+ * scrolls instead of shrinking into illegibility.
+ */
+.stage-viewport {
+  container-type: inline-size;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /*
+   * overflow-y: hidden would otherwise crop outward strokes drawn on the top
+   * and bottom rows of the stage (the comparison cards ring their outer edge).
+   * The padding gives them room; the negative margin keeps layout unchanged.
+   */
+  padding-block: 4px;
+  margin-block: -4px;
+}
+
+.stage-sizer {
+  --stage-scale: clamp(var(--stage-min, 0.62), 100cqw / var(--stage-w), 1);
+  height: calc(var(--stage-h) * 1px * var(--stage-scale));
+}
+
+.stage {
+  width: calc(var(--stage-w) * 1px);
+  height: calc(var(--stage-h) * 1px);
+  margin-inline: auto;
+  transform-origin: top left;
+  transform: scale(var(--stage-scale));
 }

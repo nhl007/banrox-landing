@@ -1,0 +1,16 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="10.0978" height="10" viewBox="0 0 10.0978 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Logomark">
+<path id="Isometric square" opacity="0.7" d="M3.04503 4.6181C3.23374 3.92077 3.95755 3.20397 4.66171 3.0171L9.05174 1.85201C9.7559 1.66513 10.1738 2.07894 9.98505 2.77628L8.80856 7.12377C8.61986 7.8211 7.89605 8.5379 7.19189 8.72478L2.80186 9.88986C2.0977 10.0767 1.67984 9.66293 1.86855 8.9656L3.04503 4.6181Z" fill="url(#paint0_linear_0_45)"/>
+<path id="Isometric square_2" d="M1.28722 2.87494C1.47593 2.17761 2.19974 1.46081 2.9039 1.27393L7.29393 0.108848C7.99809 -0.0780303 8.41595 0.335776 8.22724 1.03311L7.05076 5.3806C6.86205 6.07794 6.13824 6.79473 5.43408 6.98161L1.04405 8.1467C0.339888 8.33357 -0.0779679 7.91977 0.110739 7.22243L1.28722 2.87494Z" fill="url(#paint1_linear_0_45)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_45" x1="9.23928" y1="-0.802759" x2="3.69498" y2="3.12612" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E2E6FF"/>
+<stop offset="1" stop-color="#8585E9"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_45" x1="7.48147" y1="-2.54592" x2="1.93718" y2="1.38296" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E2E6FF"/>
+<stop offset="1" stop-color="#8585E9"/>
+</linearGradient>
+</defs>
+</svg>
