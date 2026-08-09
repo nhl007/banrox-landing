@@ -1,15 +1,62 @@
+import Image from "next/image";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { ArrowUpRight, CreditCard } from "@/components/ui/icons";
 import CardFan from "@/components/CardFan";
 
+/*
+ * The ambient bloom behind the card fan — Figma's Ellipse 6145 and 6146. Both
+ * are siblings of the hero frame on the canvas rather than children of it, so
+ * they run well past its lower edge and keep going into the next section; the
+ * bloom alone is 1028px tall against a 973px frame. Two things follow:
+ *
+ *  - the layer is pinned behind the whole page (-z-10) so the bleed sits under
+ *    the next section's copy instead of over it, and
+ *  - the section clips on the x axis only. The assets are 2164px wide at their
+ *    widest and would otherwise scroll the page sideways, but overflow-hidden
+ *    would put the hard cut back.
+ *
+ * Offsets are measured from the card fan, which is what the ellipses are
+ * actually placed against, so they survive changes to the copy above. Each
+ * asset already carries its own 400px blur margin around the ellipse. The
+ * artboard offsets are -405 and -364; the extra 4px accounts for
+ * .stage-viewport's negative margin-block, which collapses out through the
+ * wrapper and puts the containing block 4px above the stage itself.
+ */
+function HeroGlow() {
+  return (
+    <>
+      <Image
+        src="/hero/glow-bloom.svg"
+        alt=""
+        width={1828}
+        height={1828}
+        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+        style={{ top: -401 }}
+        priority
+      />
+      <Image
+        src="/hero/glow-band.svg"
+        alt=""
+        width={2164}
+        height={1312}
+        className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+        style={{ top: -360 }}
+        priority
+      />
+    </>
+  );
+}
+
 export default function Hero() {
   return (
-    <section className="relative w-full overflow-hidden">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center px-6 pt-15">
+    <section className="relative w-full overflow-x-clip pb-[176px]">
+      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center px-6 pt-20 ">
         <div className="flex w-full flex-col items-center gap-8">
           <div className="flex w-full flex-col items-center gap-4">
-            <Badge icon={<CreditCard />}>Introducing Squad Card by Banrox</Badge>
+            <Badge icon={<CreditCard />}>
+              Introducing Squad Card by Banrox
+            </Badge>
 
             <div className="flex flex-col items-center gap-4 text-center">
               {/*
@@ -56,7 +103,10 @@ export default function Hero() {
         </div>
       </div>
 
-      <CardFan />
+      <div className="relative">
+        <HeroGlow />
+        <CardFan />
+      </div>
     </section>
   );
 }

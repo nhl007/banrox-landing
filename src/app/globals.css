@@ -31,6 +31,15 @@
   /* Distinct from --color-negative (#df1c41): Figma labels this one "danger"
      and uses it only for the "Poor" credit-score rating. */
   --color-danger: #ff4242;
+
+  /* Shared by .bg-brand-radial and .bg-brand-cta — see the note on each. */
+  --gradient-brand-radial: radial-gradient(
+    ellipse 53% 176% at 50% 50%,
+    var(--color-brand-lighter) 0%,
+    var(--color-brand-mid) 50%,
+    var(--color-brand) 75%,
+    var(--color-brand-deep) 100%
+  );
 }
 
 @theme inline {
@@ -76,13 +85,39 @@ body {
  * 52.5%/175% — size-independent, so one rule serves every button size.
  */
 .bg-brand-radial {
-  background-image: radial-gradient(
-    ellipse 53% 176% at 50% 50%,
-    var(--color-brand-lighter) 0%,
-    var(--color-brand-mid) 50%,
-    var(--color-brand) 75%,
-    var(--color-brand-deep) 100%
-  );
+  background-image: var(--gradient-brand-radial);
+}
+
+/*
+ * The CTA's ring. Figma's export reports a flat white stroke, but the artboard
+ * renders a white *gradient*: measured off a 4x export it sits at ~40% along
+ * the top edge and fades to ~9% at the bottom, with a highlight blooming from
+ * the top centre to full white and falling off linearly over roughly a quarter
+ * of the button's width. Both are percentage-based, so one rule serves every
+ * button size.
+ *
+ * Painting it takes four layers because the ring is translucent and has to
+ * composite over the fill, not over the page: the bottom layer lays the fill
+ * across the whole border box, the two ring layers tint it, and the top layer
+ * repaints the fill clipped to the padding box so only the 1.5px border keeps
+ * the tint. The border itself is transparent — see Button's primary variant.
+ */
+.bg-brand-cta {
+  background-image:
+    var(--gradient-brand-radial),
+    radial-gradient(
+      ellipse 23% 100% at 50% 0%,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.09) 100%
+    ),
+    var(--gradient-brand-radial);
+  background-origin: border-box;
+  background-clip: padding-box, border-box, border-box, border-box;
 }
 
 /* The nav pill: white at the top edge fading to lavender at the bottom. */
@@ -177,7 +212,17 @@ body {
 }
 
 .stage-sizer {
-  --stage-scale: clamp(var(--stage-min, 0.62), 100cqw / var(--stage-w), 1);
+  /*
+   * tan(atan2(a, b)) is how you divide one length by another and get a plain
+   * number out. calc() only learned length-over-length division very recently;
+   * a bare `100cqw / var(--stage-w)` still evaluates to a *length*, which makes
+   * the clamp type-invalid and silently drops the scaling entirely.
+   */
+  --stage-scale: clamp(
+    var(--stage-min, 0.62),
+    tan(atan2(100cqw, var(--stage-w) * 1px)),
+    1
+  );
   height: calc(var(--stage-h) * 1px * var(--stage-scale));
 }
 

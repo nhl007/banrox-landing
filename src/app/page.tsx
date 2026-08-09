@@ -1,4 +1,5 @@
 import AloneVsTogether from "@/components/AloneVsTogether";
+import EarlyAccess from "@/components/EarlyAccess";
 import Hero from "@/components/Hero";
 import HowSquadWorks from "@/components/HowSquadWorks";
 import IntelligenceLayer from "@/components/IntelligenceLayer";
@@ -14,6 +15,7 @@ export default function Home() {
       <HowSquadWorks />
       <IntelligenceLayer />
       <SquadInvitation />
+      <EarlyAccess />
     </main>
   );
 }

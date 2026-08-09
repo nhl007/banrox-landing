@@ -54,24 +54,14 @@ function RequestCard() {
         height={347}
         className="pointer-events-none absolute -top-[186px] left-[calc(50%+0.5px)] max-w-none -translate-x-1/2"
       />
-      <Image
-        src="/approve/request-glow-3.svg"
-        alt=""
-        width={263}
-        height={351}
-        className="pointer-events-none absolute -top-[190px] left-[92px] max-w-none mix-blend-plus-lighter"
-      />
-      <Image
-        src="/approve/request-texture.png"
-        alt=""
-        width={286}
-        height={110}
-        className="pointer-events-none absolute -top-[3px] -left-[5px] max-w-none"
-      />
 
       <div className="relative flex w-[286px] flex-col items-start gap-4 px-4 pt-4 pb-6">
         <div className="flex w-full flex-col items-center gap-2">
-          <AvatarRing size={40} person={PEOPLE.mika} framing={VOTE_FRAMING.mika} />
+          <AvatarRing
+            size={40}
+            person={PEOPLE.mika}
+            framing={VOTE_FRAMING.mika}
+          />
           <div className="flex flex-col items-center gap-1 text-center leading-none whitespace-nowrap text-white">
             <p className="font-heading text-[14px] font-medium">
               Mika needs $1,500 more
@@ -146,7 +136,13 @@ type MemberChipProps = { name: string; amount: string; width: number } & (
   | { personKey?: never; reserve: true }
 );
 
-function MemberChip({ name, amount, width, personKey, reserve }: MemberChipProps) {
+function MemberChip({
+  name,
+  amount,
+  width,
+  personKey,
+  reserve,
+}: MemberChipProps) {
   return (
     <div
       className={`relative flex h-[74px] shrink-0 flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-white/10 py-2.5 ${
@@ -197,7 +193,10 @@ function MemberChip({ name, amount, width, personKey, reserve }: MemberChipProps
 
 function LedgerBar() {
   return (
-    <div className="absolute" style={{ left: 145.5, top: 410, width: 827, height: 122 }}>
+    <div
+      className="absolute"
+      style={{ left: 145.5, top: 410, width: 827, height: 122 }}
+    >
       {/*
         Figma nests this inside the bar's own overflow-clip, yet it visibly
         bleeds well above the border in the reference render (a blur-effect
@@ -214,55 +213,75 @@ function LedgerBar() {
       />
 
       <div className="absolute inset-0 overflow-hidden rounded-2xl border border-white/10 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
-      <Image
-        src="/approve/ledger-glow-1.svg"
-        alt=""
-        width={1013}
-        height={210}
-        className="pointer-events-none absolute -top-[34px] left-[calc(50%+15px)] max-w-none -translate-x-1/2"
-      />
-      <Image
-        src="/approve/ledger-glow-2.svg"
-        alt=""
-        width={755}
-        height={209}
-        className="pointer-events-none absolute -top-[33px] left-[calc(50%+17px)] max-w-none -translate-x-1/2"
-      />
-      <Image
-        src="/approve/ledger-glow-3.svg"
-        alt=""
-        width={477}
-        height={210}
-        className="pointer-events-none absolute -top-[34px] left-[270px] max-w-none mix-blend-plus-lighter"
-      />
-      <Image
-        src="/approve/ledger-texture.svg"
-        alt=""
-        width={960}
-        height={238}
-        className="pointer-events-none absolute top-[55px] left-0 max-w-none"
-      />
+        <Image
+          src="/approve/ledger-glow-1.svg"
+          alt=""
+          width={1013}
+          height={210}
+          className="pointer-events-none absolute -top-[34px] left-[calc(50%+15px)] max-w-none -translate-x-1/2"
+        />
+        <Image
+          src="/approve/ledger-glow-2.svg"
+          alt=""
+          width={755}
+          height={209}
+          className="pointer-events-none absolute -top-[33px] left-[calc(50%+17px)] max-w-none -translate-x-1/2"
+        />
+        <Image
+          src="/approve/ledger-glow-3.svg"
+          alt=""
+          width={477}
+          height={210}
+          className="pointer-events-none absolute -top-[34px] left-[270px] max-w-none mix-blend-plus-lighter"
+        />
+        <Image
+          src="/approve/ledger-texture.svg"
+          alt=""
+          width={960}
+          height={238}
+          className="pointer-events-none absolute top-[55px] left-0 max-w-none"
+        />
 
-      <div className="relative flex items-center gap-8 p-6">
-        <div className="flex flex-col items-start gap-1">
-          <p className="text-[12px] leading-[1.5] font-medium tracking-[-0.24px] text-white/70">
-            One Line
-          </p>
-          <p className="font-heading text-[24px] leading-[1.2] text-white">
-            $25,000
-          </p>
+        <div className="relative flex items-center gap-8 p-6">
+          <div className="flex flex-col items-start gap-1">
+            <p className="text-[12px] leading-[1.5] font-medium tracking-[-0.24px] text-white/70">
+              One Line
+            </p>
+            <p className="font-heading text-[24px] leading-[1.2] text-white">
+              $25,000
+            </p>
+          </div>
+
+          <span className="h-10 w-px shrink-0 bg-white/10" />
+
+          <div className="flex items-center gap-1.5">
+            <MemberChip
+              personKey="david"
+              name="David"
+              amount="$6,000"
+              width={130}
+            />
+            <MemberChip
+              personKey="lilit"
+              name="Lilit"
+              amount="$5,000"
+              width={120}
+            />
+            <MemberChip
+              personKey="aram"
+              name="Aram"
+              amount="$4,000"
+              width={110}
+            />
+            <MemberChip
+              personKey="mika"
+              name="Mike"
+              amount="$7,000"
+              width={140}
+            />
+            <MemberChip reserve name="Reserve" amount="$3,000" width={100} />
+          </div>
         </div>
-
-        <span className="h-10 w-px shrink-0 bg-white/10" />
-
-        <div className="flex items-center gap-1.5">
-          <MemberChip personKey="david" name="David" amount="$6,000" width={130} />
-          <MemberChip personKey="lilit" name="Lilit" amount="$5,000" width={120} />
-          <MemberChip personKey="aram" name="Aram" amount="$4,000" width={110} />
-          <MemberChip personKey="mika" name="Mike" amount="$7,000" width={140} />
-          <MemberChip reserve name="Reserve" amount="$3,000" width={100} />
-        </div>
-      </div>
       </div>
     </div>
   );
@@ -280,14 +299,37 @@ export default function SquadApproves() {
             <span className="font-display italic">The squad</span> decides.
           </h2>
           <p className="max-w-[604px] text-base leading-normal tracking-[-0.32px] text-white/70">
-            When one member needs to spend above their limit, the squad
-            votes. The extra releases from the shared reserve - the group
-            total never changes.
+            When one member needs to spend above their limit, the squad votes.
+            The extra releases from the shared reserve - the group total never
+            changes.
           </p>
         </div>
       </div>
 
-      <div className="mt-15 w-full">
+      <div className="relative mt-15 w-full">
+        {/*
+          Ambient glow behind the SquadCard — Figma's Ellipse 6146. It is the
+          first child of the section frame, so it sits under everything in the
+          section; -z-10 reproduces that without the copy above needing to opt
+          into a stacking context.
+
+          It is centred on the card at stage (559, 176) and the asset carries
+          its own 100px blur margin, putting its top-left 200px up and left of
+          the 294px ellipse — i.e. 171px above the stage. That is why it lives
+          out here rather than inside .stage-viewport, which clips on the y axis
+          and would cut the blur into a hard edge. The +4px on the offset is
+          .stage-viewport's negative margin-block collapsing through this
+          wrapper, the same correction the hero glow needs.
+        */}
+        <Image
+          src="/approve/squadcard-glow.svg"
+          alt=""
+          width={694}
+          height={694}
+          className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+          style={{ top: -167 }}
+        />
+
         <div className="stage-viewport w-full">
           <div
             className="stage-sizer relative"

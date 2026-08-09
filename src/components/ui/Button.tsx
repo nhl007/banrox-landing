@@ -11,8 +11,12 @@ export type ButtonSize = "md" | "lg";
 const base =
   "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg pl-8 pr-6 whitespace-nowrap transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-lighter";
 
+/*
+ * The primary ring is a white gradient rather than the flat white Figma's
+ * export claims, so the border is transparent and .bg-brand-cta paints it.
+ */
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-brand-radial border-[1.5px] border-white text-white font-medium",
+  primary: "bg-brand-cta border-[1.5px] border-transparent text-white font-medium",
   secondary: "bg-white/[0.04] text-white font-medium",
   ghost: "text-ink",
 };

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import Badge from "@/components/ui/Badge";
 import { AddTeamIcon, CopyIcon } from "@/components/ui/icons";
+import Button from "./ui/Button";
 
 export default function SquadInvitation() {
   const [copied, setCopied] = useState(false);
@@ -52,7 +53,8 @@ export default function SquadInvitation() {
           className="font-sans font-normal leading-[1.5] opacity-70 relative shrink-0 text-[16px] text-white text-center tracking-[-0.32px] w-[604px] max-w-full"
           data-node-id="9304:25739"
         >
-          Invite your people now. When Squad launches, your group is already set.
+          Invite your people now. When Squad launches, your group is already
+          set.
         </p>
       </div>
 
@@ -66,7 +68,7 @@ export default function SquadInvitation() {
           data-node-id="9304:25741"
         >
           <div
-            className="border-[1.5px] border-solid border-white content-stretch flex flex-col gap-[16px] items-center overflow-hidden p-[16px] relative rounded-[32px] shrink-0 w-[604px] max-w-full bg-white/[0.03] backdrop-blur-[2px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+            className="border-[1.5px] border-solid border-white/15 content-stretch flex flex-col gap-[16px] items-center overflow-hidden p-[16px] relative rounded-[32px] shrink-0 w-[604px] max-w-full bg-white/[0.03] backdrop-blur-[2px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
             data-node-id="9304:25742"
             data-name="Step 3 Content"
           >
@@ -123,7 +125,7 @@ export default function SquadInvitation() {
 
             {/* Invite Link Bar */}
             <div
-              className="border-[1.5px] border-[rgba(255,255,255,0.3)] border-solid content-stretch flex h-[48px] items-center justify-between overflow-hidden pl-[20px] pr-[4px] py-[16px] relative rounded-[8px] shrink-0 w-full bg-white/[0.04] backdrop-blur-sm"
+              className="border-[1.5px] border-[rgba(255,255,255,0.1)] border-solid content-stretch flex h-[48px] items-center justify-between overflow-hidden pl-[20px] pr-[4px] py-[16px] relative rounded-[8px] shrink-0 w-full bg-white/[0.04] backdrop-blur-sm"
               data-node-id="9304:25749"
             >
               <p
@@ -134,14 +136,19 @@ export default function SquadInvitation() {
               </p>
 
               {/* Copy Link Button */}
-              <button
+              <Button
                 type="button"
                 onClick={handleCopy}
-                className="bg-brand-radial border-[1.5px] border-solid border-white content-stretch flex gap-[8px] h-[40px] items-center pl-[12px] pr-[16px] py-[16px] relative rounded-[4px] shrink-0 transition-opacity hover:opacity-90 cursor-pointer"
+                className="content-stretch flex gap-[8px] h-[40px] items-center pl-[12px] pr-[16px] py-[16px] relative !rounded-[4px] shrink-0 "
+                variant="primary"
                 data-node-id="9304:25751"
                 data-name="CTA - Primary"
               >
-                <div className="relative shrink-0 size-[16px]" data-node-id="9304:25752" data-name="copy-01">
+                <div
+                  className="relative shrink-0 size-[16px]"
+                  data-node-id="9304:25752"
+                  data-name="copy-01"
+                >
                   <CopyIcon className="size-[16px]" />
                 </div>
                 <span
@@ -150,7 +157,7 @@ export default function SquadInvitation() {
                 >
                   {copied ? "Copied!" : "Copy Link"}
                 </span>
-              </button>
+              </Button>
             </div>
 
             {/* Card Text Content */}
@@ -176,7 +183,7 @@ export default function SquadInvitation() {
             {/* Share via Email CTA Button */}
             <a
               href={`mailto:?subject=Join%20my%20Banrox%20Squad&body=Hey!%20Join%20my%20squad%20on%20Banrox:%20https://${inviteUrl}`}
-              className="border border-[rgba(255,255,255,0.4)] border-solid content-stretch flex gap-[8px] h-[44px] items-center justify-center pl-[32px] pr-[24px] py-[16px] relative rounded-[8px] shrink-0 w-full transition-colors hover:bg-white/10"
+              className="border border-[rgba(255,255,255,0.2)] border-solid content-stretch flex gap-[8px] h-[44px] items-center justify-center pl-[32px] pr-[24px] py-[16px] relative rounded-[8px] shrink-0 w-full transition-colors hover:bg-white/10"
               data-node-id="9304:25759"
               data-name="CTA - Primary"
             >

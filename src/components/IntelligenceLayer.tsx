@@ -79,27 +79,44 @@ const SIGNALS: {
   },
 ];
 
-function ConvergenceDot({
-  className = "",
-  style,
+/*
+ * Absolutely-positioned decoration inside the stage. Figma exports each of
+ * these with the blur/glow baked in, so the asset is larger than the node it
+ * belongs to; `left`/`top` are the asset's own top-left in stage coordinates.
+ */
+function StageArt({
+  src,
+  left,
+  top,
+  width,
+  height,
+  flipY = false,
 }: {
-  className?: string;
-  style: React.CSSProperties;
+  src: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  flipY?: boolean;
 }) {
   return (
-    <span
-      className={`absolute size-4 rounded-full border border-white/40 bg-white shadow-[0_0_12px_4px_rgba(93,128,255,0.6)] ${className}`.trim()}
-      style={style}
+    <Image
+      src={src}
+      alt=""
+      width={width}
+      height={height}
+      className="pointer-events-none absolute max-w-none"
+      style={{ left, top, ...(flipY ? { transform: "scaleY(-1)" } : null) }}
     />
   );
 }
 
 export default function IntelligenceLayer() {
   return (
-    <section className="w-full pt-25 pb-[170px]">
+    <section className="w-full pt-25 pb-25">
       <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
         <Badge icon={<Brain />}>Intelligence Layer</Badge>
-        <h2 className="font-heading w-full pb-px text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal">
+        <h2 className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal">
           Built on <span className="font-display italic">intelligence.</span>
           <br />
           Not just a credit score.
@@ -119,15 +136,8 @@ export default function IntelligenceLayer() {
             }
           >
             <div className="stage relative">
-              {/* Ambient glow behind the fan-to-signal-row convergence. */}
-              <Image
-                src="/intel/bg-glow.svg"
-                alt=""
-                width={1189}
-                height={1189}
-                className="pointer-events-none absolute max-w-none"
-                style={{ left: 556, top: 165, transform: "translate(-50%, -50%)" }}
-              />
+              {/* Ambient glow, centred on the stage behind the signal row. */}
+              <StageArt src="/intel/bg-glow.svg" left={-38} top={-224} width={1189} height={1189} />
 
               {/* Row 1: four member score cards. */}
               <div className="absolute flex gap-6" style={{ left: 0, top: 0 }}>
@@ -136,39 +146,50 @@ export default function IntelligenceLayer() {
                 ))}
               </div>
 
-              <Image
-                src="/intel/connector-top.svg"
-                alt=""
-                width={853}
-                height={120.5}
-                className="pointer-events-none absolute max-w-none"
-                style={{ left: 130, top: 172 }}
-              />
-              <ConvergenceDot className="-translate-x-1/2 -translate-y-1/2" style={{ left: 572, top: 298 } as React.CSSProperties} />
+              <StageArt src="/intel/connector-top.svg" left={130} top={172} width={853} height={120.5} />
 
-              {/* Row 2: four signal-category cards. */}
-              <div className="absolute flex gap-2" style={{ left: 76.5, top: 282 }}>
+              {/*
+                Figma nests this arc inside the signal container, where its own
+                overflow-clip would hide it entirely — yet the artboard renders
+                it. Same quirk as the other ambient glows: it has to be a
+                sibling of the clipping box, not a child.
+              */}
+              <StageArt src="/intel/signal-arc.svg" left={283} top={172.5} width={547} height={158} />
+
+              {/* Both convergence dots sit *behind* the box they meet, so the
+                  translucent surface dims their lower half. */}
+              <StageArt src="/intel/fan-dot.svg" left={533} top={259} width={46} height={46} />
+
+              {/* Row 2: the signal container and its four category cards. */}
+              {/* The hairline is an inset ring, not a border: Figma draws the
+                  stroke over the 8px padding, and a real border would eat 2px
+                  the four 230px cards need. */}
+              <div
+                className="bg-vignette absolute flex h-[210px] w-[960px] gap-2 rounded-2xl bg-[rgba(8,8,20,0.2)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+                style={{ left: 76.5, top: 282 }}
+              >
                 {SIGNALS.map((s) => (
                   <SignalCard key={s.title.join(" ")} {...s} />
                 ))}
               </div>
 
-              {/* Connector: signal row down into the hub. */}
-              <span
-                className="absolute w-px border-l border-dashed border-white/20"
-                style={{ left: 572, top: 492, height: 40 }}
+              {/* Connector: signal row down into the hub. Figma mirrors the
+                  asset so the bright end leads into the dot. */}
+              <StageArt
+                src="/intel/hub-connector.svg"
+                left={533}
+                top={491}
+                width={46}
+                height={64}
+                flipY
               />
-              <ConvergenceDot className="-translate-x-1/2 -translate-y-1/2" style={{ left: 572, top: 532 } as React.CSSProperties} />
 
               <div className="absolute" style={{ left: 385, top: 532 }}>
                 <BanroxEngineHub />
               </div>
 
               {/* Connector: hub down into the approved pill. */}
-              <span
-                className="absolute w-px border-l border-dashed border-white/20"
-                style={{ left: 572, top: 868, height: 40 }}
-              />
+              <StageArt src="/intel/pill-connector.svg" left={555.5} top={868} width={1} height={40} />
 
               <div
                 className="bg-vignette absolute flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"

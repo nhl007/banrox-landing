@@ -16,13 +16,17 @@ const ROW_W = 1240;
 const ROW_H = 628;
 
 /** The squad cluster: offsets and diameters straight off the artboard. */
-const CLUSTER: { person: PersonKey; size: number; left: number; top: number }[] =
-  [
-    { person: "david", size: 40, left: 0, top: 17 },
-    { person: "lilit", size: 56, left: 29, top: 41 },
-    { person: "mika", size: 40, left: 74, top: 17 },
-    { person: "aram", size: 40, left: 37, top: 0 },
-  ];
+const CLUSTER: {
+  person: PersonKey;
+  size: number;
+  left: number;
+  top: number;
+}[] = [
+  { person: "david", size: 40, left: 0, top: 17 },
+  { person: "lilit", size: 56, left: 29, top: 41 },
+  { person: "mika", size: 40, left: 74, top: 17 },
+  { person: "aram", size: 40, left: 37, top: 0 },
+];
 
 function Separator({ tone }: { tone: "negative" | "success" }) {
   return (
@@ -179,7 +183,7 @@ function SquadCard() {
 
 export default function AloneVsTogether() {
   return (
-    <section className="w-full pt-[176px] pb-[170px]">
+    <section className="w-full  pb-[170px]">
       <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-15 px-6">
         <div className="flex w-full flex-col items-center gap-4">
           <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>

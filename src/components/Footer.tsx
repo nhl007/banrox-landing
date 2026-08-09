@@ -5,7 +5,11 @@ import Link from "next/link";
 
 const productsLinks = [
   { label: "Credit Monitoring", href: "/products/credit-monitoring" },
-  { label: "Identity Protection", href: "/products/identity-protection", highlight: true },
+  {
+    label: "Identity Protection",
+    href: "/products/identity-protection",
+    highlight: true,
+  },
   { label: "Privacy Protect", href: "/products/privacy-protect" },
   { label: "Debt Navigator", href: "/products/debt-navigator" },
   { label: "Student Loan Aid", href: "/products/student-loan-aid" },
@@ -96,9 +100,9 @@ export default function Footer() {
           />
 
           {/* Contact Cards Row */}
-          <div className="-translate-x-1/2 -translate-y-1/2 absolute flex gap-[32px] items-start left-1/2 top-1/2 z-10 max-w-[1240px] px-4 w-full justify-center">
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute grid grid-rows-1 grid-cols-3 gap-[32px] left-1/2 top-1/2 z-10 max-w-[1240px] px-4 w-full justify-center">
             {/* Card 1: Email Us */}
-            <div className="border-[1.5px] border-solid border-white flex flex-col gap-[40px] items-center justify-center overflow-hidden p-[40px] relative rounded-[32px] shrink-0 w-[392px] bg-white/[0.03] backdrop-blur-[32px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
+            <div className="border-[1.5px] border-solid border-white/15 flex flex-col gap-[40px] items-center justify-center overflow-hidden p-[40px] relative rounded-[32px] shrink-0 w-[392px] bg-white/[0.03] backdrop-blur-[32px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
               {/* Top Light Highlight Asset (Ellipse 5979) */}
               <div className="absolute h-[121px] left-[106.84px] top-[-121.5px] w-[356px] pointer-events-none">
                 <div className="absolute inset-[-165.29%_-56.18%]">
@@ -125,7 +129,7 @@ export default function Footer() {
             </div>
 
             {/* Card 2: Call Us */}
-            <div className="border-[1.5px] border-solid border-white flex flex-col gap-[40px] items-center justify-center overflow-hidden p-[40px] relative rounded-[32px] shrink-0 w-[392px] bg-white/[0.03] backdrop-blur-[32px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
+            <div className="border-[1.5px] border-solid border-white/15 flex flex-col gap-[40px] items-center justify-center overflow-hidden p-[40px] relative rounded-[32px] shrink-0 w-[392px] bg-white/[0.03] backdrop-blur-[32px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
               {/* Top Light Highlight Asset (Ellipse 5979) */}
               <div className="absolute h-[121px] left-[106.84px] top-[-121.5px] w-[356px] pointer-events-none">
                 <div className="absolute inset-[-165.29%_-56.18%]">
@@ -150,7 +154,7 @@ export default function Footer() {
             </div>
 
             {/* Card 3: Visit Us */}
-            <div className="border-[1.5px] border-solid border-white flex flex-col gap-[40px] items-center justify-center overflow-hidden p-[40px] relative rounded-[32px] shrink-0 w-[392px] bg-white/[0.03] backdrop-blur-[32px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
+            <div className="border-[1.5px] border-solid border-white/15 flex flex-col gap-[40px] items-center justify-center overflow-hidden p-[40px] relative rounded-[32px] shrink-0 w-[392px] bg-white/[0.03] backdrop-blur-[32px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
               {/* Top Light Highlight Asset (Ellipse 5979) */}
               <div className="absolute h-[121px] left-[106.84px] top-[-121.5px] w-[356px] pointer-events-none">
                 <div className="absolute inset-[-165.29%_-56.18%]">
@@ -224,13 +228,17 @@ export default function Footer() {
           <div className="absolute flex gap-[32px] items-start leading-none right-[100px] text-[16px] top-[80px] tracking-[-0.32px] z-10">
             {/* Products Column */}
             <div className="flex flex-col gap-[32px] items-start relative shrink-0 w-[180px]">
-              <h4 className="font-sans font-semibold text-white w-full">Products</h4>
+              <h4 className="font-sans font-semibold text-white w-full">
+                Products
+              </h4>
               {productsLinks.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
                   className={`font-sans font-normal transition-colors w-full ${
-                    item.highlight ? "text-[#8585e9]" : "text-white/70 hover:text-white"
+                    item.highlight
+                      ? "text-[#8585e9]"
+                      : "text-white/70 hover:text-white"
                   }`}
                 >
                   {item.label}
@@ -240,7 +248,9 @@ export default function Footer() {
 
             {/* Solutions Column */}
             <div className="flex flex-col gap-[32px] items-start relative shrink-0 w-[180px]">
-              <h4 className="font-sans font-semibold text-white w-full">Solutions</h4>
+              <h4 className="font-sans font-semibold text-white w-full">
+                Solutions
+              </h4>
               {solutionsLinks.map((item) => (
                 <Link
                   key={item.label}
@@ -254,7 +264,9 @@ export default function Footer() {
 
             {/* Tools Column */}
             <div className="flex flex-col gap-[32px] items-start relative shrink-0 w-[180px]">
-              <h4 className="font-sans font-semibold text-white w-full">Tools</h4>
+              <h4 className="font-sans font-semibold text-white w-full">
+                Tools
+              </h4>
               {toolsLinks.map((item) => (
                 <Link
                   key={item.label}
@@ -268,7 +280,9 @@ export default function Footer() {
 
             {/* Resources Column */}
             <div className="flex flex-col gap-[32px] items-start relative shrink-0 w-[180px]">
-              <h4 className="font-sans font-semibold text-white w-full">Resources</h4>
+              <h4 className="font-sans font-semibold text-white w-full">
+                Resources
+              </h4>
               {resourcesLinks.map((item) => (
                 <Link
                   key={item.label}
@@ -284,7 +298,11 @@ export default function Footer() {
           {/* Brand Info & Social Icons (Left Side) */}
           <div className="absolute flex flex-col gap-[40px] items-start left-[100px] top-[80px] w-[298px] z-10">
             {/* White Logomark Asset */}
-            <Link href="/" aria-label="Banrox home" className="h-[32px] overflow-hidden relative shrink-0 w-[150px] block">
+            <Link
+              href="/"
+              aria-label="Banrox home"
+              className="h-[32px] overflow-hidden relative shrink-0 w-[150px] block"
+            >
               <Image
                 src="/footer/logo-white.svg"
                 alt="Banrox"
@@ -296,8 +314,9 @@ export default function Footer() {
             </Link>
 
             <p className="font-sans font-normal leading-[1.5] opacity-70 text-[16px] text-white tracking-[-0.32px] w-full">
-              Banrox is a financial operating system protecting Americans&apos; credit,
-              identity, privacy, and business health through AI-powered monitoring—24/7
+              Banrox is a financial operating system protecting Americans&apos;
+              credit, identity, privacy, and business health through AI-powered
+              monitoring—24/7
             </p>
 
             {/* Social Icons with exact Figma SVG assets */}
@@ -307,7 +326,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="bg-[rgba(255,255,255,0.02)] border border-solid border-white overflow-hidden rounded-[30px] shrink-0 size-[40px] flex items-center justify-center transition-colors hover:bg-white/10"
+                className="bg-[rgba(255,255,255,0.02)] border border-solid border-white/15 overflow-hidden rounded-[30px] shrink-0 size-[40px] flex items-center justify-center transition-colors hover:bg-white/10"
               >
                 <Image
                   src="/footer/facebook.svg"
@@ -323,7 +342,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn"
-                className="bg-[rgba(255,255,255,0.02)] border border-solid border-white overflow-hidden rounded-[30px] shrink-0 size-[40px] flex items-center justify-center transition-colors hover:bg-white/10"
+                className="bg-[rgba(255,255,255,0.02)] border border-solid border-white/15 overflow-hidden rounded-[30px] shrink-0 size-[40px] flex items-center justify-center transition-colors hover:bg-white/10"
               >
                 <Image
                   src="/footer/linkedin.svg"
@@ -339,7 +358,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="X (Twitter)"
-                className="bg-[rgba(255,255,255,0.02)] border border-solid border-white overflow-hidden rounded-[30px] shrink-0 size-[40px] flex items-center justify-center transition-colors hover:bg-white/10"
+                className="bg-[rgba(255,255,255,0.02)] border border-solid border-white/15 overflow-hidden rounded-[30px] shrink-0 size-[40px] flex items-center justify-center transition-colors hover:bg-white/10"
               >
                 <Image
                   src="/footer/twitter-x.svg"
@@ -355,18 +374,21 @@ export default function Footer() {
           {/* Legal Disclaimer Box */}
           <div className="absolute bg-[rgba(0,0,0,0.1)] border-[1.5px] border-[rgba(255,255,255,0.05)] border-solid flex flex-col font-sans font-normal gap-[24px] items-start left-[100px] overflow-hidden p-[40px] rounded-[32px] text-[14px] text-center text-white top-[584px] tracking-[-0.28px] w-[1240px] backdrop-blur-md z-10">
             <p className="leading-[1.5] opacity-70 w-full">
-              Banrox is a financial operating system protecting Americans&apos; credit,
-              identity, privacy, and business health through AI-powered monitoring—24/7.
+              Banrox is a financial operating system protecting Americans&apos;
+              credit, identity, privacy, and business health through AI-powered
+              monitoring—24/7.
             </p>
             <p className="leading-[1.5] opacity-70 w-full">
-              Loan approval and terms are not guaranteed and depend on factors such as
-              creditworthiness and income verification.{" "}
-              <span className="uppercase font-semibold">BANROX</span> Inc. is not liable
-              for financial outcomes resulting from the use of its services. Late or
-              missed payments may negatively impact your credit score.
+              Loan approval and terms are not guaranteed and depend on factors
+              such as creditworthiness and income verification.{" "}
+              <span className="uppercase font-semibold">BANROX</span> Inc. is
+              not liable for financial outcomes resulting from the use of its
+              services. Late or missed payments may negatively impact your
+              credit score.
             </p>
             <p className="leading-[1.5] opacity-70 w-full">
-              By using our services, you consent to communication via SMS, email, and phone.
+              By using our services, you consent to communication via SMS,
+              email, and phone.
             </p>
           </div>
 
@@ -376,10 +398,16 @@ export default function Footer() {
               Copyright © 2025 Banrox Inc. All rights reserved.
             </p>
             <div className="flex gap-[32px] items-center">
-              <Link href="/privacy" className="opacity-70 hover:opacity-100 transition-opacity">
+              <Link
+                href="/privacy"
+                className="opacity-70 hover:opacity-100 transition-opacity"
+              >
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="opacity-70 hover:opacity-100 transition-opacity">
+              <Link
+                href="/terms"
+                className="opacity-70 hover:opacity-100 transition-opacity"
+              >
                 Terms &amp; Conditions
               </Link>
             </div>
@@ -387,8 +415,12 @@ export default function Footer() {
 
           {/* Giant Bottom Typography Watermark "Banrox" */}
           <p className="-translate-x-1/2 absolute bg-clip-text bg-gradient-to-b from-white/5 to-white/60 bottom-[253px] font-display left-[690.5px] text-[transparent] text-center translate-y-full whitespace-nowrap pointer-events-none select-none">
-            <span className="leading-none text-[498px] italic font-normal">Ban</span>
-            <span className="font-heading leading-none text-[498px] italic font-normal">rox</span>
+            <span className="leading-none text-[498px] italic font-normal">
+              Ban
+            </span>
+            <span className="font-heading leading-none text-[498px] italic font-normal">
+              rox
+            </span>
           </p>
         </div>
       </div>
