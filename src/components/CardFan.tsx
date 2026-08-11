@@ -134,21 +134,41 @@ const cards: Placed[] = [
   },
 ];
 
+/*
+ * The perspective sits on the stage so the fan's entrance (the hero timeline
+ * rotates it up from flat) is measured in stage units and scales along with
+ * everything else. The cards then live one level down, on a plane of their own,
+ * because that plane is what turns — the stage itself already carries the scale
+ * transform.
+ *
+ * The value is deliberately short. Perspective only bites while the stack is
+ * tilted; at rest the plane is parallel to the screen and undistorted at any
+ * distance. A nearer camera is what gives the flat stack enough projected depth
+ * to read as a stack of cards rather than a smear. Keep it in step with
+ * MOTION.flat.perspective.
+ */
 export default function CardFan() {
   return (
     <div className="stage-viewport w-full">
       <div className="stage-sizer relative" style={{ "--stage-w": 1262, "--stage-h": 516 } as React.CSSProperties}>
-        <div className="stage relative">
-          {cards.map((card) => {
-            const { left, top, z, ...cardProps } = card;
-            return (
-              <div key={card.name} className={`absolute ${z}`} style={{ left, top }}>
-                <PassportCard {...cardProps} />
-              </div>
-            );
-          })}
-          <div className="absolute z-50" style={{ left: 501, top: 96 }}>
-            <SquadCard />
+        <div className="stage relative" style={{ perspective: "900px" }}>
+          <div className="absolute inset-0" data-reveal="fan">
+            {cards.map((card) => {
+              const { left, top, z, ...cardProps } = card;
+              return (
+                <div
+                  key={card.name}
+                  className={`absolute ${z}`}
+                  style={{ left, top }}
+                  data-reveal="card"
+                >
+                  <PassportCard {...cardProps} />
+                </div>
+              );
+            })}
+            <div className="absolute z-50" style={{ left: 501, top: 96 }} data-fan-anchor="">
+              <SquadCard />
+            </div>
           </div>
         </div>
       </div>

@@ -40,7 +40,7 @@ function Separator({ tone }: { tone: "negative" | "success" }) {
 
 function AloneCard() {
   return (
-    <ComparisonCard variant="alone">
+    <ComparisonCard variant="alone" reveal="card-left">
       <div className="absolute top-[148px] left-1/2 flex w-[216px] -translate-x-1/2 flex-col items-center gap-5">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
@@ -103,6 +103,7 @@ function AloneCard() {
       />
 
       <StrengthBar
+        reveal="bar"
         title="Alone Strength"
         note="Not enough approval power."
         stats={[
@@ -117,7 +118,7 @@ function AloneCard() {
 
 function SquadCard() {
   return (
-    <ComparisonCard variant="squad">
+    <ComparisonCard variant="squad" reveal="card-right">
       <div className="absolute top-[133.5px] left-[calc(50%+1px)] flex w-[241px] -translate-x-1/2 flex-col items-center gap-5">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
@@ -169,6 +170,7 @@ function SquadCard() {
       <PersonChip person="david" approved left={373} top={373} />
 
       <StrengthBar
+        reveal="bar"
         title="Squad Strength"
         note="Higher approval power."
         stats={[
@@ -183,51 +185,77 @@ function SquadCard() {
 
 export default function AloneVsTogether() {
   return (
-    <section className="w-full  pb-[170px]">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-15 px-6">
-        <div className="flex w-full flex-col items-center gap-4">
-          <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
-          <div className="flex w-full flex-col items-center gap-4 text-center">
-            {/* pb-px: Figma measures this two-line box at 97px where the
-                browser lays it out at 96, which would pull everything below
-                up by a pixel. The glyphs themselves already align. */}
-            <h2 className="font-heading w-full pb-px text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal">
-              Alone, each of you falls short.
-              <br />
-              <span className="font-display italic">Together,</span> you qualify
-              for more.
-            </h2>
-            <p className="max-w-[604px] text-base leading-[1.5] tracking-[-0.32px] text-white/70">
-              Squad combines your profiles into one group application.
-              <br />
-              Different strengths, one shared line.
-            </p>
+    <section
+      className="pinned-pane w-full pt-[85px]  pb-[170px]"
+      data-sequence-section="alone"
+    >
+      {/* See Hero: the pin holds the section still, so the timeline slides
+          this wrapper up to bring the panels into the held viewport. */}
+      <div data-shift="">
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-15 px-6">
+          <div className="flex w-full flex-col items-center gap-4">
+            <div className="flex" data-reveal="copy">
+              <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
+            </div>
+            <div className="flex w-full flex-col items-center gap-4 text-center">
+              {/* pb-px: Figma measures this two-line box at 97px where the
+                  browser lays it out at 96, which would pull everything below
+                  up by a pixel. The glyphs themselves already align. */}
+              <h2
+                className="font-heading w-full pb-px text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+                data-reveal="copy"
+              >
+                Alone, each of you falls short.
+                <br />
+                <span className="font-display italic">Together,</span> you
+                qualify for more.
+              </h2>
+              <p
+                className="max-w-[604px] text-base leading-[1.5] tracking-[-0.32px] text-white/70"
+                data-reveal="copy"
+              >
+                Squad combines your profiles into one group application.
+                <br />
+                Different strengths, one shared line.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Gap lives on the wrapper: .stage-viewport sets its own margin-block
-          and a utility here would collide with it. */}
-      <div className="mt-15 w-full">
-        <div className="stage-viewport w-full">
-          <div
-            className="stage-sizer relative"
-            style={
-              {
-                "--stage-w": ROW_W,
-                "--stage-h": ROW_H,
-                "--stage-min": 0.5,
-              } as React.CSSProperties
-            }
-          >
-            <div className="stage relative">
-              <div className="flex h-full items-start gap-28">
-                <AloneCard />
-                <SquadCard />
+        {/* Gap lives on the wrapper: .stage-viewport sets its own margin-block
+            and a utility here would collide with it. */}
+        <div className="mt-15 w-full">
+          {/*
+            stage-viewport-clip: the panels start off the viewport edges, and a
+            rightward translate in an LTR scroll container is *scrollable*
+            overflow — it would raise a horizontal scrollbar and hold it for as
+            long as the outro leaves the panel parked outside. Clipping has to be
+            on both axes: `overflow-x: clip` beside the existing `overflow-y:
+            hidden` computes back to `hidden`, leaving it a scroll container.
+          */}
+          <div className="stage-viewport stage-viewport-clip w-full">
+            <div
+              className="stage-sizer relative"
+              style={
+                {
+                  "--stage-w": ROW_W,
+                  "--stage-h": ROW_H,
+                  "--stage-min": 0.5,
+                } as React.CSSProperties
+              }
+            >
+              <div className="stage relative">
+                <div className="flex h-full items-start gap-28">
+                  <AloneCard />
+                  <SquadCard />
+                </div>
+                <span
+                  className="font-display absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[48px] leading-none text-white italic opacity-70"
+                  data-reveal="vs"
+                >
+                  VS
+                </span>
               </div>
-              <span className="font-display absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[48px] leading-none text-white italic opacity-70">
-                VS
-              </span>
             </div>
           </div>
         </div>

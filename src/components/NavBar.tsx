@@ -31,8 +31,16 @@ export default function NavBar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="w-full px-4 pt-4 sm:px-6 lg:px-[100px]">
-      <nav className="bg-nav-pill relative mx-auto flex h-14 w-full max-w-[1240px] items-center justify-between rounded-xl border-[1.5px] border-white/20 py-1 pr-1 pl-4">
+    /*
+      The transform goes on the pill, not the <header>: the header keeps its
+      72px slot in flow so nothing below it moves, and the pill is the thing
+      that reads as dropping in and folding away.
+    */
+    <header className="w-full px-4 pt-4 sm:px-6 lg:px-[100px]" data-sequence-section="navbar">
+      <nav
+        className="bg-nav-pill relative mx-auto flex h-14 w-full max-w-[1240px] items-center justify-between rounded-xl border-[1.5px] border-white/20 py-1 pr-1 pl-4"
+        data-reveal="nav-pill"
+      >
         <Link
           href="/"
           aria-label="Banrox home"

@@ -13,7 +13,10 @@ const base =
 
 /*
  * The primary ring is a white gradient rather than the flat white Figma's
- * export claims, so the border is transparent and .bg-brand-cta paints it.
+ * export claims, so the border is transparent and .bg-brand-cta paints it —
+ * along with the light that periodically passes through it. Both live in that
+ * one class: the ring and the sweep are layers of the same background, and
+ * splitting them would mean re-deriving the clip that keeps them on the border.
  */
 const variants: Record<ButtonVariant, string> = {
   primary: "bg-brand-cta border-[1.5px] border-transparent text-white font-medium",

@@ -33,6 +33,7 @@ function HeroGlow() {
         height={1828}
         className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
         style={{ top: -401 }}
+        data-reveal="glow"
         priority
       />
       <Image
@@ -42,70 +43,104 @@ function HeroGlow() {
         height={1312}
         className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
         style={{ top: -360 }}
+        data-reveal="glow"
         priority
       />
     </>
   );
 }
 
+/*
+ * The data-reveal tags below are the hero's entrance choreography. The timeline
+ * lives in src/components/scroll/timelines.ts and the wrapper elements exist
+ * only to give it something with a box to hinge and scale.
+ */
 export default function Hero() {
   return (
-    <section className="relative w-full overflow-x-clip pb-[176px]">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center px-6 pt-20 ">
-        <div className="flex w-full flex-col items-center gap-8">
-          <div className="flex w-full flex-col items-center gap-4">
-            <Badge icon={<CreditCard />}>
-              Introducing Squad Card by Banrox
-            </Badge>
+    <section
+      className="pinned-pane relative w-full overflow-x-clip pb-[85px]"
+      data-sequence-section="hero"
+    >
+      {/*
+        data-shift wraps everything the pin has to reveal. The section is
+        taller than a desktop viewport and the pin holds it still, so the
+        timeline slides this up to bring the card scene into view — the
+        equivalent of scrolling down to it, once the page itself has stopped
+        moving. It is measured rather than the section, so the section's bottom
+        padding is not mistaken for content.
+      */}
+      <div data-shift="">
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center px-6 pt-20 ">
+          <div className="flex w-full flex-col items-center gap-8">
+            <div className="flex w-full flex-col items-center gap-4">
+              <div className="flex" data-reveal="copy">
+                <Badge icon={<CreditCard />}>
+                  Introducing Squad Card by Banrox
+                </Badge>
+              </div>
 
-            <div className="flex flex-col items-center gap-4 text-center">
-              {/*
-                72px at the 1440 artboard; clamped so it degrades gracefully on
-                narrow viewports, which the Figma frame does not specify.
-              */}
-              <h1 className="font-heading max-w-[956px] text-[clamp(2.25rem,6.1vw,4.5rem)] leading-none font-normal">
-                One card. One line.
-                <br />
-                Four people who{" "}
-                <span className="font-display italic">have your back.</span>
-              </h1>
-              <p className="max-w-[604px] text-base leading-[1.5] tracking-[-0.32px] text-white/70">
-                Squad is a shared credit line built for people who trust each
-                other. Everyone gets their own lane, and the squad holds the
-                reserve.
-              </p>
+              <div className="flex flex-col items-center gap-4 text-center">
+                {/*
+                  72px at the 1440 artboard; clamped so it degrades gracefully on
+                  narrow viewports, which the Figma frame does not specify.
+                */}
+                <h1
+                  className="font-heading max-w-[956px] text-[clamp(2.25rem,6.1vw,4.5rem)] leading-none font-normal"
+                  data-reveal="copy"
+                >
+                  One card. One line.
+                  <br />
+                  Four people who{" "}
+                  <span className="font-display italic">have your back.</span>
+                </h1>
+                <p
+                  className="max-w-[604px] text-base leading-[1.5] tracking-[-0.32px] text-white/70"
+                  data-reveal="copy"
+                >
+                  Squad is a shared credit line built for people who trust each
+                  other. Everyone gets their own lane, and the squad holds the
+                  reserve.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button
-              href="/waitlist"
-              variant="primary"
-              size="lg"
-              icon={<ArrowUpRight />}
-            >
-              Join the Waitlist
-            </Button>
-            <Button
-              href="/invite"
-              variant="secondary"
-              size="lg"
-              icon={<ArrowUpRight />}
-            >
-              Invite Your Squad
-            </Button>
-          </div>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <span className="inline-flex" data-reveal="button">
+                <Button
+                  href="/waitlist"
+                  variant="primary"
+                  size="lg"
+                  icon={<ArrowUpRight />}
+                >
+                  Join the Waitlist
+                </Button>
+              </span>
+              <span className="inline-flex" data-reveal="button">
+                <Button
+                  href="/invite"
+                  variant="secondary"
+                  size="lg"
+                  icon={<ArrowUpRight />}
+                >
+                  Invite Your Squad
+                </Button>
+              </span>
+            </div>
 
-          <p className="text-center text-xs leading-[1.5] tracking-[-0.24px] text-white/70">
-            <span className="font-medium text-white">2,847</span> people on the
-            waitlist
-          </p>
+            <p
+              className="text-center text-xs leading-[1.5] tracking-[-0.24px] text-white/70"
+              data-reveal="note"
+            >
+              <span className="font-medium text-white">2,847</span> people on
+              the waitlist
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="relative">
-        <HeroGlow />
-        <CardFan />
+        <div className="relative">
+          <HeroGlow />
+          <CardFan />
+        </div>
       </div>
     </section>
   );

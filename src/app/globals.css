@@ -96,15 +96,49 @@ body {
  * of the button's width. Both are percentage-based, so one rule serves every
  * button size.
  *
- * Painting it takes four layers because the ring is translucent and has to
+ * Painting it takes five layers because the ring is translucent and has to
  * composite over the fill, not over the page: the bottom layer lays the fill
- * across the whole border box, the two ring layers tint it, and the top layer
- * repaints the fill clipped to the padding box so only the 1.5px border keeps
- * the tint. The border itself is transparent — see Button's primary variant.
+ * across the whole border box, the two ring layers tint it, the sheen sweeps
+ * over them, and the top layer repaints the fill clipped to the padding box so
+ * only the 1.5px border keeps any of it. The border itself is transparent —
+ * see Button's primary variant.
+ *
+ * That clip is what makes the sheen a *border* effect rather than a shine
+ * across the whole button: the band is painted over the full border box like
+ * the ring layers, and the padding-box fill on top erases everything but the
+ * ring. So the light enters at one cap, runs the top and bottom edges together,
+ * and leaves at the other — no mask, no pseudo-element, no extra DOM.
  */
+@property --cta-sheen {
+  syntax: "<percentage>";
+  inherits: false;
+  /*
+   * Off the near end of the gradient line: at rest — and for anyone on
+   * reduced motion, who never gets the keyframes — the band is fully
+   * outside the box and the ring paints exactly as it did before.
+   */
+  initial-value: -30%;
+}
+
 .bg-brand-cta {
   background-image:
     var(--gradient-brand-radial),
+    /*
+     * A plateau, not a spike. The ring already carries up to 0.4 white of its
+     * own, so a band that only touches full white at a single point barely
+     * separates from it along the top edge — the head of the pass has to hold
+     * solid #fff across a few percent of the gradient line to read as light
+     * rather than as a slightly brighter stretch of ring.
+     */
+    linear-gradient(
+      100deg,
+      transparent calc(var(--cta-sheen) - 26%),
+      rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) - 12%),
+      rgba(255, 255, 255, 1) calc(var(--cta-sheen) - 3.5%),
+      rgba(255, 255, 255, 1) calc(var(--cta-sheen) + 3.5%),
+      rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) + 12%),
+      transparent calc(var(--cta-sheen) + 26%)
+    ),
     radial-gradient(
       ellipse 23% 100% at 50% 0%,
       rgba(255, 255, 255, 1) 0%,
@@ -117,7 +151,60 @@ body {
     ),
     var(--gradient-brand-radial);
   background-origin: border-box;
-  background-clip: padding-box, border-box, border-box, border-box;
+  background-clip: padding-box, border-box, border-box, border-box, border-box;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * Registered above rather than left as a plain custom property because only a
+   * registered one interpolates — unregistered, this would jump between
+   * keyframes instead of travelling.
+   *
+   * The velocity profile lives in the keyframe *spacing*, not in an easing
+   * function, which is why the animation runs `linear`: the default `ease`
+   * applies per segment and would slow the band to a stop at every waypoint
+   * below. Equal 20% steps of travel are given unequal slices of time —
+   *
+   *   whip 40 units in 6%  →  drift 20 in 8%  →  20 in 14%  →  20 in 14%
+   *                        →  20 in 8%  →  whip 40 in 6%  →  hold
+   *
+   * — so the light snaps around each rounded cap at roughly 4.5x the speed it
+   * crosses the long edges at, and hangs in the middle where there is most of
+   * it to see. The first and last waypoints (-30%, 130%) sit clear of the
+   * gradient line by more than the band's 26% half-width, so the band is fully
+   * off the box at both ends: the whips start and finish out of frame, and the
+   * hold before the loop restarts has nothing visible in it to seam.
+   */
+  @keyframes cta-sheen {
+    0% {
+      --cta-sheen: -30%;
+    }
+    6% {
+      --cta-sheen: 10%;
+    }
+    14% {
+      --cta-sheen: 30%;
+    }
+    28% {
+      --cta-sheen: 50%;
+    }
+    42% {
+      --cta-sheen: 70%;
+    }
+    50% {
+      --cta-sheen: 90%;
+    }
+    56% {
+      --cta-sheen: 130%;
+    }
+    100% {
+      --cta-sheen: 130%;
+    }
+  }
+
+  .bg-brand-cta {
+    animation: cta-sheen 4.4s linear infinite;
+  }
 }
 
 /* The nav pill: white at the top edge fading to lavender at the bottom. */
@@ -226,10 +313,168 @@ body {
   height: calc(var(--stage-h) * 1px * var(--stage-scale));
 }
 
+/*
+ * Entrance state for the scroll sequence. GSAP takes these over on hydration,
+ * but the markup is server-rendered and paints first, so the hidden state has
+ * to start in CSS or the finished page flashes for a frame. ScrollSequence
+ * ships a <noscript> override for anyone running without JS.
+ *
+ * The guard has to match MOTION.enabled exactly — anywhere the two disagree the
+ * page either flashes or never appears. Phones and reduced-motion get the
+ * finished page straight from the server, unhidden, with no controller at all.
+ */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+  }
+
+  /*
+   * Opt-in clip for a stage whose contents animate in from outside it.
+   *
+   * Both axes on purpose: `overflow-x: clip` next to `overflow-y: hidden`
+   * computes back to `hidden`, which leaves the element a scroll container and
+   * solves nothing. Clip is also the only option that does not reserve a
+   * scrollbar — and a scrollbar here would resize the container query that
+   * .stage-sizer derives its height from, moving every section below it.
+   *
+   * Scoped to a modifier class rather than .stage-viewport itself because the
+   * card fan genuinely overflows near 768px and needs to stay scrollable.
+   */
+  .stage-viewport-clip {
+    overflow: clip;
+  }
+
+  /*
+   * The opposite opt-out, for a stage whose contents animate *outside* it.
+   *
+   * The Early Access card turns a quarter circle on its way in, so its bounding
+   * box is briefly taller than the 260px slot the sizer reserves, and it starts
+   * a full viewport below that — neither of which survives the default
+   * overflow-y: hidden. Nothing here needs clipping in the first place: the
+   * artwork is 420px wide against a 768px floor, so it never overflows on its
+   * own, and the section carries its own overflow-x: clip against the travel.
+   */
+  .stage-viewport-open {
+    overflow: visible;
+  }
+
+  /*
+   * An animated section is exactly one viewport tall while the sequence is
+   * running.
+   *
+   * Not cosmetic. A pinned section releases with its top at the viewport top,
+   * so whatever it is TALLER than the viewport is scroll the user still has to
+   * spend on a section that has already finished its outro and is completely
+   * invisible — dead scroll between every pair of sections, proportional to how
+   * much each section overhangs. Fixing the height to the viewport makes that
+   * overhang zero, so the next section's entrance begins the instant the
+   * previous one lets go.
+   *
+   * Content taller than this is not lost: it overflows below the fold while
+   * pinned, and the timeline's reveal beat slides it up into view. Nothing is
+   * clipped, so the hero's bloom still bleeds as it always did.
+   */
+  .pinned-pane {
+    height: 100vh;
+    /*
+     * So [data-shift].offsetTop is the section's own padding rather than a
+     * distance to some ancestor — the reveal beat measures how much of the
+     * section falls below the fold, and that starts where the wrapper starts.
+     * Nothing else depends on it: every child of a section lives inside the
+     * wrapper, which is already a containing block of its own.
+     */
+    position: relative;
+  }
+
+  /*
+   * width: two sections are flex columns with items-center, which would shrink
+   * the shift wrapper to its content width and re-centre everything inside it.
+   *
+   * hidden: a section is invisible until its own timeline dissolves it in, and
+   * invisible again once the outro has run. Tagging every element individually
+   * would leave whatever nobody remembered to tag stranded on screen through
+   * the handover — and, translated up by a viewport height to hold its place,
+   * stranded over the section in front of it. visibility rather than opacity
+   * alone so a finished section cannot swallow clicks meant for the live one.
+   */
+  [data-shift] {
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 .stage {
   width: calc(var(--stage-w) * 1px);
   height: calc(var(--stage-h) * 1px);
   margin-inline: auto;
   transform-origin: top left;
   transform: scale(var(--stage-scale));
+}
+
+/*
+ * Footer ambient motion.
+ *
+ * Deliberately CSS rather than part of the scroll sequence. The footer is not a
+ * section in that sequence — it is what the page settles onto — so none of this
+ * is scrubbed, none of it is triggered, and it does not need the controller to
+ * be hydrated to run. `alternate` throughout: these are things that breathe, and
+ * a loop that snaps back to its start is a loop you can see.
+ *
+ * Durations are deliberately co-prime-ish. Three elements drifting on 96s, 9s and
+ * 11s never line up, so the footer never visibly repeats itself. The stars
+ * themselves twinkle on a canvas rather than here — one shared opacity would be
+ * the whole sky breathing at once, which is not what a night sky does. See
+ * components/footer/Twinkle.tsx.
+ *
+ * Every animated element is one that carries no transform of its own — the
+ * centring lives on a parent, the animation on the child — because a keyframe
+ * that writes `transform` clobbers whatever else was in it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * Translate only, and in 3D. This layer is a 1823px starfield rasterized
+   * across the full width of the window; a scale on it would re-raster the
+   * whole thing every frame, where a translate just moves the texture.
+   */
+  @keyframes footer-drift {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-1.6%, -10px, 0);
+    }
+  }
+
+  @keyframes footer-horizon {
+    from {
+      opacity: 0.7;
+      transform: scale(0.994);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1.008);
+    }
+  }
+
+  @keyframes footer-mark {
+    from {
+      opacity: 0.4;
+      transform: translate3d(0, 8px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, -8px, 0);
+    }
+  }
+
+  .footer-drift {
+    animation: footer-drift 96s ease-in-out infinite alternate;
+  }
+  .footer-horizon {
+    animation: footer-horizon 9s ease-in-out infinite alternate;
+  }
+  .footer-mark {
+    animation: footer-mark 11s ease-in-out infinite alternate;
+  }
 }

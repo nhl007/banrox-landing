@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Badge from "@/components/ui/Badge";
 import BanroxEngineHub from "@/components/ui/BanroxEngineHub";
+import ConnectorTrace from "@/components/ui/ConnectorTrace";
 import MemberScoreCard from "@/components/ui/MemberScoreCard";
 import SignalCard, { type SignalRow } from "@/components/ui/SignalCard";
 import { Brain, Tick } from "@/components/ui/icons";
@@ -90,14 +91,14 @@ function StageArt({
   top,
   width,
   height,
-  flipY = false,
+  reveal,
 }: {
   src: string;
   left: number;
   top: number;
   width: number;
   height: number;
-  flipY?: boolean;
+  reveal?: string;
 }) {
   return (
     <Image
@@ -106,104 +107,148 @@ function StageArt({
       width={width}
       height={height}
       className="pointer-events-none absolute max-w-none"
-      style={{ left, top, ...(flipY ? { transform: "scaleY(-1)" } : null) }}
+      style={{ left, top }}
+      data-reveal={reveal}
     />
   );
 }
 
 export default function IntelligenceLayer() {
   return (
-    <section className="w-full pt-25 pb-25">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
-        <Badge icon={<Brain />}>Intelligence Layer</Badge>
-        <h2 className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal">
-          Built on <span className="font-display italic">intelligence.</span>
-          <br />
-          Not just a credit score.
-        </h2>
-      </div>
-
-      <div className="mt-15 w-full">
-        <div className="stage-viewport w-full">
-          <div
-            className="stage-sizer relative"
-            style={
-              {
-                "--stage-w": STAGE_W,
-                "--stage-h": STAGE_H,
-                "--stage-min": 0.35,
-              } as React.CSSProperties
-            }
+    <section className="pinned-pane w-full pt-25 pb-25" data-sequence-section="intelligence">
+      {/* See Hero: the pin holds the section still, so the timeline slides
+          this wrapper up to bring the funnel into the held viewport. */}
+      <div data-shift="">
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
+          <div className="flex" data-reveal="copy">
+            <Badge icon={<Brain />}>Intelligence Layer</Badge>
+          </div>
+          <h2
+            className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+            data-reveal="copy"
           >
-            <div className="stage relative">
-              {/* Ambient glow, centred on the stage behind the signal row. */}
-              <StageArt src="/intel/bg-glow.svg" left={-38} top={-224} width={1189} height={1189} />
+            Built on <span className="font-display italic">intelligence.</span>
+            <br />
+            Not just a credit score.
+          </h2>
+        </div>
 
-              {/* Row 1: four member score cards. */}
-              <div className="absolute flex gap-6" style={{ left: 0, top: 0 }}>
-                {SCORES.map((s) => (
-                  <MemberScoreCard key={s.memberLabel} person={PEOPLE[s.personKey]} {...s} />
-                ))}
-              </div>
+        {/* No data-reveal on the wrapper: the funnel is built a row at a time as
+            the pin travels down it, and a group fade would flatten that. */}
+        <div className="mt-15 w-full">
+          <div className="stage-viewport w-full">
+            <div
+              className="stage-sizer relative"
+              style={
+                {
+                  "--stage-w": STAGE_W,
+                  "--stage-h": STAGE_H,
+                  "--stage-min": 0.35,
+                } as React.CSSProperties
+              }
+            >
+              <div className="stage relative">
+                {/* Ambient glow, centred on the stage behind the signal row. */}
+                <StageArt src="/intel/bg-glow.svg" left={-38} top={-224} width={1189} height={1189} reveal="aura" />
 
-              <StageArt src="/intel/connector-top.svg" left={130} top={172} width={853} height={120.5} />
+                {/* Row 1: four member score cards. */}
+                <div className="absolute flex gap-6" style={{ left: 0, top: 0 }}>
+                  {SCORES.map((s) => (
+                    <div key={s.memberLabel} data-reveal="member">
+                      <MemberScoreCard person={PEOPLE[s.personKey]} {...s} />
+                    </div>
+                  ))}
+                </div>
 
-              {/*
-                Figma nests this arc inside the signal container, where its own
-                overflow-clip would hide it entirely — yet the artboard renders
-                it. Same quirk as the other ambient glows: it has to be a
-                sibling of the clipping box, not a child.
-              */}
-              <StageArt src="/intel/signal-arc.svg" left={283} top={172.5} width={547} height={158} />
+                {/* The fan from the four cards down into the signal row — so the
+                    light runs down it, the direction the whole diagram flows. */}
+                <ConnectorTrace
+                  src="/intel/connector-top.svg"
+                  width={853}
+                  height={120.5}
+                  left={130}
+                  top={172}
+                  axis="y"
+                  spark={70}
+                  pad={20}
+                />
 
-              {/* Both convergence dots sit *behind* the box they meet, so the
-                  translucent surface dims their lower half. */}
-              <StageArt src="/intel/fan-dot.svg" left={533} top={259} width={46} height={46} />
+                {/*
+                  Figma nests this arc inside the signal container, where its own
+                  overflow-clip would hide it entirely — yet the artboard renders
+                  it. Same quirk as the other ambient glows: it has to be a
+                  sibling of the clipping box, not a child.
+                */}
+                <StageArt src="/intel/signal-arc.svg" left={283} top={172.5} width={547} height={158} reveal="signals" />
 
-              {/* Row 2: the signal container and its four category cards. */}
-              {/* The hairline is an inset ring, not a border: Figma draws the
-                  stroke over the 8px padding, and a real border would eat 2px
-                  the four 230px cards need. */}
-              <div
-                className="bg-vignette absolute flex h-[210px] w-[960px] gap-2 rounded-2xl bg-[rgba(8,8,20,0.2)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
-                style={{ left: 76.5, top: 282 }}
-              >
-                {SIGNALS.map((s) => (
-                  <SignalCard key={s.title.join(" ")} {...s} />
-                ))}
-              </div>
+                {/* Both convergence dots sit *behind* the box they meet, so the
+                    translucent surface dims their lower half. */}
+                <StageArt src="/intel/fan-dot.svg" left={533} top={259} width={46} height={46} reveal="node" />
 
-              {/* Connector: signal row down into the hub. Figma mirrors the
-                  asset so the bright end leads into the dot. */}
-              <StageArt
-                src="/intel/hub-connector.svg"
-                left={533}
-                top={491}
-                width={46}
-                height={64}
-                flipY
-              />
+                {/* Row 2: the signal container and its four category cards. */}
+                {/* The hairline is an inset ring, not a border: Figma draws the
+                    stroke over the 8px padding, and a real border would eat 2px
+                    the four 230px cards need. */}
+                <div
+                  className="bg-vignette absolute flex h-[210px] w-[960px] gap-2 rounded-2xl bg-[rgba(8,8,20,0.2)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+                  style={{ left: 76.5, top: 282 }}
+                  data-reveal="signals"
+                >
+                  {SIGNALS.map((s) => (
+                    <SignalCard key={s.title.join(" ")} {...s} />
+                  ))}
+                </div>
 
-              <div className="absolute" style={{ left: 385, top: 532 }}>
-                <BanroxEngineHub />
-              </div>
+                {/* Connector: signal row down into the hub. Figma mirrors the
+                    asset so the bright end leads into the dot — and that dot
+                    carries a blurred drop shadow filling the whole 46px box, so
+                    the light has to be held to the stroke's own width or it
+                    paints the shadow's disc instead of the wire. */}
+                <ConnectorTrace
+                  src="/intel/hub-connector.svg"
+                  width={46}
+                  height={64}
+                  left={533}
+                  top={491}
+                  axis="y"
+                  spark={40}
+                  cross={14}
+                  pad={24}
+                  flipY
+                />
 
-              {/* Connector: hub down into the approved pill. */}
-              <StageArt src="/intel/pill-connector.svg" left={555.5} top={868} width={1} height={40} />
+                <div className="absolute" style={{ left: 385, top: 532 }} data-reveal="hub">
+                  <BanroxEngineHub />
+                </div>
 
-              <div
-                className="bg-vignette absolute flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
-                style={{ left: 387, top: 908, width: 338 }}
-              >
-                <Tick size={16} />
-                <div className="flex items-center gap-2">
-                  <p className="font-heading text-[16px] leading-none text-white">
-                    Combined Straight
-                  </p>
-                  <span className="bg-white/50 block size-1 shrink-0 rounded-full" />
-                  <p className="font-heading text-success text-[16px] leading-none">
-                    Approved $25,000
-                  </p>
+                {/* Connector: hub down into the approved pill. Only a pixel wide,
+                    so the padding is what gives its bloom anywhere to spread. */}
+                <ConnectorTrace
+                  src="/intel/pill-connector.svg"
+                  width={1}
+                  height={40}
+                  left={555.5}
+                  top={868}
+                  axis="y"
+                  spark={26}
+                  pad={24}
+                />
+
+                <div
+                  className="bg-vignette absolute flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+                  style={{ left: 387, top: 908, width: 338 }}
+                  data-reveal="hub"
+                >
+                  <Tick size={16} />
+                  <div className="flex items-center gap-2">
+                    <p className="font-heading text-[16px] leading-none text-white">
+                      Combined Straight
+                    </p>
+                    <span className="bg-white/50 block size-1 shrink-0 rounded-full" />
+                    <p className="font-heading text-success text-[16px] leading-none">
+                      Approved $25,000
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

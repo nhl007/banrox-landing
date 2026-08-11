@@ -1,6 +1,7 @@
 import Image from "next/image";
 import AvatarRing from "@/components/ui/AvatarRing";
 import Badge from "@/components/ui/Badge";
+import ConnectorTrace from "@/components/ui/ConnectorTrace";
 import SquadCard from "@/components/ui/SquadCard";
 import StatusPill, { type Status } from "@/components/ui/StatusPill";
 import VoteRow from "@/components/ui/VoteRow";
@@ -23,6 +24,7 @@ import { LEDGER_FRAMING, PEOPLE, VOTE_FRAMING } from "@/data/people";
 const STAGE_W = 1118;
 const STAGE_H = 532;
 
+
 function ApproverRow({ name, status }: { name: string; status: Status }) {
   return (
     <div className="flex w-full items-start justify-between rounded-lg bg-white/5 py-2 pr-2 pl-3">
@@ -39,6 +41,7 @@ function RequestCard() {
     <div
       className="absolute overflow-hidden rounded-2xl border border-white/10 bg-[rgba(8,8,20,0.5)]"
       style={{ left: 0, top: 8, width: 286, height: 334 }}
+      data-reveal="request"
     >
       <Image
         src="/approve/request-glow-1.svg"
@@ -108,6 +111,7 @@ function VoteList() {
     <div
       className="absolute flex flex-col items-start justify-between rounded-[20px] border border-white/10 p-2 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
       style={{ left: 816, top: 10, width: 302, height: 330 }}
+      data-reveal="votes"
     >
       <VoteRow
         person={PEOPLE.david}
@@ -149,6 +153,7 @@ function MemberChip({
         reserve ? "bg-white/[0.02]" : "bg-white/[0.02] backdrop-blur-[4px]"
       }`}
       style={{ width }}
+      data-reveal="chip"
     >
       {reserve ? (
         <Image
@@ -196,6 +201,7 @@ function LedgerBar() {
     <div
       className="absolute"
       style={{ left: 145.5, top: 410, width: 827, height: 122 }}
+      data-reveal="ledger"
     >
       {/*
         Figma nests this inside the bar's own overflow-clip, yet it visibly
@@ -288,78 +294,114 @@ function LedgerBar() {
 }
 
 export default function SquadApproves() {
+  /*
+   * Clipped on x only: the 694px ambient glow below is wider than a phone
+   * viewport and would otherwise scroll the whole page sideways. overflow-y
+   * stays visible so the glow keeps bleeding past the section, which is what
+   * the design shows.
+   */
   return (
-    <section className="w-full pt-25 pb-[170px]">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
-        <Badge icon={<CheckmarkBadge />}>Squad Approves</Badge>
-        <div className="flex w-full flex-col items-center gap-4 text-center">
-          <h2 className="font-heading w-full pb-px text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal">
-            Need more than your lane?
-            <br />
-            <span className="font-display italic">The squad</span> decides.
-          </h2>
-          <p className="max-w-[604px] text-base leading-normal tracking-[-0.32px] text-white/70">
-            When one member needs to spend above their limit, the squad votes.
-            The extra releases from the shared reserve - the group total never
-            changes.
-          </p>
+    <section
+      className="pinned-pane w-full overflow-x-clip pt-25 pb-[170px]"
+      data-sequence-section="approve"
+    >
+      {/* See Hero: the pin holds the section still, so the timeline slides
+          this wrapper up to bring the diagram into the held viewport. */}
+      <div data-shift="">
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
+          <div className="flex" data-reveal="copy">
+            <Badge icon={<CheckmarkBadge />}>Squad Approves</Badge>
+          </div>
+          <div className="flex w-full flex-col items-center gap-4 text-center">
+            <h2
+              className="font-heading w-full pb-px text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+              data-reveal="copy"
+            >
+              Need more than your lane?
+              <br />
+              <span className="font-display italic">The squad</span> decides.
+            </h2>
+            <p
+              className="max-w-[604px] text-base leading-normal tracking-[-0.32px] text-white/70"
+              data-reveal="copy"
+            >
+              When one member needs to spend above their limit, the squad votes.
+              The extra releases from the shared reserve - the group total never
+              changes.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="relative mt-15 w-full">
         {/*
-          Ambient glow behind the SquadCard — Figma's Ellipse 6146. It is the
-          first child of the section frame, so it sits under everything in the
-          section; -z-10 reproduces that without the copy above needing to opt
-          into a stacking context.
-
-          It is centred on the card at stage (559, 176) and the asset carries
-          its own 100px blur margin, putting its top-left 200px up and left of
-          the 294px ellipse — i.e. 171px above the stage. That is why it lives
-          out here rather than inside .stage-viewport, which clips on the y axis
-          and would cut the blur into a hard edge. The +4px on the offset is
-          .stage-viewport's negative margin-block collapsing through this
-          wrapper, the same correction the hero glow needs.
+          No data-reveal on the wrapper: this section's timeline assembles the
+          diagram piece by piece, so every child below carries its own hook and
+          a group fade on top of them would just flatten the whole thing back
+          into one crossfade.
         */}
-        <Image
-          src="/approve/squadcard-glow.svg"
-          alt=""
-          width={694}
-          height={694}
-          className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-          style={{ top: -167 }}
-        />
+        <div className="relative mt-15 w-full">
+          {/*
+            Ambient glow behind the SquadCard — Figma's Ellipse 6146. It is the
+            first child of the section frame, so it sits under everything in the
+            section; -z-10 reproduces that without the copy above needing to opt
+            into a stacking context.
 
-        <div className="stage-viewport w-full">
-          <div
-            className="stage-sizer relative"
-            style={
-              {
-                "--stage-w": STAGE_W,
-                "--stage-h": STAGE_H,
-                "--stage-min": 0.45,
-              } as React.CSSProperties
-            }
-          >
-            <div className="stage relative">
-              <Image
-                src="/approve/connector-lines.svg"
-                alt=""
-                width={536}
-                height={219}
-                className="pointer-events-none absolute max-w-none"
-                style={{ left: 287, top: 66 }}
-              />
+            It is centred on the card at stage (559, 176) and the asset carries
+            its own 100px blur margin, putting its top-left 200px up and left of
+            the 294px ellipse — i.e. 171px above the stage. That is why it lives
+            out here rather than inside .stage-viewport, which clips on the y axis
+            and would cut the blur into a hard edge. The +4px on the offset is
+            .stage-viewport's negative margin-block collapsing through this
+            wrapper, the same correction the hero glow needs.
+          */}
+          <Image
+            src="/approve/squadcard-glow.svg"
+            alt=""
+            width={694}
+            height={694}
+            className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
+            style={{ top: -167 }}
+            data-reveal="squad-glow"
+          />
 
-              <RequestCard />
+          {/* stage-viewport-clip: the request card and the vote list start off
+              the viewport edges, and the ledger bar under the stage floor. */}
+          <div className="stage-viewport stage-viewport-clip w-full">
+            <div
+              className="stage-sizer relative"
+              style={
+                {
+                  "--stage-w": STAGE_W,
+                  "--stage-h": STAGE_H,
+                  "--stage-min": 0.45,
+                } as React.CSSProperties
+              }
+            >
+              <div className="stage relative">
+                {/* Out from the request, through the card, back along all three
+                    branches to the votes — so the light runs left to right. */}
+                <ConnectorTrace
+                  src="/approve/connector-lines.svg"
+                  width={536}
+                  height={219}
+                  left={287}
+                  top={66}
+                  pad={20}
+                />
 
-              <div className="absolute" style={{ left: 446, top: 0 }}>
-                <SquadCard size={218} />
+                <RequestCard />
+
+                <div
+                  className="absolute"
+                  style={{ left: 446, top: 0 }}
+                  data-reveal="squad"
+                >
+                  <SquadCard size={218} />
+                </div>
+
+                <VoteList />
+
+                <LedgerBar />
               </div>
-
-              <VoteList />
-
-              <LedgerBar />
             </div>
           </div>
         </div>

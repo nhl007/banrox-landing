@@ -14,11 +14,16 @@ export type StrengthBarProps = {
   title: string;
   note: string;
   stats: [Stat, Stat, Stat];
+  /** Hook for the scroll sequence; the rail wipes open from its own top edge. */
+  reveal?: string;
 };
 
-export default function StrengthBar({ title, note, stats }: StrengthBarProps) {
+export default function StrengthBar({ title, note, stats, reveal }: StrengthBarProps) {
   return (
-    <div className="absolute top-[496px] left-1/2 flex w-[516px] -translate-x-1/2 flex-col items-center justify-center gap-6 rounded-2xl border border-white/10 px-5 py-4 shadow-[inset_-2px_-2px_6px_0px_rgba(255,255,255,0.05),inset_4px_4px_8px_0px_rgba(0,0,0,0.2)]">
+    <div
+      data-reveal={reveal}
+      className="absolute top-[496px] left-1/2 flex w-[516px] -translate-x-1/2 flex-col items-center justify-center gap-6 rounded-2xl border border-white/10 px-5 py-4 shadow-[inset_-2px_-2px_6px_0px_rgba(255,255,255,0.05),inset_4px_4px_8px_0px_rgba(0,0,0,0.2)]"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-2xl bg-white/[0.02] backdrop-blur-[3px]"

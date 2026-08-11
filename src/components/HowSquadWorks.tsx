@@ -1,6 +1,7 @@
 import Image from "next/image";
 import AvatarRing from "@/components/ui/AvatarRing";
 import Badge from "@/components/ui/Badge";
+import ConnectorTrace from "@/components/ui/ConnectorTrace";
 import FigurePanel from "@/components/ui/FigurePanel";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import StepCard from "@/components/ui/StepCard";
@@ -11,6 +12,28 @@ import { PEOPLE, VOTE_FRAMING } from "@/data/people";
  * "How Squad Works" — three 392x508 step cards in a row, 32px apart
  * (3x392 + 2x32 = 1240, the standard content width).
  */
+
+/*
+ * Step 3's arc, and the room left around it for the endpoint dots and for the
+ * light's bloom to fall off before the wipe clips it.
+ *
+ * Everything decorating the arc is authored in panel coordinates — which is how
+ * Figma gives them and the only way to check them against the artwork — and
+ * `onArc` rebases them onto the trace's own padded box, where they have to live
+ * so the wipe reveals them along with the line they belong to.
+ *
+ * Figma frames the bracket at (113.5, 16) 199.5x90 and the asset overhangs that
+ * by half a stroke on three sides, which is the box below. The two numbers to
+ * check it against are the dots: the path's ends land on (113.5, 74.5) and
+ * (313, 106), and the dots Figma places independently sit at (113, 75) and
+ * (313, 106).
+ */
+const ARC = { left: 113, top: 15.5, width: 200.5, height: 90.5 };
+const TRACE_PAD = 18;
+const onArc = (left: number, top: number) => ({
+  left: left - ARC.left + TRACE_PAD,
+  top: top - ARC.top + TRACE_PAD,
+});
 
 function RingedAvatar({
   personKey,
@@ -25,7 +48,11 @@ function RingedAvatar({
 }) {
   return (
     <div className="absolute" style={{ left, top }}>
-      <AvatarRing size={40} person={PEOPLE[personKey]} framing={VOTE_FRAMING[personKey]} />
+      <AvatarRing
+        size={40}
+        person={PEOPLE[personKey]}
+        framing={VOTE_FRAMING[personKey]}
+      />
       {verified ? (
         <span className="absolute right-0 bottom-0.5">
           <VerifiedCheck size={12} />
@@ -38,13 +65,15 @@ function RingedAvatar({
 function Step1Figure() {
   return (
     <FigurePanel texture="/works/step1-texture.svg">
-      {/* Three concentric rings, centred in the panel. */}
+      {/* Three concentric rings, centred in the panel. data-glow: these never
+          settle — see worksAmbient. */}
       <Image
         src="/works/step1-ring-outer.svg"
         alt=""
         width={192}
         height={192}
         className="pointer-events-none absolute top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
+        data-glow=""
       />
       <Image
         src="/works/step1-ring-mid.svg"
@@ -52,6 +81,7 @@ function Step1Figure() {
         width={118}
         height={118}
         className="pointer-events-none absolute top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
+        data-glow=""
       />
       <Image
         src="/works/step1-ring-inner.svg"
@@ -59,6 +89,7 @@ function Step1Figure() {
         width={212}
         height={212}
         className="pointer-events-none absolute top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
+        data-glow=""
       />
 
       <RingedAvatar personKey="lilit" left={160} top={14} />
@@ -89,25 +120,47 @@ function Step1Figure() {
 function Step2Figure() {
   return (
     <FigurePanel texture="/works/step2-texture.svg">
-      <Image
+      <ConnectorTrace
         src="/works/step2-connectors.svg"
-        alt=""
         width={240}
         height={152}
-        className="pointer-events-none absolute top-[40.5px] left-[60.5px] max-w-none"
+        left={60.5}
+        top={40.5}
+        spark={110}
+        pad={16}
       />
 
       <div className="absolute top-[16px] left-[16px]">
-        <ScoreBadge person={PEOPLE.lilit} personKey="lilit" score={762} rating="Good" />
+        <ScoreBadge
+          person={PEOPLE.lilit}
+          personKey="lilit"
+          score={762}
+          rating="Good"
+        />
       </div>
       <div className="absolute top-[164px] left-[16px]">
-        <ScoreBadge person={PEOPLE.aram} personKey="aram" score={645} rating="Fair" />
+        <ScoreBadge
+          person={PEOPLE.aram}
+          personKey="aram"
+          score={645}
+          rating="Fair"
+        />
       </div>
       <div className="absolute top-[16px] left-[245px]">
-        <ScoreBadge person={PEOPLE.mika} personKey="mika" score={590} rating="Poor" />
+        <ScoreBadge
+          person={PEOPLE.mika}
+          personKey="mika"
+          score={590}
+          rating="Poor"
+        />
       </div>
       <div className="absolute top-[164px] left-[245px]">
-        <ScoreBadge person={PEOPLE.david} personKey="david" score={875} rating="Good" />
+        <ScoreBadge
+          person={PEOPLE.david}
+          personKey="david"
+          score={875}
+          rating="Good"
+        />
       </div>
 
       {/* Group-score ring, centred a touch above the panel's vertical middle. */}
@@ -118,6 +171,7 @@ function Step2Figure() {
           width={118}
           height={118}
           className="pointer-events-none absolute top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
+          data-glow=""
         />
         <Image
           src="/works/step2-ring-inner.svg"
@@ -125,6 +179,7 @@ function Step2Figure() {
           width={224}
           height={224}
           className="pointer-events-none absolute top-1/2 left-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
+          data-glow=""
         />
         <div className="relative flex flex-col items-center gap-2 text-center">
           <p className="font-heading text-[10px] tracking-[1px] text-white uppercase opacity-40">
@@ -168,50 +223,77 @@ const BARS: Bar[] = [
 
 function Step3Figure() {
   return (
-    <FigurePanel texture="/works/step3-texture.svg">
-      {/* Decorative arc + leader lines connecting the first and last bars. */}
-      <Image
-        src="/works/step3-arc.svg"
-        alt=""
-        width={200.5}
-        height={90.5}
-        className="pointer-events-none absolute top-[60.75px] left-[113px] max-w-none"
-      />
-      {/* Centred rather than corner-positioned: the asset's own rotation
-          (matching Figma's wrapper) makes its post-rotation bounding box
-          awkward to derive by hand, but its centre point is exact. */}
-      <Image
-        src="/works/step3-tick-h.svg"
-        alt=""
-        width={9.25}
-        height={1}
-        className="pointer-events-none absolute top-[16px] left-[169.63px] max-w-none -translate-x-1/2 -translate-y-1/2"
-      />
-      <Image
-        src="/works/step3-tick-v.svg"
-        alt=""
-        width={9.25}
-        height={1}
-        className="pointer-events-none absolute top-[64.38px] left-[313px] max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90"
-      />
-      <Image
-        src="/works/step3-dot.svg"
-        alt=""
-        width={8}
-        height={8}
-        className="pointer-events-none absolute top-[71px] left-[109px] max-w-none"
-      />
-      <Image
-        src="/works/step3-dot.svg"
-        alt=""
-        width={8}
-        height={8}
-        className="pointer-events-none absolute top-[102px] left-[309px] max-w-none"
-      />
+    <FigurePanel texture="/works/step3-texture.svg" textureHeight={260}>
+      {/*
+        The bracket joining the Lilit and Reserve bars, with an endpoint dot on
+        each and a bright tick riding each run.
+
+        Everything is positioned against the trace's own padded box rather than
+        the panel, so the wipe reveals the dots and ticks along with the line
+        they belong to — the origin is the arc's top-left less TRACE_PAD.
+
+        flipX because the asset is exported with its long leg on the left and
+        Figma mirrors it in place. Unmirrored it descends to y=106 over Lilit —
+        27px into the bar it is supposed to stop on top of — and stops 35px
+        short of the Reserve bar on the other side, which is the tell if this
+        ever gets re-exported and the flip is dropped.
+      */}
+      <ConnectorTrace
+        src={"/works/step3-arc.svg"}
+        {...ARC}
+        spark={100}
+        pad={TRACE_PAD}
+        flipX
+      >
+        {/* Centred rather than corner-positioned: the asset's own rotation
+            (matching Figma's wrapper) makes its post-rotation bounding box
+            awkward to derive by hand, but its centre point is exact. y=16 is
+            the arc's own horizontal run — the top of ARC plus its half-stroke
+            overhang. Mirrored with the artwork so its gradient still runs
+            bright-end-first into the corner it points at. */}
+        <Image
+          src="/works/step3-tick-h.svg"
+          alt=""
+          width={9.25}
+          height={1}
+          className="pointer-events-none absolute max-w-none -translate-x-1/2 -translate-y-1/2 -scale-x-100"
+          style={onArc(161.37, 16)}
+        />
+        {/* Clear of the 8px corner radius, so it sits on the straight part of
+            the right-hand run rather than where the path is still bending. */}
+        <Image
+          src="/works/step3-tick-v.svg"
+          alt=""
+          width={9.25}
+          height={1}
+          className="pointer-events-none absolute max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90"
+          style={onArc(313, 56.13)}
+        />
+        {/* The endpoints: the top of the Lilit bar and the top of the Reserve. */}
+        <Image
+          src="/works/step3-dot.svg"
+          alt=""
+          width={8}
+          height={8}
+          className="pointer-events-none absolute max-w-none"
+          style={onArc(109, 71)}
+        />
+        <Image
+          src="/works/step3-dot.svg"
+          alt=""
+          width={8}
+          height={8}
+          className="pointer-events-none absolute max-w-none"
+          style={onArc(309, 102)}
+        />
+      </ConnectorTrace>
 
       <div className="absolute bottom-4 left-1/2 flex w-[328px] -translate-x-1/2 items-end gap-1">
         {BARS.map((bar) => (
-          <div key={bar.name} className="flex flex-1 flex-col items-center justify-center gap-1">
+          <div
+            key={bar.name}
+            className="flex flex-1 flex-col items-center justify-center gap-1"
+          >
             {/*
               Figma builds this as a horizontal capsule rotated -90deg (an
               auto-layout workaround on their end) — a plain vertical bar is
@@ -235,52 +317,66 @@ function Step3Figure() {
 
 export default function HowSquadWorks() {
   return (
-    <section className="w-full pt-25 pb-[170px]">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
-        <Badge icon={<CreditCard />}>How Squad works</Badge>
-        <h2 className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal">
-          Three steps.
-          <br />
-          One <span className="font-display italic">shared line.</span>
-        </h2>
-      </div>
-
-      {/* Gap lives on this wrapper: .stage-viewport sets its own margin-block
-          and a utility here would collide with it (same fix as the other
-          stage-based sections). */}
-      <div className="mt-15 w-full">
-        <div className="stage-viewport w-full">
-          <div
-            className="stage-sizer relative"
-            style={
-              {
-                "--stage-w": 1240,
-                "--stage-h": 508,
-                "--stage-min": 0.4,
-              } as React.CSSProperties
-            }
+    <section
+      className="pinned-pane w-full pt-25 pb-[170px]"
+      data-sequence-section="works"
+    >
+      {/* See Hero: the pin holds the section still, so the timeline slides
+          this wrapper up to bring the step cards into the held viewport. */}
+      <div data-shift="">
+        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
+          <div className="flex" data-reveal="copy">
+            <Badge icon={<CreditCard />}>How Squad works</Badge>
+          </div>
+          <h2
+            className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+            data-reveal="copy"
           >
-            <div className="stage relative flex gap-8">
-              <div className="w-[392px] shrink-0">
-                <StepCard
-                  figure={<Step1Figure />}
-                  title="Form your squad"
-                  description="Invite up to 3 trusted people — friends, family, or anyone you trust financially. Each member connects their bank and authorizes a credit check."
-                />
-              </div>
-              <div className="w-[392px] shrink-0">
-                <StepCard
-                  figure={<Step2Figure />}
-                  title="Get scored as a group"
-                  description="Banrox's patented group risk engine combines every member's profile into a single group assessment. Combined behavior is more stable — which is why the group qualifies for more."
-                />
-              </div>
-              <div className="w-[392px] shrink-0">
-                <StepCard
-                  figure={<Step3Figure />}
-                  title="Spend in your lane, back each other"
-                  description="Each member has a private spending lane. Need more — the squad votes and the reserve releases. Cover each other to keep the account current. The group total never changes."
-                />
+            Three steps.
+            <br />
+            One <span className="font-display italic">shared line.</span>
+          </h2>
+        </div>
+
+        {/* Gap lives on this wrapper: .stage-viewport sets its own margin-block
+            and a utility here would collide with it (same fix as the other
+            stage-based sections). */}
+        {/* No data-reveal on the wrapper: each card grows in on its own, and a
+            group fade over the top would flatten that back into one crossfade. */}
+        <div className="mt-15 w-full">
+          <div className="stage-viewport w-full">
+            <div
+              className="stage-sizer relative"
+              style={
+                {
+                  "--stage-w": 1240,
+                  "--stage-h": 508,
+                  "--stage-min": 0.4,
+                } as React.CSSProperties
+              }
+            >
+              <div className="stage relative flex gap-8">
+                <div className="w-[392px] shrink-0" data-reveal="step">
+                  <StepCard
+                    figure={<Step1Figure />}
+                    title="Form your squad"
+                    description="Invite up to 3 trusted people — friends, family, or anyone you trust financially. Each member connects their bank and authorizes a credit check."
+                  />
+                </div>
+                <div className="w-[392px] shrink-0" data-reveal="step">
+                  <StepCard
+                    figure={<Step2Figure />}
+                    title="Get scored as a group"
+                    description="Banrox's patented group risk engine combines every member's profile into a single group assessment. Combined behavior is more stable — which is why the group qualifies for more."
+                  />
+                </div>
+                <div className="w-[392px] shrink-0" data-reveal="step">
+                  <StepCard
+                    figure={<Step3Figure />}
+                    title="Spend in your lane, back each other"
+                    description="Each member has a private spending lane. Need more — the squad votes and the reserve releases. Cover each other to keep the account current. The group total never changes."
+                  />
+                </div>
               </div>
             </div>
           </div>

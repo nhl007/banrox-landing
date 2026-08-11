@@ -26,12 +26,15 @@ export type ComparisonCardProps = {
   variant: "alone" | "squad";
   children: ReactNode;
   className?: string;
+  /** Hook for the scroll sequence; lands on the card's own 564x628 root. */
+  reveal?: string;
 };
 
 export default function ComparisonCard({
   variant,
   children,
   className = "",
+  reveal,
 }: ComparisonCardProps) {
   const isSquad = variant === "squad";
   // Figma nudges the squad rings 1.5px right and 5px down.
@@ -45,6 +48,7 @@ export default function ComparisonCard({
     <div
       className={`relative shrink-0 overflow-hidden rounded-3xl ring-2 ring-white/10 bg-[rgba(0,3,20,0.7)] ${className}`.trim()}
       style={{ width: CARD_W, height: CARD_H }}
+      data-reveal={reveal}
     >
       {isSquad ? (
         <div data-animate="glow">
@@ -74,7 +78,9 @@ export default function ComparisonCard({
 
       {/* Halftone grid revealed in soft patches around the card edges. */}
       <Image
-        src={isSquad ? "/compare/texture-squad.svg" : "/compare/texture-alone.svg"}
+        src={
+          isSquad ? "/compare/texture-squad.svg" : "/compare/texture-alone.svg"
+        }
         alt=""
         width={619}
         height={716}

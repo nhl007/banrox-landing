@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { inter, interTight, ztFormom } from "./fonts";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import ScrollSequence from "@/components/scroll/ScrollSequence";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,10 +16,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${inter.variable} ${interTight.variable} ${ztFormom.variable} h-full antialiased`}
     >
+      {/*
+        ScrollSequence wraps the navbar as well as the page: the navbar is the
+        first state in the sequence, and it lives outside <main>. It renders
+        `display: contents`, so it adds no box and the body's flex column is
+        untouched. Everything inside stays a server component.
+      */}
       <body className="min-h-full flex flex-col">
-        <NavBar />
-        {children}
-        <Footer />
+        <ScrollSequence>
+          <NavBar />
+          {children}
+          <Footer />
+        </ScrollSequence>
       </body>
     </html>
   );
