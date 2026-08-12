@@ -1,12 +1,12 @@
 /*
- * Every tunable in the scroll sequence lives here. Nothing else in
+ * Every tunable in the sequence lives here. Nothing else in
  * src/components/scroll hard-codes a duration, ease, stagger or distance, so
  * this file is the whole tuning surface.
  *
- * Note on durations: nothing plays at wall-clock speed. Every timeline is
- * scrubbed by scroll position, so these numbers set the *proportions* of a
- * timeline — how much of the section's scroll each beat gets — not how long it
- * takes. Doubling one beat's duration gives it twice the scroll distance.
+ * Durations are seconds of wall clock. Scroll decides *when* a beat starts and
+ * nothing else — once it starts it plays at its own speed, to the end, once.
+ * `pace` scales all of them at the same time, which is the dial to reach for
+ * when the page feels slow rather than any individual number.
  *
  * Distances are px, angles degrees.
  */
@@ -19,29 +19,86 @@ export const MOTION = {
    */
   enabled: "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
 
-  /** Seconds the playhead takes to catch up with the scrollbar. */
-  scrub: 0.6,
+  /**
+   * Every beat's timeScale. The numbers below are written as the proportions
+   * they were tuned at; this is what turns them into a pace.
+   */
+  pace: 1.6,
 
   /*
-   * How much scroll a pinned section consumes, in viewport heights. This is
-   * the pace dial: the whole intro, hold and outro are spread across it, so
-   * raising it makes everything advance more slowly per wheel notch without
-   * changing any beat's share of the sequence.
+   * Where every beat fires: one entry per beat, in the order they happen down
+   * the page.
+   *
+   * Nothing here is shared or derived. Each key is a [data-beat] anchor in the
+   * markup, sections.ts reads its beat's start from that key by name, and so
+   * changing one line here moves exactly one animation and nothing else. The
+   * duplication is the point — a value repeated seven times is seven values
+   * that happen to agree, not one value seven beats are stuck with.
+   *
+   * The syntax is ScrollTrigger's, "<point on the element> <point in the
+   * window>": "top 80%" fires when the element's top edge reaches 80% of the
+   * way down the window. A LOWER percentage fires LATER, because the element
+   * has to travel further up the screen to get there. The element side takes
+   * `top`, `center`, `bottom` or a percentage of its own height, so `center`
+   * is how a beat waits for the middle of its subject rather than its leading
+   * edge — which is what a tall element wants, since its top arrives long
+   * before the thing itself does.
+   *
+   * The rules of thumb behind the numbers below: copy fires early at 80%
+   * because a heading is short and reads the instant it appears, and a payload
+   * waits until 65% because it is a diagram several hundred pixels tall and
+   * firing it with the copy would play most of it below the fold.
    */
-  pinLength: 2,
+  trigger: {
+    /**
+     * Above the fold, so these are about the page opening rather than about
+     * scrolling. The copy fires at load whatever it says — on an unscrolled
+     * page the hero's top edge is already past every start position there is —
+     * and it queues behind the navbar (see hero.afterNav).
+     *
+     * The cards are the exception on the whole page. They are the one payload
+     * already on screen at load, so a top-edge trigger also fires immediately,
+     * opening the fan while the reader is still on the headline and finishing
+     * it before they look down. Measured from the middle of the fan instead, it
+     * waits to be arrived at.
+     */
+    hero: { copy: "center 80%", cards: "center 68%" },
+
+    alone: { copy: "center 80%", payload: "center 58%" },
+
+    approve: { copy: "center 80%", payload: "center 65%" },
+
+    works: { copy: "center 80%", payload: "center 65%" },
+
+    /**
+     * Five rather than two: the funnel is 948px tall, so a single trigger for
+     * all of it would play the engine three viewports before anyone reached it.
+     * Each row waits for itself.
+     */
+    intelligence: {
+      copy: "center 80%",
+      members: "top 65%",
+      signals: "top 65%",
+      hub: "top 65%",
+      verdict: "top 65%",
+    },
+
+    invitation: { copy: "center 80%", payload: "center 65%" },
+
+    /** The one section with no heading: the card leads and the words follow. */
+    early: { card: "center 70%", form: "center 75%" },
+  },
 
   /* --- navbar ----------------------------------------------------------- */
 
   navbar: {
-    /** Hinges on its top edge, so it folds away rather than just sliding. */
-    fold: 55,
-    /*
-     * The fold is spent by the time the hero pins, which happens as soon as
-     * the header has scrolled off — so its range is the header's own height,
-     * measured at runtime. It folds away exactly as it leaves.
+    /**
+     * Hinges on its top edge, so it drops in rather than just sliding down.
+     * The page opens on it: it is the first thing that moves, and the hero's
+     * copy waits on it (see hero.afterNav).
      */
-    /** The one thing that is not scrubbed: it drops in once, on load. */
-    drop: { duration: 0.7, ease: "power3.out" },
+    fold: 40,
+    drop: { duration: 1.5, ease: "power3.out" },
   },
 
   /* --- shared ----------------------------------------------------------- */
@@ -58,46 +115,26 @@ export const MOTION = {
   flat: { angle: 78 },
 
   /** Copy everywhere: rises from below while scaling up out of nothing. */
-  copy: { rise: 48, duration: 0.7, stagger: 0.12, ease: "back.out(1.6)" },
-
-  /*
-   * How a section hands over to the next one.
-   *
-   * Between two pins the page still scrolls a full viewport height — the
-   * outgoing section clearing the top while the incoming one climbs from the
-   * fold. Left alone that means every section rides up from the very bottom of
-   * the screen, which is a lot of travel for something that is meant to feel
-   * like it was already there, waiting behind the section in front of it.
-   *
-   * So the controller cancels that scroll: it counter-translates the incoming
-   * section by exactly what the page moves it, and the content simply holds its
-   * final position and dissolves in. `settle` is how much of the travel is
-   * deliberately left uncancelled, so the section still drifts up into place
-   * rather than hanging perfectly still.
-   */
-  arrival: {
-    settle: 120,
-    dissolve: { duration: 0.6, ease: "power1.out" },
-  },
+  copy: { rise: 190, duration: 1.4, stagger: 0.1, ease: "back.out(1.6)" },
 
   /* --- hero ------------------------------------------------------------- */
 
   hero: {
-    buttons: { duration: 0.8, stagger: 0.12, ease: "back.out(1.4)" },
-    note: { duration: 0.5, ease: "power3.out" },
+    buttons: { duration: 2, stagger: 0.5, ease: "back.out(1.4)" },
+    note: { duration: 0.2, ease: "power3.out" },
     glow: { duration: 1.2, ease: "power1.out" },
 
     /**
-     * Slides the section's content up inside the pin, so the card scene is on
-     * screen when its beat plays. The section is taller than any desktop
-     * viewport and the pin holds it still, so this is what "scrolling down to
-     * the cards" becomes once the page itself has stopped moving.
+     * How long the hero's copy waits for the navbar. Both are on screen at load
+     * so both would otherwise fire at once; this is what makes the page open in
+     * the order it reads — the bar arrives, then the words under it. Shorter
+     * than the drop itself on purpose: they overlap rather than queue.
      */
-    reveal: { duration: 1, ease: "power2.inOut" },
+    afterNav: -0.5,
 
     /** How far back the stack sits while flat, and the rise to upright. */
     depth: -180,
-    lift: { duration: 1.4, ease: "power2.out" },
+    lift: { duration: 1.5, ease: "power2.out" },
 
     /**
      * The Squad card starts lying flat AND on its side — landscape, the way a
@@ -108,59 +145,57 @@ export const MOTION = {
     turn: 90,
 
     /** The fan-out from behind the Squad card, once the stack is upright. */
-    fan: { duration: 0.9, stagger: 0.1, ease: "power3.out" },
+    fan: { duration: 1.2, stagger: 0.2, ease: "power3.out" },
   },
 
   /* --- alone vs together ------------------------------------------------ */
 
-  /*
-   * Every other section. One shared shape — copy up, content revealed, payload
-   * rises in — so the page reads as one system rather than seven ideas.
-   */
-  section: {
-    reveal: { duration: 1, ease: "power2.inOut" },
-    /**
-     * Overhang a section is allowed before it earns a reveal beat. Zero: if any
-     * of it is off screen it has to be reachable, and since every reveal also
-     * spends `tail` the beat can never be the few-pixel no-op — pure dead scroll
-     * in the middle of a pin — that a threshold would otherwise be guarding
-     * against. Sections that already fit skip it entirely.
-     */
-    revealMin: 0,
-    /**
-     * Breathing room left under the content once it has been revealed, so a
-     * section that overhangs does not end flush against the bottom edge.
-     */
-    tail: 48,
-    bodyRise: 56,
-    body: { duration: 0.9, ease: "power3.out" },
-  },
-
   alone: {
-    reveal: { duration: 1, ease: "power2.inOut" },
     /** Panels slide in from the viewport edges. Travel is measured at runtime. */
-    cards: { duration: 1.7, stagger: 0.12, ease: "power3.out" },
-    vs: { duration: 0.5, ease: "power2.out" },
+    cards: { duration: 1.7, stagger: 0.1, ease: "power3.out" },
+    vs: { duration: 0.6, ease: "power2.out" },
     /**
      * The strength rails arrive last, wiped open downwards from their own top
      * edge so each panel looks like it is extending to make room for one —
      * rather than a block fading in on top of a card that was already whole.
      */
-    bar: { duration: 0.8, stagger: 0.12, ease: "power2.out" },
+    bar: { duration: 1.5, stagger: 0.1, ease: "power2.out" },
+    /**
+     * Each rail's three figures count up to the value printed on them.
+     *
+     * The whole section is one number beating another, so the figures are the
+     * argument and arriving already settled states it rather than makes it.
+     * Counting is also what ties the two rails together: they run as one sweep
+     * across both panels, which reads as a single comparison being totted up
+     * rather than each card totalling itself.
+     *
+     * Decelerating rather than linear. A figure that lands on its value at full
+     * speed reads as a number that was cut off; `out` lets the last few tick
+     * over slowly enough to be read as they settle.
+     */
+    figures: {
+      count: { duration: 1.6, ease: "power2.out" },
+      /** Between one figure and the next, left to right across both rails. */
+      stagger: 0.08,
+      /**
+       * Held after the rails begin opening. The rail grows out of the panel's
+       * bottom edge, so with no delay the first digits would be moving while
+       * still half-clipped by it.
+       */
+      after: 0.35,
+    },
   },
 
   /* --- squad approves --------------------------------------------------- */
 
   approve: {
-    reveal: { duration: 1, ease: "power2.inOut" },
-
     /**
      * One duration for all four pieces of the diagram, so they land on the same
      * frame. That is the whole idea of the section — a group acting as one — and
      * it only reads if the diagram arrives as a single object rather than as
      * four elements taking turns. Only the ease differs between them.
      */
-    land: 1.4,
+    land: 2,
     slide: "power3.out",
     /**
      * The Squad card is the one with nowhere to travel from, so it scales up out
@@ -179,7 +214,7 @@ export const MOTION = {
     glow: { duration: 1.1, ease: "power1.out" },
 
     /** The ledger counts itself in, one member at a time. */
-    chips: { duration: 0.5, stagger: 0.11, ease: "back.out(2)" },
+    chips: { duration: 1, stagger: 0.3, ease: "back.out(2)" },
   },
 
   /* --- connectors ------------------------------------------------------- */
@@ -194,10 +229,20 @@ export const MOTION = {
    * a glow that stops dead at the far end just becomes a parked highlight.
    */
   trace: {
-    lines: { duration: 0.9, ease: "none" },
+    lines: { duration: 1.5, ease: "none" },
     spark: { duration: 1.15, ease: "none" },
     /** Between one run and the next where a diagram has several in series. */
     stagger: 0.25,
+    /**
+     * Between one pass down the wiring and the next, once the diagram has
+     * arrived and the light is looping (see traceLoop).
+     *
+     * Long on purpose, and the dial to reach for if the page feels busy. The
+     * pass itself is barely half a second, so this is almost the whole cycle:
+     * short enough and three diagrams pulsing away turn into the thing the eye
+     * keeps going back to instead of the content they wire together.
+     */
+    gap: 6,
     /** Endpoint dots and flow ticks: the things a drawn line arrives at. */
     node: { duration: 0.5, ease: "power2.out" },
   },
@@ -205,7 +250,6 @@ export const MOTION = {
   /* --- how squad works -------------------------------------------------- */
 
   works: {
-    reveal: { duration: 1, ease: "power2.inOut" },
     /**
      * Three cards scaling up out of nothing, each landing with a hop so it reads
      * as arriving rather than inflating.
@@ -217,8 +261,8 @@ export const MOTION = {
      * inside .stage-viewport — and that resizes the container query the sizer
      * derives its height from, moving every section below it.
      */
-    hop: 26,
-    cards: { duration: 1.1, stagger: 0.14, ease: "power4.out" },
+    hop: 86,
+    cards: { duration: 2, stagger: 0.14, ease: "power4.out" },
     /**
      * The one thing on the page that never finishes. Steps 1 and 2 are about a
      * group being continuously assessed, so their rings breathe for as long as
@@ -235,23 +279,89 @@ export const MOTION = {
 
   /*
    * The one section taller than the rest by a wide margin: the funnel alone is
-   * 948px, so the pin has to travel down it. Its beats are therefore laid
-   * *across* the reveal rather than after it — each part of the funnel plays
-   * while it is the part on screen, the way the hero's card scene does.
+   * 948px, so no single trigger point can serve all of it. Each row of it gets
+   * its own beat and its own trigger instead, so a row animates as you arrive
+   * at it rather than three viewports before you do.
    */
   intel: {
-    reveal: { duration: 1.6, ease: "power2.inOut" },
     rise: 72,
-    members: { duration: 0.9, stagger: 0.1, ease: "power3.out" },
-    signals: { duration: 0.9, ease: "power3.out" },
+    members: { duration: 1.5, stagger: 0.1, ease: "power3.out" },
+
+    /**
+     * What is *on* each score card: the number counts up while the meter under
+     * it fills to match.
+     *
+     * Both together, on one duration, because they are one fact stated twice —
+     * a meter that arrives full under a number still climbing reads as two
+     * unrelated readouts sharing a card. The row is the raw material the rest
+     * of the funnel processes, so it should look like it is being read off a
+     * file rather than printed already complete.
+     *
+     * `stagger` deliberately repeats members.stagger rather than deriving from
+     * it: matching it is what keeps each number counting inside the card that
+     * is arriving, instead of a second wave crossing the row at its own speed.
+     * They agree; they are not the same value.
+     */
+    figures: {
+      count: { duration: 1.4, ease: "power2.out" },
+      meter: { duration: 1.4, ease: "power2.out" },
+      stagger: 0.1,
+      /**
+       * When the first card's readout starts, in seconds into the beat — held
+       * just long enough that the card is legibly on its way in before the
+       * number inside it starts moving.
+       */
+      after: 0.3,
+    },
+    signals: { duration: 1.5, ease: "power3.out" },
+
+    /**
+     * The four category cards, which fill the signal container rather than
+     * arriving with it.
+     *
+     * The container is the one thing in the funnel that is a container — the
+     * row above it is four separate cards and the hub below is one object — so
+     * it is the one place the diagram can show something being assembled
+     * instead of delivered. Riding in as a single slab spends that for nothing.
+     *
+     * Scaled up rather than only risen, and the only `back` ease in the
+     * section: a card that overshoots reads as dropping into a slot, which is
+     * what these do. Safe against the neighbours, and by a wide margin — a back
+     * ease overshoots a fraction of the distance it travels, not of the value,
+     * so over 0.94-to-1 it peaks at 1.005. That is 1.2px on a 230px card,
+     * against an 8px gap.
+     */
+    cardFrom: { y: 16, scale: 0.94 },
+    cards: { duration: 0.6, stagger: 0.1, ease: "back.out(1.6)" },
+    /**
+     * When they start, in seconds into the beat. Absolute rather than chained
+     * off the container's rise, because it lands *during* that rise — early
+     * enough that the two read as one movement, late enough that there is a box
+     * to drop into.
+     */
+    fill: 0.45,
+
+    /**
+     * The hub's bloom, which breathes for as long as the section is on screen.
+     *
+     * This is the only thing in the funnel that never finishes, and it is the
+     * one element that should not: everything above it arrives and settles
+     * because it is a file or a reading, and the engine is the thing still
+     * working. Held to opacity — the glow layers sit behind the logomark and
+     * the two lines of type under it, and scaling them would re-raster that
+     * text every frame for the life of the section.
+     *
+     * Staggered from the innermost layer out, so the breath leaves the core
+     * rather than the whole bloom pulsing as one plate.
+     */
+    glow: { duration: 2.2, stagger: 0.28, ease: "sine.inOut", dim: 0.5 },
     /** The engine, and the verdict it hands down. */
-    hub: { duration: 1, stagger: 0.14, ease: "power3.out" },
+    hub: { duration: 1.5, stagger: 0.14, ease: "power3.out" },
   },
 
   /* --- squad invitation ------------------------------------------------- */
 
   invite: {
-    reveal: { duration: 1, ease: "power2.inOut" },
     /** Rises and grows at once, so it arrives rather than just sliding up. */
     cardFrom: { y: 160, scale: 0.88 },
     card: { duration: 1.2, ease: "back.out(1.3)" },
@@ -263,7 +373,6 @@ export const MOTION = {
   /* --- early access ----------------------------------------------------- */
 
   early: {
-    reveal: { duration: 1, ease: "power2.inOut" },
     /**
      * The page opened on this card standing upright and turning into place; it
      * closes on the same card lying flat and turning the other way. +90 reads
@@ -271,10 +380,16 @@ export const MOTION = {
      * is positive-clockwise — same convention as the hero.
      */
     turn: 90,
-    card: { duration: 1.5, ease: "power3.out" },
+    /**
+     * How far below its resting place the card starts. Its beat fires with the
+     * card's top around two thirds down the window, so a little over a third of
+     * a viewport puts it just off the bottom edge when it sets out.
+     */
+    rise: 440,
+    card: { duration: 3, ease: "power3.out" },
     fieldRise: 28,
-    fields: { duration: 0.7, stagger: 0.12, ease: "power3.out" },
+    fields: { duration: 1, stagger: 0.12, ease: "power3.out" },
     /** Hinges upright off its bottom edge, the same gesture as the hero CTAs. */
-    cta: { duration: 0.8, ease: "back.out(1.4)" },
+    cta: { duration: 1.5, ease: "back.out(1.4)" },
   },
 } as const;

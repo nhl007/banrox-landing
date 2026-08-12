@@ -57,18 +57,11 @@ function Field({
 
 export default function EarlyAccess() {
   return (
-    <section className="pinned-pane relative w-full overflow-x-clip" data-sequence-section="early">
-      {/* See Hero: the pin holds the section still, so the timeline slides
-          this wrapper up to bring the waitlist form into the held viewport.
-          The section's own column carries on down here — a bare wrapper would
+    <section className="relative w-full overflow-x-clip" data-sequence-section="early">
+      {/* The section's own column carries on down here — a bare wrapper would
           leave its single child to shrink-to-fit and swallow the 60px gap
-          between the card and the copy.
-
-          The padding moves down here with it. The Glows below are absolute and
-          were resolving against the section; the moment GSAP writes a transform
-          on this wrapper it becomes their containing block instead, and they
-          would drop by the section's own pt-20. Carrying the padding here keeps
-          the two boxes geometrically identical, so nothing moves. */}
+          between the card and the copy — and its padding comes with it so the
+          two boxes stay geometrically identical. */}
       <div
         className="flex w-full flex-col items-center gap-15 px-6 pt-20 pb-30"
         data-shift=""
@@ -79,7 +72,7 @@ export default function EarlyAccess() {
         {/* The card keeps its 420x260 proportions and scales below that width
             instead of reflowing. The extra wrapper keeps .stage-viewport's own
             negative margin-block from eating into the section's gap. */}
-        <div className="relative w-full">
+        <div className="relative w-full" data-beat="card">
           <div className="stage-viewport stage-viewport-open w-full">
             <div
               className="stage-sizer"
@@ -103,7 +96,10 @@ export default function EarlyAccess() {
           </div>
         </div>
 
-        <div className="relative flex w-full max-w-204 flex-col items-center gap-15">
+        <div
+          className="relative flex w-full max-w-204 flex-col items-center gap-15"
+          data-beat="form"
+        >
           <div className="flex w-full flex-col items-center gap-4">
             <div className="flex" data-reveal="copy">
               <Badge icon={<CreditCard />}>Early Access</Badge>

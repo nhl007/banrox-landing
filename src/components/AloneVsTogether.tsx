@@ -186,13 +186,15 @@ function SquadCard() {
 export default function AloneVsTogether() {
   return (
     <section
-      className="pinned-pane w-full pt-[85px]  pb-[170px]"
+      className="relative w-full pt-[85px]  pb-[170px]"
       data-sequence-section="alone"
     >
-      {/* See Hero: the pin holds the section still, so the timeline slides
-          this wrapper up to bring the panels into the held viewport. */}
+      {/* See Hero. */}
       <div data-shift="">
-        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-15 px-6">
+        <div
+          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-15 px-6"
+          data-beat="copy"
+        >
           <div className="flex w-full flex-col items-center gap-4">
             <div className="flex" data-reveal="copy">
               <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
@@ -224,12 +226,12 @@ export default function AloneVsTogether() {
 
         {/* Gap lives on the wrapper: .stage-viewport sets its own margin-block
             and a utility here would collide with it. */}
-        <div className="mt-15 w-full">
+        <div className="mt-15 w-full" data-beat="payload">
           {/*
             stage-viewport-clip: the panels start off the viewport edges, and a
             rightward translate in an LTR scroll container is *scrollable*
             overflow — it would raise a horizontal scrollbar and hold it for as
-            long as the outro leaves the panel parked outside. Clipping has to be
+            long as the panel starts parked outside. Clipping has to be
             on both axes: `overflow-x: clip` beside the existing `overflow-y:
             hidden` computes back to `hidden`, leaving it a scroll container.
           */}

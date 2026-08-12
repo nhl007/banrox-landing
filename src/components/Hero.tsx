@@ -58,19 +58,16 @@ function HeroGlow() {
 export default function Hero() {
   return (
     <section
-      className="pinned-pane relative w-full overflow-x-clip pb-[85px]"
+      className="relative w-full overflow-x-clip pt-10 pb-[85px]"
       data-sequence-section="hero"
     >
-      {/*
-        data-shift wraps everything the pin has to reveal. The section is
-        taller than a desktop viewport and the pin holds it still, so the
-        timeline slides this up to bring the card scene into view — the
-        equivalent of scrolling down to it, once the page itself has stopped
-        moving. It is measured rather than the section, so the section's bottom
-        padding is not mistaken for content.
-      */}
+      {/* Groups the section's content so the flex column below cannot shrink
+          to its widest child. See [data-shift] in globals.css. */}
       <div data-shift="">
-        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center px-6 pt-20 ">
+        <div
+          className="mx-auto flex w-full max-w-[1240px] flex-col items-center px-6 pt-20 "
+          data-beat="copy"
+        >
           <div className="flex w-full flex-col items-center gap-8">
             <div className="flex w-full flex-col items-center gap-4">
               <div className="flex" data-reveal="copy">
@@ -137,7 +134,9 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative">
+        {/* Its own beat: the card scene is a screen below the copy, so it
+            waits for its own arrival rather than the section's. */}
+        <div className="relative" data-beat="cards">
           <HeroGlow />
           <CardFan />
         </div>

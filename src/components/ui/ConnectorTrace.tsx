@@ -126,9 +126,19 @@ export default function ConnectorTrace({
   /* Its own inverse, which is what lets the same string undo it below. */
   const mirror = flipX ? "scaleX(-1)" : flipY ? "scaleY(-1)" : null;
   const across = axis === "x";
+  /*
+   * Parked entirely off the run's own start edge, so the pass begins with
+   * nothing on screen and the light arrives.
+   *
+   * It used to sit half on, straddling that edge, because it ran *with* the
+   * wipe and the wipe clipped its leading half away — what was left read as a
+   * head riding the drawing edge. Now that it runs after the wipe there is
+   * nothing left to clip it, and half a light parked on the near end would
+   * simply be a white smudge that starts there.
+   */
   const along = across
-    ? { left: -spark / 2, width: spark }
-    : { top: -spark / 2, height: spark };
+    ? { left: -spark, width: spark }
+    : { top: -spark, height: spark };
   const wide = across
     ? cross
       ? { top: `calc(50% - ${cross / 2}px)`, height: cross }
@@ -169,10 +179,6 @@ export default function ConnectorTrace({
       <div className="absolute inset-0" style={{ filter: BLOOM }}>
         <div className="absolute inset-0" style={mask}>
           {/*
-            Centred on the run's own start edge so its middle rides the wipe's
-            edge: the leading half is clipped off and what is left reads as a
-            head with a tail behind it.
-
             Deliberately not a [data-reveal]. That hook means "the sequence owns
             whether this is on screen", and both the CSS start state and the
             <noscript> override read it as something to hand back at full

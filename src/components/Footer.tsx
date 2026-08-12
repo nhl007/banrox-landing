@@ -71,9 +71,24 @@ const navColumns = [
 ];
 
 const socials = [
-  { href: "https://facebook.com", label: "Facebook", src: "/footer/facebook.svg", size: 17 },
-  { href: "https://linkedin.com", label: "LinkedIn", src: "/footer/linkedin.svg", size: 17 },
-  { href: "https://x.com", label: "X (Twitter)", src: "/footer/twitter-x.svg", size: 16 },
+  {
+    href: "https://facebook.com",
+    label: "Facebook",
+    src: "/footer/facebook.svg",
+    size: 17,
+  },
+  {
+    href: "https://linkedin.com",
+    label: "LinkedIn",
+    src: "/footer/linkedin.svg",
+    size: 17,
+  },
+  {
+    href: "https://x.com",
+    label: "X (Twitter)",
+    src: "/footer/twitter-x.svg",
+    size: 16,
+  },
 ];
 
 /*
@@ -134,15 +149,21 @@ export default function Footer() {
           The drift sits on this box so the sky and the stars twinkling in it
           move together — see Twinkle for why those are two layers.
         */}
-        <div className="footer-drift pointer-events-none absolute top-[-61px] left-[-13.3%] h-[572px] w-[126.6%]">
-          <Image
+        <div className="footer-drift pointer-events-none absolute top-[-61px] left-[-13.3%] h-[772px] w-[126.6%]">
+          {/* The still field: all 11,290 stars as vectors, so they stay points
+              at any width. Off, which leaves the canvas below as the whole sky —
+              and leaves nothing at all for reduced motion, no-JS, and the frames
+              before it mounts, since it draws none of them. Its asset is no
+              longer in the tree either; scripts/build-starfield.mjs regenerates
+              it. */}
+          {/* <Image
             src="/footer/starfield.svg"
             alt=""
             width={1823}
             height={572}
             className="absolute inset-0 block size-full max-w-none object-cover"
             priority
-          />
+          /> */}
           <Twinkle className="absolute inset-0 block size-full" />
         </div>
 
@@ -361,14 +382,14 @@ export default function Footer() {
             <p className="w-full leading-[1.5] opacity-70">
               Loan approval and terms are not guaranteed and depend on factors
               such as creditworthiness and income verification.{" "}
-              <span className="font-semibold uppercase">BANROX</span> Inc. is not
-              liable for financial outcomes resulting from the use of its
-              services. Late or missed payments may negatively impact your credit
-              score.
+              <span className="font-semibold uppercase">BANROX</span> Inc. is
+              not liable for financial outcomes resulting from the use of its
+              services. Late or missed payments may negatively impact your
+              credit score.
             </p>
             <p className="w-full leading-[1.5] opacity-70">
-              By using our services, you consent to communication via SMS, email,
-              and phone.
+              By using our services, you consent to communication via SMS,
+              email, and phone.
             </p>
           </div>
 

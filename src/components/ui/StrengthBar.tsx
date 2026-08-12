@@ -39,7 +39,15 @@ export default function StrengthBar({ title, note, stats, reveal }: StrengthBarP
           <div key={stat.label} className="contents">
             {i > 0 ? <span className="h-8 w-px bg-white/10" /> : null}
             <div className="font-heading flex flex-col items-center justify-center gap-1.5 text-center leading-none font-medium whitespace-nowrap">
+              {/*
+                data-count: the sequence counts this up on arrival. The printed
+                value stays the element's own text — it is what the server
+                renders, what a reader without the sequence sees, and what the
+                timeline reads the target off, so there is no second copy of the
+                number to fall out of step with this one.
+              */}
               <p
+                data-count=""
                 className={`text-[20px] ${stat.positive ? "text-success" : "text-white"}`}
               >
                 {stat.value}

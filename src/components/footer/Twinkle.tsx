@@ -4,18 +4,20 @@ import { useEffect, useRef } from "react";
 import { FIELD, unpack } from "./twinkle-data";
 
 /*
- * The stars twinkling, over the still starfield behind it.
+ * The footer's sky.
  *
- * Only 720 of the field's 11,290 stars are here, and the still image underneath
- * still draws all of them. That split is the whole design:
+ * 2,993 stars — every one in the artwork bright enough to be worth animating,
+ * out of the 11,290 it contains. Composited with `lighter`, so a sparkle is a
+ * star's own light getting stronger rather than a white dot appearing on top of
+ * one, and each is drawn as a hard core inside a soft bloom: the bloom alone
+ * read as fog, because a star of radius 0.6 blooms across eight times its own
+ * width and leaves nothing in the middle.
  *
- *   - Nothing is ever removed, so the sky is complete before this mounts, with
- *     JavaScript off, and under reduced motion. This layer only ever adds.
- *   - Adding is also what makes it look right. Composited with `lighter`, a
- *     sparkle is the star's own light getting stronger, not a white dot
- *     appearing on top of it.
- *   - And it is 720 draws a frame instead of 11,290, which is the difference
- *     between free and a footer that heats the machine.
+ * NOTE: this is now the only star layer. It used to sit over a still SVG of the
+ * whole field, which is what made the sky complete before this mounted, with
+ * JavaScript off, and under reduced motion — all three of which now render an
+ * empty sky. Restoring that guarantee means putting the still field back behind
+ * this (see Footer, where it is commented out) rather than anything here.
  *
  * Each star runs on its own period and phase, both hashed off its position, so
  * the sky never pulses as one and never repeats. The curve is cubed: a sine
@@ -23,10 +25,38 @@ import { FIELD, unpack } from "./twinkle-data";
  * cubed sine sits near dark and spikes — which is what a star actually does.
  */
 
-/** How far past its radius a sparkle blooms, and so how big its sprite is. */
-const BLOOM = 4;
+/**
+ * A sparkle is a point of light with a bloom around it, and it needs to be
+ * drawn as both.
+ *
+ * The bloom alone was the whole sparkle once, and it read as fog: a star of
+ * radius 0.6 blooms across eight times its own width, so at the peak of a
+ * twinkle the brightest thing on screen was a soft patch several pixels across
+ * with no star visible in the middle of it. The core is what it was missing —
+ * hard, barely wider than the star itself, and drawn at full alpha over the
+ * bloom's half.
+ */
+const BLOOM = 3.2;
+const CORE = 2.4;
+/** The bloom is the surround, not the subject; the core carries the light. */
+const BLOOM_ALPHA = 0.55;
 /** Below this the star is indistinguishable from unlit; skip the draw. */
 const FLOOR = 0.03;
+
+/** One radial ramp, baked once. Building these per star per frame is the one
+    thing that would make this expensive. */
+function ramp(px: number, stops: [number, string][]) {
+  const c = document.createElement("canvas");
+  c.width = px;
+  c.height = px;
+  const x = c.getContext("2d");
+  if (!x) return null;
+  const g = x.createRadialGradient(px / 2, px / 2, 0, px / 2, px / 2, px / 2);
+  for (const [o, col] of stops) g.addColorStop(o, col);
+  x.fillStyle = g;
+  x.fillRect(0, 0, px, px);
+  return c;
+}
 
 export default function Twinkle({ className }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -54,21 +84,21 @@ export default function Twinkle({ className }: { className?: string }) {
       rate[i] = 0.35 + ((h * 7) % 1) * 1.15;
     });
 
-    /* One sprite, drawn once and stamped per star. Building a gradient per star
-       per frame is the one thing that would make this expensive. */
-    const sprite = document.createElement("canvas");
-    const SPRITE = 64;
-    sprite.width = SPRITE;
-    sprite.height = SPRITE;
-    const sctx = sprite.getContext("2d");
-    if (!sctx) return;
-    const g = sctx.createRadialGradient(SPRITE / 2, SPRITE / 2, 0, SPRITE / 2, SPRITE / 2, SPRITE / 2);
-    g.addColorStop(0, "rgba(255,255,255,1)");
-    g.addColorStop(0.18, "rgba(236,248,255,0.85)");
-    g.addColorStop(0.45, "rgba(180,214,245,0.28)");
-    g.addColorStop(1, "rgba(140,190,235,0)");
-    sctx.fillStyle = g;
-    sctx.fillRect(0, 0, SPRITE, SPRITE);
+    const bloom = ramp(64, [
+      [0, "rgba(255,255,255,1)"],
+      [0.18, "rgba(236,248,255,0.85)"],
+      [0.45, "rgba(180,214,245,0.28)"],
+      [1, "rgba(140,190,235,0)"],
+    ]);
+    /* Solid to nearly half its own radius, so it lands as a disc with an edge
+       rather than as a smaller version of the bloom. */
+    const core = ramp(32, [
+      [0, "rgba(255,255,255,1)"],
+      [0.44, "rgba(255,255,255,1)"],
+      [0.72, "rgba(228,241,255,0.5)"],
+      [1, "rgba(198,224,255,0)"],
+    ]);
+    if (!bloom || !core) return;
 
     /* Artwork space -> device pixels, matching the still image's object-cover. */
     let scale = 1;
@@ -91,6 +121,9 @@ export default function Twinkle({ className }: { className?: string }) {
 
     /* Fixed per star, so a patch cleared is exactly the patch drawn. */
     const size = (i: number) => Math.max(3, stars[i].r * scale * BLOOM * 2);
+    /* Floored at one device pixel: below that a soft ramp drawn into a fraction
+       of a pixel is a grey smudge, which is the opposite of the point. */
+    const dot = (i: number) => Math.max(1, stars[i].r * scale * CORE);
 
     let start = 0;
     const frame = (now: number) => {
@@ -101,8 +134,8 @@ export default function Twinkle({ className }: { className?: string }) {
 
       /*
        * Clearing every star's own patch rather than the whole canvas. This layer
-       * is nothing but 720 sparse dots, so 720 small clears cost nothing where a
-       * full-canvas clear is a several-megabyte memset on every frame.
+       * is nothing but sparse dots, so a few thousand small clears cost nothing
+       * where a full-canvas clear is a several-megabyte memset every frame.
        */
       ctx.globalCompositeOperation = "source-over";
       for (let i = 0; i < stars.length; i++) {
@@ -115,9 +148,14 @@ export default function Twinkle({ className }: { className?: string }) {
         const w = 0.5 + 0.5 * Math.sin(t * rate[i] + phase[i]);
         const a = w * w * w;
         if (a < FLOOR) continue;
+        const x = stars[i].x * scale + ox;
+        const y = stars[i].y * scale + oy;
         const d = size(i);
+        const k = dot(i);
+        ctx.globalAlpha = a * BLOOM_ALPHA;
+        ctx.drawImage(bloom, x - d / 2, y - d / 2, d, d);
         ctx.globalAlpha = a;
-        ctx.drawImage(sprite, stars[i].x * scale + ox - d / 2, stars[i].y * scale + oy - d / 2, d, d);
+        ctx.drawImage(core, x - k / 2, y - k / 2, k, k);
       }
       ctx.globalAlpha = 1;
     };

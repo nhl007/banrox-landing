@@ -18,12 +18,11 @@ export default function SquadInvitation() {
 
   return (
     <section
-      className="pinned-pane content-stretch flex flex-col items-center p-[100px] relative w-full"
+      className="content-stretch flex flex-col items-center p-[100px] relative w-full"
       data-node-id="9304:25728"
       data-sequence-section="invitation"
     >
-      {/* See Hero: the pin holds the section still, so the timeline slides
-          this wrapper up to bring the invite card into the held viewport. */}
+      {/* See Hero. */}
       <div
         className="content-stretch flex flex-col gap-[60px] items-center w-full"
         data-shift=""
@@ -32,6 +31,7 @@ export default function SquadInvitation() {
         <div
           className="content-stretch flex flex-col gap-[16px] items-center relative shrink-0 w-[604px] max-w-full"
           data-node-id="9304:25729"
+          data-beat="copy"
         >
           {/* Badge Component */}
           <div className="flex" data-reveal="copy">
@@ -75,6 +75,7 @@ export default function SquadInvitation() {
         <div
           className="content-stretch flex flex-col items-center relative shrink-0 w-full"
           data-node-id="9304:25740"
+          data-beat="payload"
         >
           <div
             className="content-stretch flex h-[552px] items-start justify-center relative shrink-0 w-full"

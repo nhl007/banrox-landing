@@ -14,11 +14,16 @@ export type SignalCardProps = {
   title: [string, string];
   /** 3 or 4 rows — every card reserves a 4th row's height regardless. */
   rows: SignalRow[];
+  /** Hook for the scroll sequence; lands on the card's own 230x194 root. */
+  reveal?: string;
 };
 
-export default function SignalCard({ icon, title, rows }: SignalCardProps) {
+export default function SignalCard({ icon, title, rows, reveal }: SignalCardProps) {
   return (
-    <div className="relative flex h-[194px] w-[230px] shrink-0 flex-col items-center gap-4 overflow-hidden rounded-xl border border-white/10 p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
+    <div
+      data-reveal={reveal}
+      className="relative flex h-[194px] w-[230px] shrink-0 flex-col items-center gap-4 overflow-hidden rounded-xl border border-white/10 p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+    >
       <div className="bg-vignette pointer-events-none absolute inset-0 bg-[rgba(8,8,20,0.2)]" />
 
       <div className="relative flex items-center justify-center gap-3">

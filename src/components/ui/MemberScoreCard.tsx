@@ -80,7 +80,19 @@ export default function MemberScoreCard({
           <Fingerprint className="opacity-70" />
         </div>
 
-        <p className="font-heading text-[40px] leading-none text-white">{score}</p>
+        {/*
+          text-center matters once this counts: the sequence pins the box to its
+          finished width before the first digit changes, so without it a
+          part-counted number sits at the left of a box sized for three digits
+          and drifts into place as it fills. data-count is the hook — see
+          countUp, which reads its target off the printed figure.
+        */}
+        <p
+          data-count=""
+          className="font-heading text-center text-[40px] leading-none text-white"
+        >
+          {score}
+        </p>
 
         <div className="flex w-full flex-col items-start gap-2">
           <div className="flex w-full items-start justify-between text-[14px] leading-none whitespace-nowrap">
@@ -88,7 +100,14 @@ export default function MemberScoreCard({
             <p className="font-heading text-white/50">300-850</p>
           </div>
           <div className="relative h-1.5 w-full rounded-[20px] bg-white/10">
+            {/*
+              data-meter carries the fill so the sequence has a target that
+              survives being animated away from — the style below is the one the
+              server renders and the one a reader without the sequence keeps,
+              and it is also the first thing the fill overwrites.
+            */}
             <div
+              data-meter={meterPercent}
               className="bg-score-meter absolute top-0 left-0 h-1.5 rounded-[20px]"
               style={{ width: `${meterPercent}%` }}
             />

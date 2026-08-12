@@ -13,12 +13,18 @@ function Dot() {
 export default function BanroxEngineHub() {
   return (
     <div className="relative h-[336px] w-[342px] shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[rgba(8,8,20,0.5)] backdrop-blur-[22px]">
+      {/*
+        data-glow: these three never settle — the section's ambient loop breathes
+        them for as long as it is on screen (see intelAmbient). Tagged in DOM
+        order widest to narrowest, which is the order that loop staggers along.
+      */}
       <Image
         src="/intel/hub-glow-1.svg"
         alt=""
         width={501}
         height={351}
         className="pointer-events-none absolute -top-[139px] left-1/2 max-w-none -translate-x-1/2"
+        data-glow=""
       />
       <Image
         src="/intel/hub-glow-2.svg"
@@ -26,6 +32,7 @@ export default function BanroxEngineHub() {
         width={398}
         height={347}
         className="pointer-events-none absolute -top-[135px] left-1/2 max-w-none -translate-x-1/2"
+        data-glow=""
       />
       <Image
         src="/intel/hub-glow-3.svg"
@@ -33,6 +40,7 @@ export default function BanroxEngineHub() {
         width={285}
         height={351}
         className="pointer-events-none absolute -top-[139px] left-[108px] max-w-none mix-blend-plus-lighter"
+        data-glow=""
       />
       <Image
         src="/intel/hub-texture.svg"

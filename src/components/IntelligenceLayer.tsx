@@ -28,10 +28,34 @@ const SCORES: {
   rating: "Excellent" | "Good";
   meterPercent: number;
 }[] = [
-  { personKey: "lilit", memberLabel: "Member 01", score: 762, rating: "Excellent", meterPercent: 71.6 },
-  { personKey: "aram", memberLabel: "Member 02", score: 588, rating: "Good", meterPercent: 53.9 },
-  { personKey: "mika", memberLabel: "Member 03", score: 590, rating: "Good", meterPercent: 45.1 },
-  { personKey: "david", memberLabel: "Member 04", score: 875, rating: "Excellent", meterPercent: 83.3 },
+  {
+    personKey: "lilit",
+    memberLabel: "Member 01",
+    score: 762,
+    rating: "Excellent",
+    meterPercent: 71.6,
+  },
+  {
+    personKey: "aram",
+    memberLabel: "Member 02",
+    score: 588,
+    rating: "Good",
+    meterPercent: 53.9,
+  },
+  {
+    personKey: "mika",
+    memberLabel: "Member 03",
+    score: 590,
+    rating: "Good",
+    meterPercent: 45.1,
+  },
+  {
+    personKey: "david",
+    memberLabel: "Member 04",
+    score: 875,
+    rating: "Excellent",
+    meterPercent: 83.3,
+  },
 ];
 
 const SIGNALS: {
@@ -115,11 +139,16 @@ function StageArt({
 
 export default function IntelligenceLayer() {
   return (
-    <section className="pinned-pane w-full pt-25 pb-25" data-sequence-section="intelligence">
-      {/* See Hero: the pin holds the section still, so the timeline slides
-          this wrapper up to bring the funnel into the held viewport. */}
+    <section
+      className="relative w-full pt-25 pb-25"
+      data-sequence-section="intelligence"
+    >
+      {/* See Hero. */}
       <div data-shift="">
-        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
+        <div
+          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6"
+          data-beat="copy"
+        >
           <div className="flex" data-reveal="copy">
             <Badge icon={<Brain />}>Intelligence Layer</Badge>
           </div>
@@ -133,8 +162,9 @@ export default function IntelligenceLayer() {
           </h2>
         </div>
 
-        {/* No data-reveal on the wrapper: the funnel is built a row at a time as
-            the pin travels down it, and a group fade would flatten that. */}
+        {/* No data-reveal on the wrapper: the funnel is 948px tall, so it is
+            built a row at a time as each row arrives — see sections.ts — and a
+            group fade over the top would flatten that back into one crossfade. */}
         <div className="mt-15 w-full">
           <div className="stage-viewport w-full">
             <div
@@ -149,10 +179,21 @@ export default function IntelligenceLayer() {
             >
               <div className="stage relative">
                 {/* Ambient glow, centred on the stage behind the signal row. */}
-                <StageArt src="/intel/bg-glow.svg" left={-38} top={-224} width={1189} height={1189} reveal="aura" />
+                <StageArt
+                  src="/intel/bg-glow.svg"
+                  left={-38}
+                  top={-224}
+                  width={1189}
+                  height={1189}
+                  reveal="aura"
+                />
 
                 {/* Row 1: four member score cards. */}
-                <div className="absolute flex gap-6" style={{ left: 0, top: 0 }}>
+                <div
+                  className="absolute flex gap-6"
+                  style={{ left: 0, top: 0 }}
+                  data-beat="members"
+                >
                   {SCORES.map((s) => (
                     <div key={s.memberLabel} data-reveal="member">
                       <MemberScoreCard person={PEOPLE[s.personKey]} {...s} />
@@ -179,11 +220,25 @@ export default function IntelligenceLayer() {
                   it. Same quirk as the other ambient glows: it has to be a
                   sibling of the clipping box, not a child.
                 */}
-                <StageArt src="/intel/signal-arc.svg" left={283} top={172.5} width={547} height={158} reveal="signals" />
+                <StageArt
+                  src="/intel/signal-arc.svg"
+                  left={283}
+                  top={172.5}
+                  width={547}
+                  height={158}
+                  reveal="signals"
+                />
 
                 {/* Both convergence dots sit *behind* the box they meet, so the
                     translucent surface dims their lower half. */}
-                <StageArt src="/intel/fan-dot.svg" left={533} top={259} width={46} height={46} reveal="node" />
+                <StageArt
+                  src="/intel/fan-dot.svg"
+                  left={533}
+                  top={259}
+                  width={46}
+                  height={46}
+                  reveal="node"
+                />
 
                 {/* Row 2: the signal container and its four category cards. */}
                 {/* The hairline is an inset ring, not a border: Figma draws the
@@ -193,9 +248,17 @@ export default function IntelligenceLayer() {
                   className="bg-vignette absolute flex h-[210px] w-[960px] gap-2 rounded-2xl bg-[rgba(8,8,20,0.2)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
                   style={{ left: 76.5, top: 282 }}
                   data-reveal="signals"
+                  data-beat="signals"
                 >
+                  {/* "category", not "signal": the container above is already
+                      [data-reveal='signals'], and two roles a letter apart is
+                      one typo away from a card row that never animates. */}
                   {SIGNALS.map((s) => (
-                    <SignalCard key={s.title.join(" ")} {...s} />
+                    <SignalCard
+                      key={s.title.join(" ")}
+                      reveal="category"
+                      {...s}
+                    />
                   ))}
                 </div>
 
@@ -217,7 +280,12 @@ export default function IntelligenceLayer() {
                   flipY
                 />
 
-                <div className="absolute" style={{ left: 385, top: 532 }} data-reveal="hub">
+                <div
+                  className="absolute"
+                  style={{ left: 385, top: 532 }}
+                  data-reveal="hub"
+                  data-beat="hub"
+                >
                   <BanroxEngineHub />
                 </div>
 
@@ -237,7 +305,8 @@ export default function IntelligenceLayer() {
                 <div
                   className="bg-vignette absolute flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
                   style={{ left: 387, top: 908, width: 338 }}
-                  data-reveal="hub"
+                  data-reveal="verdict"
+                  data-beat="verdict"
                 >
                   <Tick size={16} />
                   <div className="flex items-center gap-2">

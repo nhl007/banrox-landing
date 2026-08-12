@@ -318,13 +318,15 @@ function Step3Figure() {
 export default function HowSquadWorks() {
   return (
     <section
-      className="pinned-pane w-full pt-25 pb-[170px]"
+      className="relative w-full pt-16 pb-[170px]"
       data-sequence-section="works"
     >
-      {/* See Hero: the pin holds the section still, so the timeline slides
-          this wrapper up to bring the step cards into the held viewport. */}
+      {/* See Hero. */}
       <div data-shift="">
-        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
+        <div
+          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6"
+          data-beat="copy"
+        >
           <div className="flex" data-reveal="copy">
             <Badge icon={<CreditCard />}>How Squad works</Badge>
           </div>
@@ -343,7 +345,7 @@ export default function HowSquadWorks() {
             stage-based sections). */}
         {/* No data-reveal on the wrapper: each card grows in on its own, and a
             group fade over the top would flatten that back into one crossfade. */}
-        <div className="mt-15 w-full">
+        <div className="mt-15 w-full" data-beat="payload">
           <div className="stage-viewport w-full">
             <div
               className="stage-sizer relative"

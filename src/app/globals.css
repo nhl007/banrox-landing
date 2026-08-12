@@ -359,48 +359,16 @@ body {
   }
 
   /*
-   * An animated section is exactly one viewport tall while the sequence is
-   * running.
-   *
-   * Not cosmetic. A pinned section releases with its top at the viewport top,
-   * so whatever it is TALLER than the viewport is scroll the user still has to
-   * spend on a section that has already finished its outro and is completely
-   * invisible — dead scroll between every pair of sections, proportional to how
-   * much each section overhangs. Fixing the height to the viewport makes that
-   * overhang zero, so the next section's entrance begins the instant the
-   * previous one lets go.
-   *
-   * Content taller than this is not lost: it overflows below the fold while
-   * pinned, and the timeline's reveal beat slides it up into view. Nothing is
-   * clipped, so the hero's bloom still bleeds as it always did.
-   */
-  .pinned-pane {
-    height: 100vh;
-    /*
-     * So [data-shift].offsetTop is the section's own padding rather than a
-     * distance to some ancestor — the reveal beat measures how much of the
-     * section falls below the fold, and that starts where the wrapper starts.
-     * Nothing else depends on it: every child of a section lives inside the
-     * wrapper, which is already a containing block of its own.
-     */
-    position: relative;
-  }
-
-  /*
    * width: two sections are flex columns with items-center, which would shrink
-   * the shift wrapper to its content width and re-centre everything inside it.
+   * this wrapper to its content width and re-centre everything inside it.
    *
-   * hidden: a section is invisible until its own timeline dissolves it in, and
-   * invisible again once the outro has run. Tagging every element individually
-   * would leave whatever nobody remembered to tag stranded on screen through
-   * the handover — and, translated up by a viewport height to hold its place,
-   * stranded over the section in front of it. visibility rather than opacity
-   * alone so a finished section cannot swallow clicks meant for the live one.
+   * It used to be hidden here as well, back when a section was pinned and had
+   * to dissolve in behind the one leaving. Nothing pins now — a section scrolls
+   * into view like any other part of the page, and its own [data-reveal]
+   * elements are the only things that start hidden.
    */
   [data-shift] {
     width: 100%;
-    opacity: 0;
-    visibility: hidden;
   }
 }
 
@@ -413,19 +381,92 @@ body {
 }
 
 /*
+ * The light that runs round the orbit rings on the comparison panels.
+ *
+ * A comet, not a moving dot: a tail ramping up over ~38deg of arc to a head
+ * that falls away in 5. The steep edge leads, so the ring reads as something
+ * being lit along its length rather than a bead dragged round a wire.
+ *
+ * Kept short and thin deliberately. These circles are 1px at 0.05-0.29 alpha —
+ * they are the quietest thing on the card — so a light with a long tail and a
+ * wide bloom stops being a highlight on them and becomes the thing you look at
+ * instead of the panel it decorates. On the outer ring this is ~145px of arc
+ * with about 1.5px of glow either side of the line.
+ *
+ * The whole thing is static in the element's own space — the conic gradient
+ * places the comet round the circle, the radial one narrows it to a band on the
+ * ring — and the ONLY animated property is `rotate` on the element itself. That
+ * is what keeps this cheap enough to run six of them: nothing repaints, the
+ * rasterized element is just re-composited at a new angle every frame. Spinning
+ * the gradient instead (by animating a registered angle) would repaint a
+ * 400px box per ring per frame.
+ *
+ * The band sits at 89.3% because the element is inset -6% against a wrapper the
+ * circle exactly inscribes: 1/1.12 of its own radius is where the artwork's
+ * line falls.
+ */
+.ring-orbit {
+  background: conic-gradient(
+    from 0deg,
+    rgba(150, 190, 255, 0) 0deg,
+    rgba(150, 190, 255, 0.12) 18deg,
+    rgba(198, 222, 255, 0.38) 31deg,
+    rgba(235, 244, 255, 0.8) 38deg,
+    rgba(150, 190, 255, 0) 43deg
+  );
+  -webkit-mask-image: radial-gradient(
+    closest-side,
+    transparent 0 88.2%,
+    rgba(0, 0, 0, 0.12) 88.9%,
+    #000 89.2%,
+    #000 89.45%,
+    rgba(0, 0, 0, 0.12) 89.9%,
+    transparent 90.6%
+  );
+  mask-image: radial-gradient(
+    closest-side,
+    transparent 0 88.2%,
+    rgba(0, 0, 0, 0.12) 88.9%,
+    #000 89.2%,
+    #000 89.45%,
+    rgba(0, 0, 0, 0.12) 89.9%,
+    transparent 90.6%
+  );
+  /*
+   * Off unless the keyframes below run. A comet parked at a fixed angle is a
+   * bright smear on one side of the ring, which is worse than the plain circle
+   * anyone on reduced motion would otherwise have seen.
+   */
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ring-orbit {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .ring-orbit {
+    opacity: 1;
+    animation: ring-orbit var(--orbit, 14s) linear infinite;
+  }
+}
+
+/*
  * Footer ambient motion.
  *
  * Deliberately CSS rather than part of the scroll sequence. The footer is not a
  * section in that sequence — it is what the page settles onto — so none of this
- * is scrubbed, none of it is triggered, and it does not need the controller to
+ * is tied to scroll at all, and it does not need the controller to
  * be hydrated to run. `alternate` throughout: these are things that breathe, and
  * a loop that snaps back to its start is a loop you can see.
  *
- * Durations are deliberately co-prime-ish. Three elements drifting on 96s, 9s and
- * 11s never line up, so the footer never visibly repeats itself. The stars
- * themselves twinkle on a canvas rather than here — one shared opacity would be
- * the whole sky breathing at once, which is not what a night sky does. See
- * components/footer/Twinkle.tsx.
+ * Durations are deliberately co-prime-ish. Three elements drifting on 96s, 13s
+ * and 11s never line up, so the footer never visibly repeats itself. The
+ * stars themselves twinkle on a canvas rather than here — one shared opacity
+ * would be the whole sky breathing at once, which is not what a night sky does.
+ * See components/footer/Twinkle.tsx.
  *
  * Every animated element is one that carries no transform of its own — the
  * centring lives on a parent, the animation on the child — because a keyframe
@@ -446,14 +487,24 @@ body {
     }
   }
 
+  /*
+   * Glow and grow, on the one element, so the arc brightens as it swells rather
+   * than doing either on its own — dimming alone is a lamp on a timer, and
+   * swelling alone is a shape being scaled.
+   *
+   * The scale is small on purpose. It is applied about the sphere's centre,
+   * which sits 240px below the bottom of the band, so the only part anyone sees
+   * is the crest — and 1.6% of a 772px radius moves that crest about 12px. Much
+   * more and the arc visibly slides up and down the sky instead of breathing.
+   */
   @keyframes footer-horizon {
     from {
-      opacity: 0.7;
-      transform: scale(0.994);
+      opacity: 0.68;
+      transform: scale(0.99);
     }
     to {
       opacity: 1;
-      transform: scale(1.008);
+      transform: scale(1.016);
     }
   }
 
@@ -472,7 +523,7 @@ body {
     animation: footer-drift 96s ease-in-out infinite alternate;
   }
   .footer-horizon {
-    animation: footer-horizon 9s ease-in-out infinite alternate;
+    animation: footer-horizon 13s ease-in-out infinite alternate;
   }
   .footer-mark {
     animation: footer-mark 11s ease-in-out infinite alternate;

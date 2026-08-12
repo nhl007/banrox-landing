@@ -24,7 +24,6 @@ import { LEDGER_FRAMING, PEOPLE, VOTE_FRAMING } from "@/data/people";
 const STAGE_W = 1118;
 const STAGE_H = 532;
 
-
 function ApproverRow({ name, status }: { name: string; status: Status }) {
   return (
     <div className="flex w-full items-start justify-between rounded-lg bg-white/5 py-2 pr-2 pl-3">
@@ -302,13 +301,15 @@ export default function SquadApproves() {
    */
   return (
     <section
-      className="pinned-pane w-full overflow-x-clip pt-25 pb-[170px]"
+      className="relative w-full overflow-x-clip pt-25 pb-[170px]"
       data-sequence-section="approve"
     >
-      {/* See Hero: the pin holds the section still, so the timeline slides
-          this wrapper up to bring the diagram into the held viewport. */}
+      {/* See Hero. */}
       <div data-shift="">
-        <div className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6">
+        <div
+          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6"
+          data-beat="copy"
+        >
           <div className="flex" data-reveal="copy">
             <Badge icon={<CheckmarkBadge />}>Squad Approves</Badge>
           </div>
@@ -338,7 +339,7 @@ export default function SquadApproves() {
           a group fade on top of them would just flatten the whole thing back
           into one crossfade.
         */}
-        <div className="relative mt-15 w-full">
+        <div className="relative mt-15 w-full" data-beat="payload">
           {/*
             Ambient glow behind the SquadCard — Figma's Ellipse 6146. It is the
             first child of the section frame, so it sits under everything in the

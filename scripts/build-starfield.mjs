@@ -150,11 +150,17 @@ out += `</svg>`;
 /* -------------------------------------------------------------- twinkle --- */
 
 /*
- * Which stars sparkle. The brightest half by radius, thinned to a spread across
- * the whole field rather than a clump — real twinkling is most visible on the
- * bright ones, and a subset that clusters reads as a flicker in one corner.
+ * Which stars sparkle: every bright one in the field.
+ *
+ * This was a 720 subset, thinned to a spread so it did not clump into a flicker
+ * in one corner. The cap is now above the number of candidates, so the thinning
+ * is a no-op and the rule is simply "if it is bright enough to be worth
+ * twinkling, it twinkles" — 2,993 of them, which is what stops the sky reading
+ * as a handful of lights blinking in an otherwise dead field. The sort is kept
+ * so that lowering this below the candidate count still spreads rather than
+ * taking one corner of the sky.
  */
-const COUNT = 720;
+const COUNT = 3000;
 const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 /* Bright ones only. A star out at the edge of the field is nearly the colour of
    the sky behind it, and a dark dot brightening reads as a speck of dust. */
