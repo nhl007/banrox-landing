@@ -28,31 +28,25 @@ import { MOTION } from "./motion";
  */
 
 /**
- * One thing that plays when one thing comes into view.
+ * One thing that plays, as part of a section arriving.
  *
- * A section is a list of these rather than a single timeline because a section
- * is taller than the window. Its heading and the diagram beneath it are never
- * on screen at the same moment, so one trigger cannot serve both: fired at the
- * heading the diagram animates below the fold, fired at the diagram the heading
- * has already been read. Each beat waits for its own subject to arrive.
+ * A section is still a list of these rather than a single timeline, but not for
+ * the reason it used to be. It is no longer that a section is taller than the
+ * window and its parts have to be waited for separately — a section is exactly
+ * one screen now, so the whole of it arrives at once. It is that a section
+ * arrives in an *order*: the heading, then the diagram, then what the diagram
+ * hands down. Beats are that order written out, and they queue behind each
+ * other off the section's one trigger.
  */
 export type Beat = {
   /** Builds the paused timeline. */
   play: (el: HTMLElement) => gsap.core.Timeline;
   /**
-   * The [data-beat] inside the section whose arrival fires this. Omitted means
-   * the section itself, which is what a heading wants — a section's top edge
-   * and its heading are the same place.
+   * Seconds held after the beat above it finishes. Negative overlaps the two,
+   * which is usually what a section wants — a diagram that starts assembling
+   * while the last word of the heading is still settling reads as one arrival
+   * rather than as two animations taking turns.
    */
-  on?: string;
-  /**
-   * Where it fires, as a ScrollTrigger start position. Required, and always
-   * read from MOTION.trigger rather than written here: that keeps every
-   * trigger point on the page in one ordered list, and makes it impossible to
-   * add a beat without deciding where it goes off.
-   */
-  start: string;
-  /** Seconds held before playing, for a beat that has to follow another. */
   delay?: number;
 };
 
@@ -67,71 +61,78 @@ export type Ambient = (el: HTMLElement) => gsap.core.Timeline;
 export type SectionSpec = {
   /** Matches data-sequence-section in the markup. */
   id: string;
+  /**
+   * Where the whole section fires, as a ScrollTrigger start position — or
+   * ON_LOAD for the section already on screen when the page opens. Always read
+   * from MOTION.trigger rather than written here: that keeps every trigger
+   * point on the page in one ordered list, and makes it impossible to add a
+   * section without deciding where it goes off.
+   */
+  start: string;
   beats: Beat[];
   /** One, or several — they are independent and need not share a clock. */
   ambient?: Ambient | Ambient[];
 };
 
-/*
- * Written out one beat at a time rather than through a shared `copy`/`payload`
- * helper. The helpers were shorter, but they also meant a section could not be
- * retimed without retiming six others, and the trigger point of any given
- * animation was two indirections away from the animation. Every beat now names
- * its own entry in MOTION.trigger, and those entries are listed there in the
- * order they play.
- */
 const T = MOTION.trigger;
 
 export const SECTIONS: SectionSpec[] = [
   {
     /*
-     * The page opens on the navbar dropping in; the hero's copy is held back
-     * behind it (see MOTION.hero.afterNav) because both are on screen at load
-     * and would otherwise fire on the same frame — the controller's rule that a
-     * section's beats queue is what puts them in reading order.
+     * The one section that does not wait to be scrolled to: it is the page
+     * opening. The navbar drops in, the copy is held back behind it (see
+     * MOTION.hero.afterNav), and the card scene follows the copy — three things
+     * on one clock, in the order the page reads.
+     *
+     * The navbar is part of this section's screen rather than a strip above it,
+     * which is what makes the card fan fit under the copy with no assist. It
+     * used to sit the better part of a screen below the headline and had to be
+     * scrolled to.
      */
     id: "hero",
+    start: T.hero,
     beats: [
-      { play: heroCopy, on: "copy", start: T.hero.copy, delay: MOTION.hero.afterNav },
-      { play: heroCards, on: "cards", start: T.hero.cards },
+      { play: heroCopy, delay: MOTION.hero.afterNav },
+      { play: heroCards, delay: MOTION.hero.afterCopy },
     ],
   },
   {
     id: "alone",
-    beats: [
-      { play: copyIn, on: "copy", start: T.alone.copy },
-      { play: alonePanels, on: "payload", start: T.alone.payload },
-    ],
+    start: T.alone,
+    beats: [{ play: copyIn }, { play: alonePanels, delay: -0.35 }],
   },
   {
     id: "approve",
-    beats: [
-      { play: copyIn, on: "copy", start: T.approve.copy },
-      { play: approveDiagram, on: "payload", start: T.approve.payload },
-    ],
+    start: T.approve,
+    beats: [{ play: copyIn }, { play: approveDiagram, delay: -0.35 }],
     ambient: traceLoop,
   },
   {
     id: "works",
-    beats: [
-      { play: copyIn, on: "copy", start: T.works.copy },
-      { play: worksCards, on: "payload", start: T.works.payload },
-    ],
+    start: T.works,
+    beats: [{ play: copyIn }, { play: worksCards, delay: -0.35 }],
     ambient: [worksAmbient, traceLoop],
   },
   {
     /*
-     * Five beats rather than two: the funnel is 948px tall, so one trigger for
-     * all of it would play the engine three viewports before anyone reached it.
-     * Each row waits for itself.
+     * Five beats rather than two, and the only section that needs that many:
+     * the funnel is a chain of four rows, each drawing itself into the one
+     * below, so it has an order of its own beyond "heading, then diagram".
+     *
+     * They overlap harder than the two-beat sections do, and measurably so:
+     * end to end the funnel took 5.9 seconds to fill, which is a long time to
+     * hold someone on one screen when the screen is all there is. Run into each
+     * other they read as one thing being assembled — which is what a funnel is
+     * — and it lands in about four.
      */
     id: "intelligence",
+    start: T.intelligence,
     beats: [
-      { play: copyIn, on: "copy", start: T.intelligence.copy },
-      { play: intelMembers, on: "members", start: T.intelligence.members },
-      { play: intelSignals, on: "signals", start: T.intelligence.signals },
-      { play: intelHub, on: "hub", start: T.intelligence.hub },
-      { play: intelVerdict, on: "verdict", start: T.intelligence.verdict },
+      { play: copyIn },
+      { play: intelMembers, delay: -0.6 },
+      { play: intelSignals, delay: -0.8 },
+      { play: intelHub, delay: -0.8 },
+      { play: intelVerdict, delay: -0.8 },
     ],
     /* The engine's bloom, which is the one thing in the funnel still working
        once everything above it has arrived and settled. */
@@ -139,10 +140,8 @@ export const SECTIONS: SectionSpec[] = [
   },
   {
     id: "invitation",
-    beats: [
-      { play: copyIn, on: "copy", start: T.invitation.copy },
-      { play: inviteCard, on: "payload", start: T.invitation.payload },
-    ],
+    start: T.invitation,
+    beats: [{ play: copyIn }, { play: inviteCard, delay: -0.35 }],
   },
   {
     /*
@@ -150,9 +149,7 @@ export const SECTIONS: SectionSpec[] = [
      * beats run the other way round — card first, words second.
      */
     id: "early",
-    beats: [
-      { play: earlyCard, on: "card", start: T.early.card },
-      { play: earlyForm, on: "form", start: T.early.form },
-    ],
+    start: T.early,
+    beats: [{ play: earlyCard }, { play: earlyForm, delay: -1.2 }],
   },
 ];

@@ -32,6 +32,15 @@
      and uses it only for the "Poor" credit-score rating. */
   --color-danger: #ff4242;
 
+  /*
+   * The navbar's slot in flow — its own pt-4 plus the pill's h-14.
+   *
+   * It is not a section of its own. It is the top of the hero, and the hero is
+   * one screen *including* it, so this is what comes off the hero's height.
+   * Keep in step with NavBar.
+   */
+  --nav-h: 72px;
+
   /* Shared by .bg-brand-radial and .bg-brand-cta — see the note on each. */
   --gradient-brand-radial: radial-gradient(
     ellipse 53% 176% at 50% 50%,
@@ -267,26 +276,127 @@ body {
   background-image: linear-gradient(13.35deg, #2b58fa 10.84%, #89a3ff 84.75%);
 }
 
-/*
- * The card fan is authored at a fixed 1262x516. Scale it to the container
- * rather than reflowing, so the overlap geometry survives; below the floor the
- * viewport scrolls horizontally instead of shrinking into illegibility.
+/* ---------------------------------------------------------------------------
+ * One section, one screen.
+ *
+ * Every animated section plays on a single trigger of its own, which only means
+ * anything if the whole section is in front of the reader when it fires: a
+ * section taller than the window animates its lower half below the fold, and
+ * the reader arrives to find it already over. So from `md` up a section is
+ * exactly as tall as the window and its contents are fitted into that box,
+ * rather than the box growing to hold them.
+ *
+ * Below `md` none of this applies, and deliberately. The sequence is switched
+ * off there (see MOTION.enabled), so there is no transition to miss — and
+ * nothing is gained by folding a 1240px diagram into a phone. The sections
+ * stack and scroll, which is what a phone does.
+ *
+ * ---------------------------------------------------------------------------
+ * THE GATE — (min-width: 768px) and (min-height: 480px) — is repeated on every
+ * block below and on MOTION.enabled and the [data-reveal] rule. They must all
+ * say the same thing. A window on one side of it for the layout and the other
+ * side for the controller is a section that is not a screen being animated as
+ * though it were, and a stage told to size itself against a container whose
+ * height nothing has fixed.
+ *
+ * The height half is not decoration. A phone held sideways is 932x430 — it
+ * passes the width test and fails the premise completely: the heading alone is
+ * most of 430px, so the card fan underneath it was fitted to what was left and
+ * came out at 0.076 scale. Measured. 480 clears every landscape phone and no
+ * tablet, iPad landscape being 768 tall. Under it the page does what a phone
+ * does, which is the one thing that still works at that height.
  */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  /*
+   * The vertical rhythm answers the window's *height*, because height is the
+   * axis everything now competes for. At 900px these land on roughly what the
+   * artboard specifies; at 720 they hand about 60px back to the diagram, which
+   * is where it buys the most.
+   */
+  --screen-pad: clamp(1.25rem, 4svh, 4rem);
+  --screen-gap: clamp(0.75rem, 3.2svh, 3.75rem);
+  padding-block: var(--screen-pad);
+}
+
+.screen-body {
+  display: flex;
+  flex: 1 1 auto;
+  /*
+   * Without this a flex item cannot be made shorter than its content, and one
+   * diagram refusing to shrink puts the section back over the window.
+   */
+  min-height: 0;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--screen-gap);
+}
+
+/** The heading block: it takes the height it needs and never gives any back. */
+.screen-copy {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/** Everything under the heading, and the only thing that gives. */
+.screen-payload {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) and (min-height: 480px) {
+  .screen {
+    height: 100svh;
+  }
+
+  /* The navbar sits on top of the hero and belongs to it, so the hero's screen
+     is what the window has left after it. */
+  .screen-hero {
+    height: calc(100svh - var(--nav-h));
+  }
+}
+
 /*
+ * Type that answers the window's height as well as its width.
+ *
+ * A heading sized only in vw is the same 48px on a 1440x900 desktop as on a
+ * 1440x720 laptop — and on the second one that is 48px taken straight out of
+ * the diagram underneath it. min() of the two lets whichever dimension is
+ * scarcer decide, which is what fitting on a screen means.
+ */
+.type-hero {
+  font-size: clamp(2.25rem, min(6.1vw, 8.6svh), 4.5rem);
+}
+.type-title {
+  font-size: clamp(1.75rem, min(3.9vw, 5.6svh), 3rem);
+}
+.type-lede {
+  font-size: clamp(0.875rem, min(1.15vw, 2svh), 1rem);
+}
+
+/* ---------------------------------------------------------------------------
  * Fixed-geometry "stages". Sections whose overlap geometry must survive (the
- * card fan, the comparison panels) are authored at their artboard size and
- * scaled to the container rather than reflowed. Callers set --stage-w,
- * --stage-h (unitless px) and --stage-min on the sizer.
+ * card fan, the comparison panels, every diagram) are authored at their
+ * artboard size and scaled to the container rather than reflowed. Callers set
+ * --stage-w and --stage-h (unitless px) on the sizer, and nothing else.
  *
  * --stage-scale has to be declared on a descendant of the container, since cq
  * units resolve against the nearest *ancestor* container, never the element's
- * own. The sizer reserves the scaled height; the stage does the scaling.
- * Scaling from the top-left means a shrunk stage exactly fills the container,
- * while at scale 1 the auto margins centre it. Below --stage-min the viewport
- * scrolls instead of shrinking into illegibility.
+ * own — hence the split between the viewport (which is the container), the
+ * sizer (which does the arithmetic and reserves the scaled box) and the stage
+ * (which is the artboard, scaled from its top-left corner to fill that box).
  */
 .stage-viewport {
   container-type: inline-size;
+  display: flex;
+  width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   /*
@@ -305,12 +415,123 @@ body {
    * a bare `100cqw / var(--stage-w)` still evaluates to a *length*, which makes
    * the clamp type-invalid and silently drops the scaling entirely.
    */
-  --stage-scale: clamp(
-    var(--stage-min, 0.62),
-    tan(atan2(100cqw, var(--stage-w) * 1px)),
-    1
-  );
+  --fit-w: tan(atan2(100cqw, var(--stage-w) * 1px));
+  /*
+   * The floor is the scale at which the artboard still fits the narrowest
+   * content column worth designing for: a 360px phone less the 24px gutter the
+   * card-shaped sections carry either side.
+   *
+   * Written as a width rather than as a per-stage magic number, because that is
+   * what it means. Above that the clamp is a no-op and the stage simply fits
+   * its container; below it the viewport scrolls sideways rather than shrinking
+   * the diagram any further.
+   */
+  --stage-min: tan(atan2(312px, var(--stage-w) * 1px));
+  --stage-scale: clamp(var(--stage-min), var(--fit-w), 1);
+  position: relative;
+  /* The scaled box, reserved in layout — the stage inside it is transformed and
+     so takes up its unscaled size no matter what it looks like. */
+  width: calc(var(--stage-w) * 1px * var(--stage-scale));
   height: calc(var(--stage-h) * 1px * var(--stage-scale));
+  margin-inline: auto;
+}
+
+.stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--stage-w) * 1px);
+  height: calc(var(--stage-h) * 1px);
+  transform-origin: top left;
+  transform: scale(var(--stage-scale));
+}
+
+/*
+ * Opt-in clip, for a stage whose contents leave the artboard — pieces that
+ * animate in from off screen, and decoration that overhangs the frame it was
+ * drawn in.
+ *
+ * Both axes on purpose: `overflow-x: clip` next to `overflow-y: hidden`
+ * computes back to `hidden`, which leaves the element a scroll container and
+ * solves nothing. Clip is also the only option that does not reserve a
+ * scrollbar — and a scrollbar here resizes the container query the sizer
+ * derives its scale from, moving every section below it.
+ *
+ * A modifier rather than the default, because a stage narrower than its floor
+ * has to stay reachable: below 360px the fan and the step cards are wider than
+ * the window and the viewport scrolls to them.
+ */
+.stage-viewport-clip {
+  overflow: clip;
+}
+
+/*
+ * The opposite opt-out, for a stage whose contents animate *outside* it.
+ *
+ * The Early Access card turns a quarter circle on its way in, so its bounding
+ * box is briefly taller than the 260px slot the sizer reserves, and it starts a
+ * third of a window below that — neither of which survives the default
+ * overflow-y: hidden. Nothing here needs clipping in the first place: the
+ * artwork is 420px wide, so it fits every window it will ever see, and the
+ * section carries its own overflow-x: clip against the travel.
+ */
+.stage-viewport-open {
+  overflow: visible;
+}
+
+@media (min-width: 768px) and (min-height: 480px) {
+  /*
+   * Height is a constraint too, once the section is a fixed screen. `size`
+   * rather than `inline-size` is what makes 100cqh mean anything — it is only
+   * safe here because the viewport is a stretched flex item of a payload with a
+   * definite height, so its own box no longer depends on what is in it.
+   */
+  .stage-viewport {
+    container-type: size;
+  }
+
+  .stage-sizer {
+    --fit-h: tan(atan2(100cqh, var(--stage-h) * 1px));
+    /*
+     * The floor is a *width* floor and only a width floor. It exists so a
+     * diagram cannot be squeezed into illegibility by a narrow window — the
+     * viewport scrolls sideways instead — but the height fit is the whole point
+     * of the section being one screen, so it caps the result outright. Floored
+     * against height, a short window would simply push the diagram out of the
+     * section again, which is the bug this replaced.
+     */
+    --stage-scale: min(clamp(var(--stage-min), var(--fit-w), 1), var(--fit-h));
+    margin-block: auto;
+  }
+}
+
+/*
+ * A layer that shares a stage's geometry without living inside it.
+ *
+ * The ambient glows behind the hero's card fan and the approve diagram's squad
+ * card are authored in stage coordinates and have to scale with the stage — but
+ * they cannot be children of one. A stage is a container query, a container
+ * query is a stacking context, and anything painted "behind" from inside one is
+ * still painted in front of the heading above it. Two of the stages also clip,
+ * which is the whole reason their contents can start off screen.
+ *
+ * So a glow gets a stage of its own: same width, same height, same box, so the
+ * same scale falls out — sitting at z-index -1, behind the page, exactly where
+ * a -z-10 sibling used to.
+ */
+.stage-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  container-type: inline-size;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) and (min-height: 480px) {
+  .stage-backdrop {
+    container-type: size;
+  }
 }
 
 /*
@@ -323,61 +544,11 @@ body {
  * page either flashes or never appears. Phones and reduced-motion get the
  * finished page straight from the server, unhidden, with no controller at all.
  */
-@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+@media (min-width: 768px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
   [data-reveal] {
     opacity: 0;
   }
 
-  /*
-   * Opt-in clip for a stage whose contents animate in from outside it.
-   *
-   * Both axes on purpose: `overflow-x: clip` next to `overflow-y: hidden`
-   * computes back to `hidden`, which leaves the element a scroll container and
-   * solves nothing. Clip is also the only option that does not reserve a
-   * scrollbar — and a scrollbar here would resize the container query that
-   * .stage-sizer derives its height from, moving every section below it.
-   *
-   * Scoped to a modifier class rather than .stage-viewport itself because the
-   * card fan genuinely overflows near 768px and needs to stay scrollable.
-   */
-  .stage-viewport-clip {
-    overflow: clip;
-  }
-
-  /*
-   * The opposite opt-out, for a stage whose contents animate *outside* it.
-   *
-   * The Early Access card turns a quarter circle on its way in, so its bounding
-   * box is briefly taller than the 260px slot the sizer reserves, and it starts
-   * a full viewport below that — neither of which survives the default
-   * overflow-y: hidden. Nothing here needs clipping in the first place: the
-   * artwork is 420px wide against a 768px floor, so it never overflows on its
-   * own, and the section carries its own overflow-x: clip against the travel.
-   */
-  .stage-viewport-open {
-    overflow: visible;
-  }
-
-  /*
-   * width: two sections are flex columns with items-center, which would shrink
-   * this wrapper to its content width and re-centre everything inside it.
-   *
-   * It used to be hidden here as well, back when a section was pinned and had
-   * to dissolve in behind the one leaving. Nothing pins now — a section scrolls
-   * into view like any other part of the page, and its own [data-reveal]
-   * elements are the only things that start hidden.
-   */
-  [data-shift] {
-    width: 100%;
-  }
-}
-
-.stage {
-  width: calc(var(--stage-w) * 1px);
-  height: calc(var(--stage-h) * 1px);
-  margin-inline: auto;
-  transform-origin: top left;
-  transform: scale(var(--stage-scale));
 }
 
 /*

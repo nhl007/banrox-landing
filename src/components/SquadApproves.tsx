@@ -3,6 +3,7 @@ import AvatarRing from "@/components/ui/AvatarRing";
 import Badge from "@/components/ui/Badge";
 import ConnectorTrace from "@/components/ui/ConnectorTrace";
 import SquadCard from "@/components/ui/SquadCard";
+import StageBackdrop from "@/components/ui/StageBackdrop";
 import StatusPill, { type Status } from "@/components/ui/StatusPill";
 import VoteRow from "@/components/ui/VoteRow";
 import { CheckmarkBadge, Reserve } from "@/components/ui/icons";
@@ -301,21 +302,17 @@ export default function SquadApproves() {
    */
   return (
     <section
-      className="relative w-full overflow-x-clip pt-25 pb-[170px]"
+      className="screen relative w-full overflow-x-clip"
       data-sequence-section="approve"
     >
-      {/* See Hero. */}
-      <div data-shift="">
-        <div
-          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6"
-          data-beat="copy"
-        >
+      <div className="screen-body">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<CheckmarkBadge />}>Squad Approves</Badge>
           </div>
-          <div className="flex w-full flex-col items-center gap-4 text-center">
+          <div className="flex w-full flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] text-center">
             <h2
-              className="font-heading w-full pb-px text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+              className="font-heading type-title w-full pb-px leading-none font-normal"
               data-reveal="copy"
             >
               Need more than your lane?
@@ -323,7 +320,7 @@ export default function SquadApproves() {
               <span className="font-display italic">The squad</span> decides.
             </h2>
             <p
-              className="max-w-[604px] text-base leading-normal tracking-[-0.32px] text-white/70"
+              className="type-lede max-w-[604px] leading-normal tracking-[-0.32px] text-white/70"
               data-reveal="copy"
             >
               When one member needs to spend above their limit, the squad votes.
@@ -334,50 +331,49 @@ export default function SquadApproves() {
         </div>
 
         {/*
-          No data-reveal on the wrapper: this section's timeline assembles the
-          diagram piece by piece, so every child below carries its own hook and
-          a group fade on top of them would just flatten the whole thing back
-          into one crossfade.
+          No data-reveal on the payload wrapper: this section's timeline
+          assembles the diagram piece by piece, so every child below carries its
+          own hook and a group fade on top of them would just flatten the whole
+          thing back into one crossfade.
         */}
-        <div className="relative mt-15 w-full" data-beat="payload">
+        <div className="screen-payload">
           {/*
             Ambient glow behind the SquadCard — Figma's Ellipse 6146. It is the
             first child of the section frame, so it sits under everything in the
-            section; -z-10 reproduces that without the copy above needing to opt
-            into a stacking context.
+            section, and it is centred on the card at stage (559, 176) with its
+            own 100px blur margin baked into the asset — putting the top-left of
+            the 694px export 347px up and left of that.
 
-            It is centred on the card at stage (559, 176) and the asset carries
-            its own 100px blur margin, putting its top-left 200px up and left of
-            the 294px ellipse — i.e. 171px above the stage. That is why it lives
-            out here rather than inside .stage-viewport, which clips on the y axis
-            and would cut the blur into a hard edge. The +4px on the offset is
-            .stage-viewport's negative margin-block collapsing through this
-            wrapper, the same correction the hero glow needs.
+            Its own stage rather than a sibling of the real one: it has to scale
+            with the diagram it sits behind, and it cannot be *in* the diagram's
+            stage because that one clips on both axes so the request card and
+            vote list can start off screen. See StageBackdrop.
           */}
-          <Image
-            src="/approve/squadcard-glow.svg"
-            alt=""
-            width={694}
-            height={694}
-            className="pointer-events-none absolute left-1/2 -z-10 max-w-none -translate-x-1/2"
-            style={{ top: -167 }}
-            data-reveal="squad-glow"
-          />
+          <StageBackdrop width={STAGE_W} height={STAGE_H}>
+            <Image
+              src="/approve/squadcard-glow.svg"
+              alt=""
+              width={694}
+              height={694}
+              className="pointer-events-none absolute max-w-none"
+              style={{ left: 559 - 347, top: 176 - 347 }}
+              data-reveal="squad-glow"
+            />
+          </StageBackdrop>
 
           {/* stage-viewport-clip: the request card and the vote list start off
               the viewport edges, and the ledger bar under the stage floor. */}
-          <div className="stage-viewport stage-viewport-clip w-full">
+          <div className="stage-viewport stage-viewport-clip">
             <div
-              className="stage-sizer relative"
+              className="stage-sizer"
               style={
                 {
                   "--stage-w": STAGE_W,
                   "--stage-h": STAGE_H,
-                  "--stage-min": 0.45,
                 } as React.CSSProperties
               }
             >
-              <div className="stage relative">
+              <div className="stage">
                 {/* Out from the request, through the card, back along all three
                     branches to the votes — so the light runs left to right. */}
                 <ConnectorTrace

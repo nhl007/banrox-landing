@@ -185,68 +185,56 @@ function SquadCard() {
 
 export default function AloneVsTogether() {
   return (
-    <section
-      className="relative w-full pt-[85px]  pb-[170px]"
-      data-sequence-section="alone"
-    >
-      {/* See Hero. */}
-      <div data-shift="">
-        <div
-          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-15 px-6"
-          data-beat="copy"
-        >
-          <div className="flex w-full flex-col items-center gap-4">
-            <div className="flex" data-reveal="copy">
-              <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
-            </div>
-            <div className="flex w-full flex-col items-center gap-4 text-center">
-              {/* pb-px: Figma measures this two-line box at 97px where the
-                  browser lays it out at 96, which would pull everything below
-                  up by a pixel. The glyphs themselves already align. */}
-              <h2
-                className="font-heading w-full pb-px text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
-                data-reveal="copy"
-              >
-                Alone, each of you falls short.
-                <br />
-                <span className="font-display italic">Together,</span> you
-                qualify for more.
-              </h2>
-              <p
-                className="max-w-[604px] text-base leading-[1.5] tracking-[-0.32px] text-white/70"
-                data-reveal="copy"
-              >
-                Squad combines your profiles into one group application.
-                <br />
-                Different strengths, one shared line.
-              </p>
-            </div>
+    <section className="screen relative w-full" data-sequence-section="alone">
+      <div className="screen-body">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
+          <div className="flex" data-reveal="copy">
+            <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
+          </div>
+          <div className="flex w-full flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] text-center">
+            {/* pb-px: Figma measures this two-line box at 97px where the
+                browser lays it out at 96, which would pull everything below
+                up by a pixel. The glyphs themselves already align. */}
+            <h2
+              className="font-heading type-title w-full pb-px leading-none font-normal"
+              data-reveal="copy"
+            >
+              Alone, each of you falls short.
+              <br />
+              <span className="font-display italic">Together,</span> you qualify
+              for more.
+            </h2>
+            <p
+              className="type-lede max-w-[604px] leading-[1.5] tracking-[-0.32px] text-white/70"
+              data-reveal="copy"
+            >
+              Squad combines your profiles into one group application.
+              <br />
+              Different strengths, one shared line.
+            </p>
           </div>
         </div>
 
-        {/* Gap lives on the wrapper: .stage-viewport sets its own margin-block
-            and a utility here would collide with it. */}
-        <div className="mt-15 w-full" data-beat="payload">
-          {/*
-            stage-viewport-clip: the panels start off the viewport edges, and a
-            rightward translate in an LTR scroll container is *scrollable*
-            overflow — it would raise a horizontal scrollbar and hold it for as
-            long as the panel starts parked outside. Clipping has to be
-            on both axes: `overflow-x: clip` beside the existing `overflow-y:
-            hidden` computes back to `hidden`, leaving it a scroll container.
-          */}
-          <div className="stage-viewport stage-viewport-clip w-full">
+        {/*
+          stage-viewport-clip: the panels start off the viewport edges, and a
+          rightward translate in an LTR scroll container is *scrollable*
+          overflow — it would raise a horizontal scrollbar and hold it for as
+          long as the panel starts parked outside. Clipping has to be
+          on both axes: `overflow-x: clip` beside the existing `overflow-y:
+          hidden` computes back to `hidden`, leaving it a scroll container.
+        */}
+        <div className="screen-payload">
+          <div className="stage-viewport stage-viewport-clip">
             <div
-              className="stage-sizer relative"
+              className="stage-sizer"
               style={
                 {
                   "--stage-w": ROW_W,
                   "--stage-h": ROW_H,
-                  "--stage-min": 0.5,
                 } as React.CSSProperties
               }
             >
-              <div className="stage relative">
+              <div className="stage">
                 <div className="flex h-full items-start gap-28">
                   <AloneCard />
                   <SquadCard />

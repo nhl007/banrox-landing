@@ -140,20 +140,16 @@ function StageArt({
 export default function IntelligenceLayer() {
   return (
     <section
-      className="relative w-full pt-25 pb-25"
+      className="screen relative w-full"
       data-sequence-section="intelligence"
     >
-      {/* See Hero. */}
-      <div data-shift="">
-        <div
-          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6"
-          data-beat="copy"
-        >
+      <div className="screen-body">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<Brain />}>Intelligence Layer</Badge>
           </div>
           <h2
-            className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+            className="font-heading type-title w-full text-center leading-none font-normal"
             data-reveal="copy"
           >
             Built on <span className="font-display italic">intelligence.</span>
@@ -162,22 +158,31 @@ export default function IntelligenceLayer() {
           </h2>
         </div>
 
-        {/* No data-reveal on the wrapper: the funnel is 948px tall, so it is
-            built a row at a time as each row arrives — see sections.ts — and a
-            group fade over the top would flatten that back into one crossfade. */}
-        <div className="mt-15 w-full">
-          <div className="stage-viewport w-full">
+        {/* No data-reveal on the wrapper: the funnel is built a row at a time,
+            each drawing itself into the one below — see sections.ts — and a
+            group fade over the top would flatten that into one crossfade.
+
+            It is also the tallest artboard on the page by a wide margin (948px
+            against the next one's 628), so it is the section that pays most for
+            being fitted into a screen: on a short window this is where the
+            scale bottoms out first. */}
+        <div className="screen-payload">
+          {/* stage-viewport-clip: the funnel's ambient glow is a 1189px asset on
+              a 1112px stage, so it overhangs the artboard on every side. The top
+              and bottom of it were always cropped; clipping the sides too keeps
+              a window near the stage's own width from raising a scrollbar for
+              39px of blur. */}
+          <div className="stage-viewport stage-viewport-clip">
             <div
-              className="stage-sizer relative"
+              className="stage-sizer"
               style={
                 {
                   "--stage-w": STAGE_W,
                   "--stage-h": STAGE_H,
-                  "--stage-min": 0.35,
                 } as React.CSSProperties
               }
             >
-              <div className="stage relative">
+              <div className="stage">
                 {/* Ambient glow, centred on the stage behind the signal row. */}
                 <StageArt
                   src="/intel/bg-glow.svg"
@@ -192,7 +197,6 @@ export default function IntelligenceLayer() {
                 <div
                   className="absolute flex gap-6"
                   style={{ left: 0, top: 0 }}
-                  data-beat="members"
                 >
                   {SCORES.map((s) => (
                     <div key={s.memberLabel} data-reveal="member">
@@ -248,7 +252,6 @@ export default function IntelligenceLayer() {
                   className="bg-vignette absolute flex h-[210px] w-[960px] gap-2 rounded-2xl bg-[rgba(8,8,20,0.2)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
                   style={{ left: 76.5, top: 282 }}
                   data-reveal="signals"
-                  data-beat="signals"
                 >
                   {/* "category", not "signal": the container above is already
                       [data-reveal='signals'], and two roles a letter apart is
@@ -284,7 +287,6 @@ export default function IntelligenceLayer() {
                   className="absolute"
                   style={{ left: 385, top: 532 }}
                   data-reveal="hub"
-                  data-beat="hub"
                 >
                   <BanroxEngineHub />
                 </div>
@@ -306,7 +308,6 @@ export default function IntelligenceLayer() {
                   className="bg-vignette absolute flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
                   style={{ left: 387, top: 908, width: 338 }}
                   data-reveal="verdict"
-                  data-beat="verdict"
                 >
                   <Tick size={16} />
                   <div className="flex items-center gap-2">

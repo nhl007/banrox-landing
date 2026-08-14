@@ -14,11 +14,16 @@ import { ArrowUpRight, CreditCard } from "@/components/ui/icons";
  * Both glows are the same 412px circle under a 260px blur, so Figma exports
  * them as 932x932 assets that overhang their box by 63.11% on every side. They
  * are anchored to the section's centre line rather than its left edge.
+ *
+ * `top` is a fraction of the card's slot rather than a pixel offset, now that
+ * the slot's height answers the window. The artboard puts them at 285 and 384
+ * in a section whose card sat between 80 and 340, which is where the two
+ * percentages come from.
  */
-function Glow({ src, top, offsetX }: { src: string; top: number; offsetX: number }) {
+function Glow({ src, top, offsetX }: { src: string; top: string; offsetX: number }) {
   return (
     <div
-      className="pointer-events-none absolute size-103 -translate-x-1/2"
+      className="pointer-events-none absolute -z-10 size-103 -translate-x-1/2"
       style={{ top, left: `calc(50% + ${offsetX}px)` }}
     >
       <div className="absolute inset-[-63.11%]">
@@ -57,30 +62,28 @@ function Field({
 
 export default function EarlyAccess() {
   return (
-    <section className="relative w-full overflow-x-clip" data-sequence-section="early">
-      {/* The section's own column carries on down here — a bare wrapper would
-          leave its single child to shrink-to-fit and swallow the 60px gap
-          between the card and the copy — and its padding comes with it so the
-          two boxes stay geometrically identical. */}
-      <div
-        className="flex w-full flex-col items-center gap-15 px-6 pt-20 pb-30"
-        data-shift=""
-      >
-        <Glow src="/early/glow-back.svg" top={285} offsetX={0} />
-        <Glow src="/early/glow-front.svg" top={384} offsetX={60} />
+    <section
+      className="screen relative w-full overflow-x-clip"
+      data-sequence-section="early"
+    >
+      <div className="screen-body">
+        {/*
+          The one section that leads with artwork, so the card takes the flexible
+          slot and the words below it take only what they need — the reverse of
+          everywhere else. The card keeps its 420x260 proportions and scales
+          rather than reflowing.
+        */}
+        <div className="screen-payload px-6">
+          <Glow src="/early/glow-back.svg" top="79%" offsetX={0} />
+          <Glow src="/early/glow-front.svg" top="117%" offsetX={60} />
 
-        {/* The card keeps its 420x260 proportions and scales below that width
-            instead of reflowing. The extra wrapper keeps .stage-viewport's own
-            negative margin-block from eating into the section's gap. */}
-        <div className="relative w-full" data-beat="card">
-          <div className="stage-viewport stage-viewport-open w-full">
+          <div className="stage-viewport stage-viewport-open">
             <div
               className="stage-sizer"
               style={
                 {
                   "--stage-w": 420,
                   "--stage-h": 260,
-                  "--stage-min": 0.55,
                 } as React.CSSProperties
               }
             >
@@ -96,16 +99,13 @@ export default function EarlyAccess() {
           </div>
         </div>
 
-        <div
-          className="relative flex w-full max-w-204 flex-col items-center gap-15"
-          data-beat="form"
-        >
-          <div className="flex w-full flex-col items-center gap-4">
+        <div className="screen-copy mx-auto flex max-w-204 flex-col items-center gap-[clamp(1rem,3.2svh,3.75rem)] px-6">
+          <div className="flex w-full flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)]">
             <div className="flex" data-reveal="copy">
               <Badge icon={<CreditCard />}>Early Access</Badge>
             </div>
             <h2
-              className="font-heading w-full text-center text-[clamp(2rem,4.55vw,3.5rem)] leading-none font-normal"
+              className="font-heading w-full text-center text-[clamp(1.75rem,min(4.55vw,6.4svh),3.5rem)] leading-none font-normal"
               data-reveal="copy"
             >
               Be first.
@@ -113,16 +113,21 @@ export default function EarlyAccess() {
               Bring <span className="font-display italic">your squad.</span>
             </h2>
             <p
-              className="w-full text-center text-base leading-normal tracking-[-0.32px] text-white/70"
+              className="type-lede w-full text-center leading-normal tracking-[-0.32px] text-white/70"
               data-reveal="copy"
             >
-              Join the waitlist for Squad Card. When we launch, your group is ready.
+              Join the waitlist for Squad Card. When we launch, your group is
+              ready.
             </p>
           </div>
 
-          <form className="flex w-full flex-col items-center gap-15">
+          <form className="flex w-full flex-col items-center gap-[clamp(1rem,3.2svh,3.75rem)]">
             <div className="flex w-full flex-col gap-4 sm:flex-row">
-              <Field name="firstName" label="First Name" autoComplete="given-name" />
+              <Field
+                name="firstName"
+                label="First Name"
+                autoComplete="given-name"
+              />
               <Field
                 name="email"
                 type="email"
@@ -137,8 +142,8 @@ export default function EarlyAccess() {
                 className="w-full text-center text-xs leading-normal tracking-[-0.24px] text-white/70"
                 data-reveal="field"
               >
-                <span className="font-medium text-white">2,847</span> people on the
-                waitlist
+                <span className="font-medium text-white">2,847</span> people on
+                the waitlist
               </p>
               {/* The wrapper takes the hinge: Button owns its own hover
                   transform, and two owners on one transform collide. */}

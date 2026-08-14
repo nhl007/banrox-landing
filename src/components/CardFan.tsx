@@ -134,6 +134,13 @@ const cards: Placed[] = [
   },
 ];
 
+/**
+ * The fan's artboard, exported because the hero's ambient bloom is placed in
+ * these coordinates and needs a stage of the same size to sit in — see
+ * StageBackdrop.
+ */
+export const FAN_STAGE = { width: 1262, height: 516 } as const;
+
 /*
  * The perspective sits on the stage so the fan's entrance (the hero timeline
  * rotates it up from flat) is measured in stage units and scales along with
@@ -150,8 +157,16 @@ const cards: Placed[] = [
 export default function CardFan() {
   return (
     <div className="stage-viewport w-full">
-      <div className="stage-sizer relative" style={{ "--stage-w": 1262, "--stage-h": 516 } as React.CSSProperties}>
-        <div className="stage relative" style={{ perspective: "900px" }}>
+      <div
+        className="stage-sizer"
+        style={
+          {
+            "--stage-w": FAN_STAGE.width,
+            "--stage-h": FAN_STAGE.height,
+          } as React.CSSProperties
+        }
+      >
+        <div className="stage" style={{ perspective: "900px" }}>
           <div className="absolute inset-0" data-reveal="fan">
             {cards.map((card) => {
               const { left, top, z, ...cardProps } = card;

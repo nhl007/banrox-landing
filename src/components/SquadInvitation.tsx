@@ -6,6 +6,19 @@ import Badge from "@/components/ui/Badge";
 import { AddTeamIcon, CopyIcon } from "@/components/ui/icons";
 import Button from "./ui/Button";
 
+/*
+ * "Invite your squad" — a 604x552 card under a heading.
+ *
+ * The card is the one payload on the page that is not a diagram, but it is
+ * staged like one anyway: it has a fixed height (the QR panel, the link bar and
+ * the two CTAs add up to exactly the 552 Figma reserves) and no way to reflow
+ * into a shorter box, so on a short window it scales rather than overflowing.
+ * The section used to carry a flat 100px of padding on all four sides, which on
+ * a phone left 190px of the 390 for the content.
+ */
+const CARD_W = 604;
+const CARD_H = 552;
+
 export default function SquadInvitation() {
   const [copied, setCopied] = useState(false);
   const inviteUrl = "squadcard.app/i/MR-K4X9";
@@ -18,49 +31,34 @@ export default function SquadInvitation() {
 
   return (
     <section
-      className="content-stretch flex flex-col items-center p-[100px] relative w-full"
+      className="screen relative w-full"
       data-node-id="9304:25728"
       data-sequence-section="invitation"
     >
-      {/* See Hero. */}
-      <div
-        className="content-stretch flex flex-col gap-[60px] items-center w-full"
-        data-shift=""
-      >
-        {/* Header Section */}
+      <div className="screen-body">
         <div
-          className="content-stretch flex flex-col gap-[16px] items-center relative shrink-0 w-[604px] max-w-full"
+          className="screen-copy mx-auto flex max-w-[604px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6"
           data-node-id="9304:25729"
-          data-beat="copy"
         >
-          {/* Badge Component */}
           <div className="flex" data-reveal="copy">
             <Badge icon={<AddTeamIcon className="size-[16px]" />}>
               Invite Your Squad
             </Badge>
           </div>
 
-          {/* Headline */}
-          <div
-            className="content-stretch flex flex-col items-center relative shrink-0 w-full"
-            data-node-id="9304:25737"
+          <h2
+            className="font-heading type-title w-full text-center leading-none font-normal text-white"
+            data-node-id="9304:25738"
+            data-reveal="copy"
           >
-            <h2
-              className="font-heading leading-[0] not-italic relative shrink-0 text-[48px] text-center text-white w-[1240px] max-w-full font-normal"
-              data-node-id="9304:25738"
-              data-reveal="copy"
-            >
-              <p className="mb-0 leading-none">
-                <span>{`A squad without `}</span>
-                <span className="font-display italic leading-none">{`your people`}</span>
-              </p>
-              <p className="leading-none">{`isn't a squad.`}</p>
-            </h2>
-          </div>
+            <span>{`A squad without `}</span>
+            <span className="font-display italic">{`your people`}</span>
+            <br />
+            {`isn't a squad.`}
+          </h2>
 
-          {/* Subtitle */}
           <p
-            className="font-sans font-normal leading-[1.5] opacity-70 relative shrink-0 text-[16px] text-white text-center tracking-[-0.32px] w-[604px] max-w-full"
+            className="font-sans type-lede w-full text-center leading-[1.5] tracking-[-0.32px] text-white opacity-70"
             data-node-id="9304:25739"
             data-reveal="copy"
           >
@@ -69,150 +67,159 @@ export default function SquadInvitation() {
           </p>
         </div>
 
-        {/* Card Content Section (Step 3 Content) */}
         {/* No data-reveal on the wrapper: the card arrives and then fills
             itself in, and a group fade would flatten that into one crossfade. */}
-        <div
-          className="content-stretch flex flex-col items-center relative shrink-0 w-full"
-          data-node-id="9304:25740"
-          data-beat="payload"
-        >
-          <div
-            className="content-stretch flex h-[552px] items-start justify-center relative shrink-0 w-full"
-            data-node-id="9304:25741"
-          >
+        {/* px-6 where the diagrams have none: this one is a card with a border
+            rather than a diagram bled to the edges, and on a phone the stage
+            fits the container exactly — so with no gutter it would touch both
+            sides of the screen. Above 604px the scale is capped at 1 and the
+            padding costs nothing. */}
+        <div className="screen-payload px-6" data-node-id="9304:25740">
+          <div className="stage-viewport">
             <div
-              className="border-[1.5px] border-solid border-white/15 content-stretch flex flex-col gap-[16px] items-center overflow-hidden p-[16px] relative rounded-[32px] shrink-0 w-[604px] max-w-full bg-white/[0.03] backdrop-blur-[2px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
-              data-node-id="9304:25742"
-              data-name="Step 3 Content"
-              data-reveal="card"
+              className="stage-sizer"
+              style={
+                {
+                  "--stage-w": CARD_W,
+                  "--stage-h": CARD_H,
+                } as React.CSSProperties
+              }
             >
-              {/* Top-Left Corner Glow Asset */}
-              <div
-                className="absolute left-[-1.5px] size-[151px] top-[-1.5px] pointer-events-none"
-                data-node-id="9304:25743"
-              >
-                <div className="absolute inset-[-145.7%]">
-                  <Image
-                    src="/works/ellipse-6131.svg"
-                    alt=""
-                    width={591}
-                    height={591}
-                    className="block max-w-none size-full"
-                  />
-                </div>
-              </div>
-
-              {/* QR Code Container */}
-              <div
-                className="h-[260px] overflow-hidden relative rounded-[16px] shrink-0 w-[572px] max-w-full bg-white/[0.04]"
-                data-node-id="9304:25744"
-                data-reveal="item"
-              >
+              <div className="stage">
                 <div
-                  className="-translate-x-1/2 absolute contents left-1/2 top-0"
-                  data-node-id="9304:25745"
-                  data-name="Step 3 Image Container"
+                  className="content-stretch relative flex w-full flex-col items-center gap-[16px] overflow-hidden rounded-[32px] border-[1.5px] border-solid border-white/15 bg-white/[0.03] p-[16px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[2px]"
+                  data-node-id="9304:25742"
+                  data-name="Step 3 Content"
+                  data-reveal="card"
                 >
-                  <p
-                    className="-translate-x-1/2 absolute font-sans font-normal leading-[1.5] left-1/2 opacity-70 text-[14px] text-center text-white top-[calc(50%+97px)] tracking-[-0.28px] whitespace-nowrap"
-                    data-node-id="9304:25747"
-                  >
-                    scan to join Maya’ Squad
-                  </p>
-                </div>
-
-                {/* Exact Figma QR Code PNG Asset */}
-                <div
-                  className="-translate-x-1/2 -translate-y-1/2 absolute left-1/2 rounded-[4px] size-[178px] top-1/2 overflow-hidden"
-                  data-node-id="9304:25748"
-                  data-name="image 583172"
-                >
-                  <Image
-                    src="/works/qr-code.png"
-                    alt="scan to join Maya' Squad"
-                    width={178}
-                    height={178}
-                    className="absolute block inset-0 size-full object-contain"
-                    priority
-                  />
-                </div>
-              </div>
-
-              {/* Invite Link Bar */}
-              <div
-                className="border-[1.5px] border-[rgba(255,255,255,0.1)] border-solid content-stretch flex h-[48px] items-center justify-between overflow-hidden pl-[20px] pr-[4px] py-[16px] relative rounded-[8px] shrink-0 w-full bg-white/[0.04] backdrop-blur-sm"
-                data-node-id="9304:25749"
-                data-reveal="item"
-              >
-                <p
-                  className="font-sans font-normal leading-none opacity-70 relative shrink-0 text-[14px] text-white whitespace-nowrap select-all"
-                  data-node-id="9304:25750"
-                >
-                  {inviteUrl}
-                </p>
-
-                {/* Copy Link Button */}
-                <Button
-                  type="button"
-                  onClick={handleCopy}
-                  className="content-stretch flex gap-[8px] h-[40px] items-center pl-[12px] pr-[16px] py-[16px] relative !rounded-[4px] shrink-0 "
-                  variant="primary"
-                  data-node-id="9304:25751"
-                  data-name="CTA - Primary"
-                >
+                  {/* Top-Left Corner Glow Asset */}
                   <div
-                    className="relative shrink-0 size-[16px]"
-                    data-node-id="9304:25752"
-                    data-name="copy-01"
+                    className="pointer-events-none absolute top-[-1.5px] left-[-1.5px] size-[151px]"
+                    data-node-id="9304:25743"
                   >
-                    <CopyIcon className="size-[16px]" />
+                    <div className="absolute inset-[-145.7%]">
+                      <Image
+                        src="/works/ellipse-6131.svg"
+                        alt=""
+                        width={591}
+                        height={591}
+                        className="block size-full max-w-none"
+                      />
+                    </div>
                   </div>
-                  <span
-                    className="font-sans font-medium leading-none relative shrink-0 text-[12px] text-white tracking-[-0.24px] whitespace-nowrap"
-                    data-node-id="9304:25755"
+
+                  {/* QR Code Container */}
+                  <div
+                    className="relative h-[260px] w-full shrink-0 overflow-hidden rounded-[16px] bg-white/[0.04]"
+                    data-node-id="9304:25744"
+                    data-reveal="item"
                   >
-                    {copied ? "Copied!" : "Copy Link"}
-                  </span>
-                </Button>
-              </div>
+                    <div
+                      className="absolute top-0 left-1/2 contents -translate-x-1/2"
+                      data-node-id="9304:25745"
+                      data-name="Step 3 Image Container"
+                    >
+                      <p
+                        className="font-sans absolute left-1/2 top-[calc(50%+97px)] -translate-x-1/2 text-center text-[14px] leading-[1.5] font-normal tracking-[-0.28px] whitespace-nowrap text-white opacity-70"
+                        data-node-id="9304:25747"
+                      >
+                        scan to join Maya&rsquo; Squad
+                      </p>
+                    </div>
 
-              {/* Card Text Content */}
-              <div
-                className="content-stretch flex flex-col gap-[12px] items-start overflow-hidden pb-[16px] px-[16px] relative shrink-0 text-white w-full"
-                data-node-id="9304:25756"
-                data-reveal="item"
-              >
-                <div
-                  className="font-heading leading-[0] relative shrink-0 text-[28px] tracking-[-0.28px] whitespace-nowrap font-normal"
-                  data-node-id="9304:25757"
-                >
-                  <p className="leading-[1.2] mb-0">Your squad.</p>
-                  <p className="leading-[1.2]">Your line.</p>
+                    {/* Exact Figma QR Code PNG Asset */}
+                    <div
+                      className="absolute top-1/2 left-1/2 size-[178px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[4px]"
+                      data-node-id="9304:25748"
+                      data-name="image 583172"
+                    >
+                      <Image
+                        src="/works/qr-code.png"
+                        alt="scan to join Maya' Squad"
+                        width={178}
+                        height={178}
+                        className="absolute inset-0 block size-full object-contain"
+                        priority
+                      />
+                    </div>
+                  </div>
+
+                  {/* Invite Link Bar */}
+                  <div
+                    className="content-stretch relative flex h-[48px] w-full shrink-0 items-center justify-between overflow-hidden rounded-[8px] border-[1.5px] border-solid border-[rgba(255,255,255,0.1)] bg-white/[0.04] py-[16px] pr-[4px] pl-[20px] backdrop-blur-sm"
+                    data-node-id="9304:25749"
+                    data-reveal="item"
+                  >
+                    <p
+                      className="font-sans relative shrink-0 text-[14px] leading-none font-normal whitespace-nowrap text-white opacity-70 select-all"
+                      data-node-id="9304:25750"
+                    >
+                      {inviteUrl}
+                    </p>
+
+                    {/* Copy Link Button */}
+                    <Button
+                      type="button"
+                      onClick={handleCopy}
+                      className="content-stretch relative flex h-[40px] shrink-0 items-center gap-[8px] py-[16px] pr-[16px] pl-[12px] !rounded-[4px]"
+                      variant="primary"
+                      data-node-id="9304:25751"
+                      data-name="CTA - Primary"
+                    >
+                      <div
+                        className="relative size-[16px] shrink-0"
+                        data-node-id="9304:25752"
+                        data-name="copy-01"
+                      >
+                        <CopyIcon className="size-[16px]" />
+                      </div>
+                      <span
+                        className="font-sans relative shrink-0 text-[12px] leading-none font-medium tracking-[-0.24px] whitespace-nowrap text-white"
+                        data-node-id="9304:25755"
+                      >
+                        {copied ? "Copied!" : "Copy Link"}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Card Text Content */}
+                  <div
+                    className="content-stretch relative flex w-full shrink-0 flex-col items-start gap-[12px] overflow-hidden px-[16px] pb-[16px] text-white"
+                    data-node-id="9304:25756"
+                    data-reveal="item"
+                  >
+                    <div
+                      className="font-heading relative shrink-0 text-[28px] leading-[0] font-normal tracking-[-0.28px] whitespace-nowrap"
+                      data-node-id="9304:25757"
+                    >
+                      <p className="mb-0 leading-[1.2]">Your squad.</p>
+                      <p className="leading-[1.2]">Your line.</p>
+                    </div>
+                    <p
+                      className="font-sans relative w-full shrink-0 text-[16px] leading-[1.5] font-normal tracking-[-0.32px] opacity-70"
+                      data-node-id="9304:25758"
+                    >
+                      Apply together. Qualify for more. Spend in your lane.
+                    </p>
+                  </div>
+
+                  {/* Share via Email CTA Button */}
+                  <a
+                    href={`mailto:?subject=Join%20my%20Banrox%20Squad&body=Hey!%20Join%20my%20squad%20on%20Banrox:%20https://${inviteUrl}`}
+                    className="content-stretch relative flex h-[44px] w-full shrink-0 items-center justify-center gap-[8px] rounded-[8px] border border-solid border-[rgba(255,255,255,0.2)] py-[16px] pr-[24px] pl-[32px] transition-colors hover:bg-white/10"
+                    data-node-id="9304:25759"
+                    data-name="CTA - Primary"
+                    data-reveal="item"
+                  >
+                    <span
+                      className="font-sans relative shrink-0 text-[16px] leading-none font-medium tracking-[-0.32px] whitespace-nowrap text-white"
+                      data-node-id="I9304:25759;243:144"
+                    >
+                      Share via Email
+                    </span>
+                  </a>
                 </div>
-                <p
-                  className="font-sans font-normal leading-[1.5] opacity-70 relative shrink-0 text-[16px] tracking-[-0.32px] w-full"
-                  data-node-id="9304:25758"
-                >
-                  Apply together. Qualify for more. Spend in your lane.
-                </p>
               </div>
-
-              {/* Share via Email CTA Button */}
-              <a
-                href={`mailto:?subject=Join%20my%20Banrox%20Squad&body=Hey!%20Join%20my%20squad%20on%20Banrox:%20https://${inviteUrl}`}
-                className="border border-[rgba(255,255,255,0.2)] border-solid content-stretch flex gap-[8px] h-[44px] items-center justify-center pl-[32px] pr-[24px] py-[16px] relative rounded-[8px] shrink-0 w-full transition-colors hover:bg-white/10"
-                data-node-id="9304:25759"
-                data-name="CTA - Primary"
-                data-reveal="item"
-              >
-                <span
-                  className="font-sans font-medium leading-none relative shrink-0 text-[16px] text-white tracking-[-0.32px] whitespace-nowrap"
-                  data-node-id="I9304:25759;243:144"
-                >
-                  Share via Email
-                </span>
-              </a>
             </div>
           </div>
         </div>

@@ -10,83 +10,152 @@
  *
  * Distances are px, angles degrees.
  */
+
+/**
+ * A section that plays as soon as the page is ready rather than when it is
+ * scrolled to — written in `trigger` below wherever a ScrollTrigger start
+ * position would otherwise go.
+ *
+ * Only the hero uses it, and only because it is the part of the page that is
+ * already there before there is any scrolling to respond to. Everything further
+ * down waits to be arrived at, which is the whole point of the system.
+ */
+export const ON_LOAD = "load";
+
 export const MOTION = {
   /*
    * The gate for the entire system. Below this the page renders static and no
    * trigger is created at all. It MUST stay identical to the @media guard on
    * [data-reveal] in globals.css — that rule holds the pre-hydration state, so
-   * any disagreement either flashes the finished page or strands it blank.
+   * any disagreement either flashes the finished page or strands it blank — and
+   * to the queries that make a section one screen, since a section that is not
+   * a screen cannot honestly be animated on one trigger.
+   *
+   * The height half is what a phone held sideways fails: 932x430 passes the
+   * width test, and at that height the heading is most of the window, so the
+   * card fan fitted into what was left came out at 0.076 scale. Measured. See
+   * the note above .screen in globals.css.
    */
-  enabled: "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
+  enabled:
+    "(min-width: 768px) and (min-height: 480px) and (prefers-reduced-motion: no-preference)",
 
   /**
    * Every beat's timeScale. The numbers below are written as the proportions
    * they were tuned at; this is what turns them into a pace.
    */
-  pace: 1.6,
+  pace: 1,
 
   /*
-   * Where every beat fires: one entry per beat, in the order they happen down
-   * the page.
+   * Where every section fires: one entry per section, in the order they happen
+   * down the page.
    *
-   * Nothing here is shared or derived. Each key is a [data-beat] anchor in the
-   * markup, sections.ts reads its beat's start from that key by name, and so
-   * changing one line here moves exactly one animation and nothing else. The
-   * duplication is the point — a value repeated seven times is seven values
-   * that happen to agree, not one value seven beats are stuck with.
+   * One trigger per section, not one per beat. A section is exactly one screen
+   * tall (see .screen in globals.css), so its heading and its diagram are in
+   * front of the reader at the same moment — and splitting a section into
+   * separately-triggered arrivals was answering a problem the layout no longer
+   * has. The beats inside a section still play in order; they queue behind each
+   * other off this single trigger, which is the controller's job.
    *
-   * The syntax is ScrollTrigger's, "<point on the element> <point in the
-   * window>": "top 80%" fires when the element's top edge reaches 80% of the
-   * way down the window. A LOWER percentage fires LATER, because the element
-   * has to travel further up the screen to get there. The element side takes
-   * `top`, `center`, `bottom` or a percentage of its own height, so `center`
-   * is how a beat waits for the middle of its subject rather than its leading
-   * edge — which is what a tall element wants, since its top arrives long
-   * before the thing itself does.
+   * Nothing here is shared or derived. Each key is a section id, sections.ts
+   * reads its start from that key by name, and changing one line moves exactly
+   * one section and nothing else. The duplication is the point — a value
+   * repeated six times is six values that happen to agree, not one value six
+   * sections are stuck with.
    *
-   * The rules of thumb behind the numbers below: copy fires early at 80%
-   * because a heading is short and reads the instant it appears, and a payload
-   * waits until 65% because it is a diagram several hundred pixels tall and
-   * firing it with the copy would play most of it below the fold.
+   * The syntax is ScrollTrigger's, "<point on the section> <point in the
+   * window>": "top 40%" fires once the section's top edge has climbed to 40% of
+   * the way down the window — which, the section being a screen tall, is with
+   * about 60% of it showing. A LOWER percentage fires LATER, because the
+   * section has to travel further up the screen to get there.
+   *
+   * 40 rather than something later because arriving is not instant: the funnel
+   * takes about four seconds to fill, so a trigger that waited for the section
+   * to fill the window would spend most of that time behind a reader who has
+   * already moved on. Started a little over halfway in, it lands as they do.
    */
   trigger: {
     /**
-     * Above the fold, so these are about the page opening rather than about
-     * scrolling. The copy fires at load whatever it says — on an unscrolled
-     * page the hero's top edge is already past every start position there is —
-     * and it queues behind the navbar (see hero.afterNav).
-     *
-     * The cards are the exception on the whole page. They are the one payload
-     * already on screen at load, so a top-edge trigger also fires immediately,
-     * opening the fan while the reader is still on the headline and finishing
-     * it before they look down. Measured from the middle of the fan instead, it
-     * waits to be arrived at.
+     * The one section that does not wait for a scroll that has not happened
+     * yet: it is the page opening. Its beats fire off the load and queue in
+     * reading order — the navbar drops, the copy comes up under it
+     * (hero.afterNav), and the card scene follows the copy (hero.afterCopy).
      */
-    hero: { copy: "center 80%", cards: "center 68%" },
+    hero: ON_LOAD,
 
-    alone: { copy: "center 80%", payload: "center 58%" },
+    alone: "top 40%",
 
-    approve: { copy: "center 80%", payload: "center 65%" },
+    approve: "top 40%",
 
-    works: { copy: "center 80%", payload: "center 65%" },
+    works: "top 40%",
 
+    intelligence: "top 40%",
+
+    invitation: "top 40%",
+
+    early: "top 40%",
+  },
+
+  /* --- settling --------------------------------------------------------- */
+
+  /**
+   * How the page comes to rest on a section instead of between two.
+   *
+   * Done here rather than with CSS scroll snapping, and measured rather than
+   * assumed. `scroll-snap-type: mandatory` lands every position exactly, but it
+   * decides on each gesture in isolation, by whichever position is nearest: a
+   * single 400px wheel detent ends closer to where it started than to the next
+   * section, so it is snapped straight back and the page does not move at all.
+   * Five detents 30ms apart are five gestures, so they do not move it either.
+   * Only one continuous sweep of most of a screen gets anywhere. `proximity`
+   * keeps the wheel working and gives up on the problem, coming to rest
+   * 300-380px into a section about half the time.
+   *
+   * Nearest is the wrong rule here whoever implements it, which is the other
+   * half of why this is not CSS: it puts the decision at the halfway mark, so
+   * half of every gesture a reader makes is answered by putting them back where
+   * they started. Going where they were headed is `deadzone` below.
+   *
+   * Waiting for the scrolling to stop is what fixes it: detents accumulate into
+   * one distance first, and only then does the page settle. It also settles
+   * over a duration with an ease, where the browser's own snap is a cut.
+   *
+   * Not scaled by `pace`. This is not a beat — it is the page arriving where
+   * the reader was already going, and it should take the same time whatever
+   * speed the animations are running at.
+   */
+  settle: {
     /**
-     * Five rather than two: the funnel is 948px tall, so a single trigger for
-     * all of it would play the engine three viewports before anyone reached it.
-     * Each row waits for itself.
+     * Quiet time after the last scroll event before the page settles.
+     *
+     * The whole mechanism rests on this. Too short and a slow wheel is judged
+     * one detent at a time, which is CSS mandatory snapping again; too long and
+     * the page moves after the reader has decided they have stopped.
      */
-    intelligence: {
-      copy: "center 80%",
-      members: "top 65%",
-      signals: "top 65%",
-      hub: "top 65%",
-      verdict: "top 65%",
-    },
-
-    invitation: { copy: "center 80%", payload: "center 65%" },
-
-    /** The one section with no heading: the card leads and the words follow. */
-    early: { card: "center 70%", form: "center 75%" },
+    delay: 0.12,
+    /**
+     * How far the page has to move before it counts as going somewhere, as a
+     * fraction of the window.
+     *
+     * The settle is DIRECTIONAL: a scroll down goes to the top of the next
+     * section, however short it was, and a scroll up goes back to the top of
+     * the previous one. That is what makes the page navigable a section at a
+     * time — one notch of a wheel, one section — where snapping to whichever
+     * section is nearest put the decision at the halfway mark and sent
+     * everything short of half a screen straight back where it came from.
+     *
+     * Which leaves the opposite failure to guard: with any movement at all
+     * counting, a trackpad brushed by a resting hand is a full screen. This is
+     * the width of that guard, and the only thing between here and a page that
+     * jumps when nobody asked it to.
+     */
+    deadzone: 0.06,
+    /**
+     * How long the slide takes, floor and ceiling. Scaled between them by the
+     * distance left to travel, so nudging back 40px does not take as long as
+     * carrying most of a screen.
+     */
+    duration: { min: 0.18, max: 0.5 },
+    ease: "power2.out",
   },
 
   /* --- navbar ----------------------------------------------------------- */
@@ -131,6 +200,18 @@ export const MOTION = {
      * than the drop itself on purpose: they overlap rather than queue.
      */
     afterNav: -0.5,
+
+    /**
+     * How long the card scene waits for the copy. Negative for the same reason
+     * afterNav is: the two are one opening rather than two animations queueing,
+     * so the fan sets off while the second CTA above it is still settling. Zero
+     * would read as a pause.
+     *
+     * There is nothing to scroll to any more. The hero is one screen including
+     * the navbar, so the fan is on screen from the first frame — which is what
+     * retired the assist that used to drag the page down to it.
+     */
+    afterCopy: -0.6,
 
     /** How far back the stack sits while flat, and the rise to upright. */
     depth: -180,

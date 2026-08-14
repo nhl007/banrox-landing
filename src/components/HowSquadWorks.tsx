@@ -317,21 +317,14 @@ function Step3Figure() {
 
 export default function HowSquadWorks() {
   return (
-    <section
-      className="relative w-full pt-16 pb-[170px]"
-      data-sequence-section="works"
-    >
-      {/* See Hero. */}
-      <div data-shift="">
-        <div
-          className="mx-auto flex w-full max-w-[1240px] flex-col items-center gap-4 px-6"
-          data-beat="copy"
-        >
+    <section className="screen relative w-full" data-sequence-section="works">
+      <div className="screen-body">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<CreditCard />}>How Squad works</Badge>
           </div>
           <h2
-            className="font-heading w-full text-center text-[clamp(1.75rem,3.9vw,3rem)] leading-none font-normal"
+            className="font-heading type-title w-full text-center leading-none font-normal"
             data-reveal="copy"
           >
             Three steps.
@@ -340,24 +333,20 @@ export default function HowSquadWorks() {
           </h2>
         </div>
 
-        {/* Gap lives on this wrapper: .stage-viewport sets its own margin-block
-            and a utility here would collide with it (same fix as the other
-            stage-based sections). */}
         {/* No data-reveal on the wrapper: each card grows in on its own, and a
             group fade over the top would flatten that back into one crossfade. */}
-        <div className="mt-15 w-full" data-beat="payload">
-          <div className="stage-viewport w-full">
+        <div className="screen-payload">
+          <div className="stage-viewport">
             <div
-              className="stage-sizer relative"
+              className="stage-sizer"
               style={
                 {
                   "--stage-w": 1240,
                   "--stage-h": 508,
-                  "--stage-min": 0.4,
                 } as React.CSSProperties
               }
             >
-              <div className="stage relative flex gap-8">
+              <div className="stage flex gap-8">
                 <div className="w-[392px] shrink-0" data-reveal="step">
                   <StepCard
                     figure={<Step1Figure />}
