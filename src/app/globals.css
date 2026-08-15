@@ -787,11 +787,14 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
- * The navigation rail — one dot per section, down the right-hand edge.
+ * The navigation rail — one dot per section, then the footer, down the
+ * right-hand edge.
  *
  * The deck has no scrollbar, because the page does not move while you are in
  * it, so nothing else on screen says how many sections there are or which one
- * you are on. This does both, and takes you across the deck in one move.
+ * you are on. The rail says all of it: a ring on the stop you are at, a line
+ * lit behind it for the ones you have been through, and a dot for each of the
+ * ones you have not.
  *
  * Hidden below md. There is no deck there — the page is a column with a real
  * scrollbar of its own — and a fixed rail on a phone is 40px of the width gone
@@ -817,49 +820,79 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 18px 12px;
+  gap: 16px;
+  /* Generous, and doing real work: it is the hit area the pointer has to be
+     inside for the dots to know it is there, and the room the ring needs to
+     stretch into at the ends of its travel without being clipped. */
+  padding: 22px 14px;
 }
 
-/* The wire the beads are strung on. Faded at both ends so it reads as a rail
-   passing through rather than a bar with two hard stops. */
+/*
+ * The unlit rail. Faded at both ends so it reads as something passing through
+ * rather than a bar with two hard stops.
+ */
 .deck-rail::before {
   content: "";
   position: absolute;
-  top: 20px;
-  bottom: 20px;
+  top: 24px;
+  bottom: 24px;
   left: 50%;
   width: 1px;
   transform: translateX(-50%);
   background: linear-gradient(
     180deg,
     transparent,
-    rgba(226, 230, 255, 0.22) 14%,
-    rgba(226, 230, 255, 0.22) 86%,
+    rgba(226, 230, 255, 0.18) 12%,
+    rgba(226, 230, 255, 0.18) 88%,
     transparent
   );
 }
 
 /*
- * The travelling light. Positioned by GSAP on the y axis only — see MOTION.rail
- * — so everything here is what it looks like standing still.
+ * The lit part, from the first stop down to the one you are on. Laid out at
+ * full length by the component and scaled from its top edge, so stepping
+ * through the deck never touches layout.
+ */
+.deck-fill {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  transform-origin: top center;
+  transform: translateX(-50%) scaleY(0);
+  background: linear-gradient(
+    180deg,
+    rgba(133, 133, 233, 0.9),
+    rgba(62, 90, 255, 0.55)
+  );
+  box-shadow: 0 0 6px rgba(62, 90, 255, 0.55);
+  pointer-events: none;
+}
+
+/*
+ * The ring on the stop you are at.
+ *
+ * A drawn ring rather than the soft blob this replaces: a circle with an edge
+ * is a mark on a map, and a radial gradient is a smudge of light that happens
+ * to be near a dot. It is also what makes the stretch legible — an outline
+ * pulled into an ellipse reads as one object moving, where a blur pulled into
+ * an ellipse just reads as a slightly different blur.
+ *
+ * Positioned on the y axis by GSAP; everything here is what it looks like
+ * standing still. See MOTION.rail.
  */
 .deck-mark {
   position: absolute;
   top: 0;
   left: 50%;
-  width: 26px;
-  height: 26px;
-  margin: -13px 0 0 -13px;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 1.5px solid rgba(226, 230, 255, 0.9);
   border-radius: 999px;
+  box-shadow:
+    0 0 14px 1px rgba(62, 90, 255, 0.5),
+    inset 0 0 10px rgba(133, 133, 233, 0.45);
   pointer-events: none;
-  background: radial-gradient(
-    circle at 50% 50%,
-    rgba(133, 133, 233, 0.75),
-    rgba(62, 90, 255, 0.32) 45%,
-    transparent 72%
-  );
-  box-shadow: 0 0 22px 6px rgba(38, 75, 255, 0.35);
 }
 
 .deck-dot {
@@ -875,27 +908,40 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * Three states, and they are the point: dim for a stop you have not reached,
+ * half-lit for one you have been through, white for the one you are on. Eight
+ * identical dots tell you the page has eight sections and nothing else.
+ *
+ * The swell towards the pointer is the --mag the rail writes per dot. The
+ * transform is owned here rather than by GSAP: GSAP takes over an element's
+ * entire transform the moment it touches any part of it, so a tween on `scale`
+ * and a `transform` in this file are two owners of one property. This way the
+ * script supplies a number and the stylesheet decides what it means.
+ */
 .deck-bead {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(226, 230, 255, 0.35);
+  background: rgba(226, 230, 255, 0.22);
+  transform: scale(var(--mag, 1));
   transition:
-    background-color 0.35s ease,
-    box-shadow 0.35s ease,
-    transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
+    background-color 0.4s ease,
+    transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.deck-dot[data-passed] .deck-bead {
+  background: rgba(226, 230, 255, 0.55);
 }
 
 .deck-dot[aria-current] .deck-bead {
   background: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-  transform: scale(1.5);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.75);
 }
 
 .deck-dot:hover .deck-bead,
 .deck-dot:focus-visible .deck-bead {
   background: #ffffff;
-  transform: scale(1.9);
 }
 
 .deck-dot:focus-visible {
@@ -903,7 +949,7 @@ body {
 }
 
 /*
- * The preview, which is the whole reason the rail is worth having: seven
+ * The preview, which is the whole reason the rail is worth having: eight
  * identical dots tell you where you are and nothing about where you would be
  * going.
  *
@@ -915,7 +961,7 @@ body {
 .deck-peek {
   position: absolute;
   top: 50%;
-  right: calc(100% + 16px);
+  right: calc(100% + 14px);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -944,7 +990,7 @@ body {
   position: absolute;
   top: 50%;
   left: 100%;
-  width: 12px;
+  width: 10px;
   height: 1px;
   transform: translateY(-50%) scaleX(0);
   transform-origin: left center;
@@ -978,31 +1024,11 @@ body {
   color: #ffffff;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* A ring leaving the marker, so the current section is the one thing on the
-     rail that is alive rather than merely brighter. */
-  @keyframes deck-pulse {
-    from {
-      opacity: 0.5;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 0;
-      transform: scale(1.9);
-    }
-  }
-
-  .deck-mark::after {
-    content: "";
-    position: absolute;
-    inset: 5px;
-    border: 1px solid rgba(133, 133, 233, 0.7);
-    border-radius: 999px;
-    animation: deck-pulse 2.6s ease-out infinite;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
+  .deck-bead {
+    transform: none;
+  }
+
   .deck-bead,
   .deck-peek,
   .deck-peek::after {

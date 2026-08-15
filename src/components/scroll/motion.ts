@@ -95,6 +95,33 @@ export const MOTION = {
     squash: { scaleY: 1.9, scaleX: 0.68, duration: 0.2, ease: "power2.out" },
     /** And rounding out at the far end, overshooting just enough to land. */
     settle: { duration: 0.5, ease: "elastic.out(1, 0.55)" },
+    /**
+     * The lit part of the rail, growing from the first dot to the current one.
+     *
+     * The ring says which section you are on; this says how far through you
+     * are, which on a deck with no scrollbar is the thing nothing else on the
+     * page tells you. Slower than the ring on purpose — the ring is the thing
+     * you asked for and should feel immediate, the line is the consequence and
+     * can take its time catching up.
+     */
+    fill: { duration: 0.7, ease: "power2.out" },
+
+    /**
+     * The dots swelling towards the pointer, largest under it and falling away
+     * either side.
+     *
+     * The rail is eight targets 5px across in a 22px column, which is a hard
+     * thing to hit and an unrewarding thing to try. Magnifying under the
+     * pointer makes the whole column behave like one control that knows you are
+     * there, and makes the dot you are about to press the biggest thing on it
+     * before you press it.
+     *
+     * Squared falloff rather than linear: linear spreads the effect evenly over
+     * `reach` and the rail bulges as a whole, where squaring keeps it tight
+     * around the pointer and reads as one dot rising rather than half of them
+     * drifting.
+     */
+    magnet: { max: 2.4, reach: 58, duration: 0.4, ease: "power3.out" },
   },
 
   /* --- navbar ----------------------------------------------------------- */

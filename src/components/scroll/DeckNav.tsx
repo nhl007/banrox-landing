@@ -12,12 +12,13 @@ import { MOTION } from "./motion";
 import { SECTIONS } from "./sections";
 
 /*
- * The rail: one dot per section, down the right-hand edge.
+ * The rail: one dot per section, then the footer, down the right-hand edge.
  *
  * The deck has no scrollbar — the page does not move while you are in it — so
  * there is nothing to tell you how many sections there are, which one you are
- * on, or how far in you have got. This is that. It is also the only way to get
- * across the deck in one move rather than seven.
+ * on, or how far in you have got. The rail is all three: a ring that travels to
+ * the section you are on, a line that fills behind it, and a dot per stop that
+ * brightens once you have been there.
  *
  * It works whether or not there is a deck. Above the gate it asks the
  * controller for a section; below it, and under reduced motion, the page is an
@@ -35,40 +36,112 @@ export default function DeckNav() {
   const [scrolled, setScrolled] = useState(0);
   const current = active ? (footer ? SECTIONS.length : index) : scrolled;
 
+  const rail = useRef<HTMLDivElement>(null);
   const mark = useRef<HTMLSpanElement>(null);
+  const fill = useRef<HTMLSpanElement>(null);
   const dots = useRef<(HTMLButtonElement | null)[]>([]);
 
   /*
-   * The marker, travelling.
+   * The ring travelling, and the line filling in behind it.
    *
-   * Measured off the dot rather than computed from the index, so the spacing
-   * lives in the stylesheet where it belongs and nothing here has to be kept in
-   * step with it.
+   * Both measured off the dots rather than computed from the index, so the
+   * spacing lives in the stylesheet where it belongs and nothing here has to be
+   * kept in step with it.
    */
   useEffect(() => {
     const dot = dots.current[current];
-    const light = mark.current;
-    if (!dot || !light) return;
+    const first = dots.current[0];
+    const last = dots.current[dots.current.length - 1];
+    const ring = mark.current;
+    const line = fill.current;
+    if (!dot || !first || !last || !ring || !line) return;
 
-    const y = dot.offsetTop + dot.offsetHeight / 2;
+    const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
+    const from = centre(first);
+    const span = centre(last) - from;
+    const y = centre(dot);
+    /* The line is laid out at full length once and scaled, which keeps it off
+       the layout path — a height tween on every step would be a reflow of the
+       rail eight times a visit. */
+    const grown = span ? (y - from) / span : 0;
+
+    gsap.set(line, { top: from, height: span });
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set(light, { y });
+      gsap.set(ring, { y });
+      gsap.set(line, { scaleY: grown });
       return;
     }
 
     const tl = gsap
       .timeline()
-      .to(light, { y, ...MOTION.rail.travel }, 0)
-      .to(light, { ...MOTION.rail.squash }, 0)
+      .to(ring, { y, ...MOTION.rail.travel }, 0)
+      .to(ring, { ...MOTION.rail.squash }, 0)
       .to(
-        light,
+        ring,
         { scaleX: 1, scaleY: 1, ...MOTION.rail.settle },
         MOTION.rail.squash.duration,
-      );
+      )
+      .to(line, { scaleY: grown, ...MOTION.rail.fill }, 0);
+
     return () => {
       tl.kill();
     };
   }, [current]);
+
+  /*
+   * The dots swelling towards the pointer — see MOTION.rail.magnet.
+   *
+   * This writes ONE NUMBER per dot, into a custom property the stylesheet
+   * reads: --mag, which .deck-bead turns into a scale and eases with a
+   * transition of its own. It does not animate the transform itself, and that
+   * is deliberate rather than incidental — GSAP takes ownership of an element's
+   * whole transform when it touches any part of it, so a tween on `scale` here
+   * and a `transform` in the stylesheet are two owners of one property, and the
+   * one that loses is whichever wrote first. Handing CSS the number and letting
+   * it own the transform outright has no such argument in it, and keeps the
+   * work on the compositor.
+   */
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const { max, reach } = MOTION.rail.magnet;
+
+    /* Measured when the pointer arrives rather than on every move: the rail
+       cannot change shape while it is being hovered. */
+    let centres: number[] = [];
+    const measure = () => {
+      centres = dots.current.map((dot) => {
+        const box = dot?.getBoundingClientRect();
+        return box ? box.top + box.height / 2 : Number.NaN;
+      });
+    };
+
+    const onMove = (e: PointerEvent) => {
+      for (let i = 0; i < centres.length; i++) {
+        const dot = dots.current[i];
+        if (!dot || Number.isNaN(centres[i])) continue;
+        const near = Math.max(0, 1 - Math.abs(e.clientY - centres[i]) / reach);
+        /* Squared, so the swell stays tight around the pointer instead of
+           lifting half the rail at once. */
+        dot.style.setProperty("--mag", `${1 + near * near * (max - 1)}`);
+      }
+    };
+    const onLeave = () => {
+      for (const dot of dots.current) dot?.style.removeProperty("--mag");
+    };
+
+    el.addEventListener("pointerenter", measure);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      el.removeEventListener("pointerenter", measure);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
 
   /*
    * Following the column, for the modes with no deck. rootMargin collapses the
@@ -117,14 +190,12 @@ export default function DeckNav() {
    * dot anyway — it is where the contact details are, and without one the only
    * way to reach it is to go through all seven cards first.
    */
-  const stops = [
-    ...SECTIONS.map((s) => s.label),
-    "Contacts",
-  ];
+  const stops = [...SECTIONS.map((s) => s.label), "Contacts"];
 
   return (
     <nav className="deck-nav" aria-label="Sections">
-      <div className="deck-rail">
+      <div className="deck-rail" ref={rail}>
+        <span className="deck-fill" ref={fill} aria-hidden="true" />
         <span className="deck-mark" ref={mark} aria-hidden="true" />
 
         {stops.map((label, i) => (
@@ -137,6 +208,7 @@ export default function DeckNav() {
             className="deck-dot"
             aria-label={label}
             aria-current={i === current ? "true" : undefined}
+            data-passed={i < current ? "" : undefined}
             onClick={() => goTo(i)}
           >
             <span className="deck-bead" aria-hidden="true" />
