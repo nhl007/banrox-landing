@@ -17,10 +17,13 @@ import { MOTION } from "./motion";
  */
 
 const q = (root: HTMLElement, role: string) =>
-  gsap.utils.toArray<HTMLElement>(root.querySelectorAll(`[data-reveal='${role}']`));
+  gsap.utils.toArray<HTMLElement>(
+    root.querySelectorAll(`[data-reveal='${role}']`),
+  );
 
 /** A paused timeline with the shared ease, which every beat below starts from. */
-const beat = () => gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+const beat = () =>
+  gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
 
 /**
  * The heading block: badge, headline, sub-paragraph, each scaling up out of
@@ -32,7 +35,12 @@ const beat = () => gsap.timeline({ paused: true, defaults: { ease: "power3.out" 
  */
 export function copyIn(el: HTMLElement) {
   const copy = q(el, "copy");
-  gsap.set(copy, { opacity: 0, scale: 0, y: MOTION.copy.rise, transformOrigin: "50% 100%" });
+  gsap.set(copy, {
+    opacity: 0,
+    scale: 0,
+    y: MOTION.copy.rise,
+    transformOrigin: "50% 100%",
+  });
 
   return beat().to(copy, {
     opacity: 1,
@@ -66,7 +74,9 @@ const passOf = (run: HTMLElement) => {
   /* The run plus the light's own length: it starts parked just off one end and
      finishes just off the other, so it is never sitting on the artwork at rest. */
   const far = () =>
-    down ? run.offsetHeight + spark.offsetHeight : run.offsetWidth + spark.offsetWidth;
+    down
+      ? run.offsetHeight + spark.offsetHeight
+      : run.offsetWidth + spark.offsetWidth;
 
   return {
     spark,
@@ -136,8 +146,11 @@ const traceRuns = (
 };
 
 /** Every run inside `root`, in document order. */
-const trace = (tl: gsap.core.Timeline, root: HTMLElement, at: number | string) =>
-  traceRuns(tl, q(root, "lines"), at);
+const trace = (
+  tl: gsap.core.Timeline,
+  root: HTMLElement,
+  at: number | string,
+) => traceRuns(tl, q(root, "lines"), at);
 
 /**
  * The light going down every connector in a section, over and over.
@@ -231,7 +244,12 @@ export function heroCopy(el: HTMLElement) {
   const buttons = q(el, "button");
   const note = q(el, "note");
 
-  gsap.set(copy, { opacity: 0, scale: 0, y: MOTION.copy.rise, transformOrigin: "50% 100%" });
+  gsap.set(copy, {
+    opacity: 0,
+    scale: 0,
+    y: MOTION.copy.rise,
+    transformOrigin: "50% 100%",
+  });
   gsap.set(note, { opacity: 0, y: 12 });
   gsap.set(buttons, {
     opacity: 0,
@@ -241,7 +259,14 @@ export function heroCopy(el: HTMLElement) {
   });
 
   return beat()
-    .to(copy, { opacity: 1, scale: 1, y: 0, duration: MOTION.copy.duration, ease: MOTION.copy.ease, stagger: MOTION.copy.stagger })
+    .to(copy, {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      duration: MOTION.copy.duration,
+      ease: MOTION.copy.ease,
+      stagger: MOTION.copy.stagger,
+    })
     .to(buttons, { opacity: 1, rotationX: 0, ...MOTION.hero.buttons }, "-=0.35")
     .to(note, { opacity: 1, y: 0, ...MOTION.hero.note }, "-=0.4");
 }
@@ -267,7 +292,9 @@ export function heroCards(el: HTMLElement) {
    * which is the space GSAP's x lives in.
    */
   const stacked = (card: HTMLElement) =>
-    anchor.offsetLeft + anchor.offsetWidth / 2 - (card.offsetLeft + card.offsetWidth / 2);
+    anchor.offsetLeft +
+    anchor.offsetWidth / 2 -
+    (card.offsetLeft + card.offsetWidth / 2);
 
   gsap.set(glow, { opacity: 0 });
   gsap.set(fan, {
@@ -281,7 +308,10 @@ export function heroCards(el: HTMLElement) {
    * on its side, so parts of them would otherwise poke past its edges — and the
    * point is that nothing exists until it comes out from behind the Squad card.
    */
-  gsap.set(cards, { opacity: 0, x: (_i, card: HTMLElement) => stacked(card) });
+  gsap.set(cards, {
+    opacity: 0,
+    x: (_i, card: HTMLElement) => stacked(card),
+  });
   /*
    * The Squad card starts on its side. The component already turns its face
    * -90deg to stand upright, so +90 here cancels that back to landscape; the
@@ -289,16 +319,18 @@ export function heroCards(el: HTMLElement) {
    */
   gsap.set(anchor, { rotationZ: MOTION.hero.turn });
 
-  return beat()
-    .to(glow, { opacity: 1, ...MOTION.hero.glow }, 0)
-    .to(fan, { opacity: 1, duration: 0.3, ease: "none" }, 0.2)
-    /* Lifts off the display plane and turns upright in one movement. */
-    .to(fan, { rotationX: 0, z: 0, ...MOTION.hero.lift }, "<")
-    .to(anchor, { rotationZ: 0, ...MOTION.hero.lift }, "<")
-    /* Only now does anything come out from behind the Squad card — overlapped
+  return (
+    beat()
+      .to(glow, { opacity: 1, ...MOTION.hero.glow }, 0)
+      .to(fan, { opacity: 1, duration: 0.3, ease: "none" }, 0.2)
+      /* Lifts off the display plane and turns upright in one movement. */
+      .to(fan, { rotationX: 0, z: 0, ...MOTION.hero.lift }, "<")
+      .to(anchor, { rotationZ: 0, ...MOTION.hero.lift }, "<")
+      /* Only now does anything come out from behind the Squad card — overlapped
        with the last of the lift, so they start emerging as it finishes standing
        rather than after a pause with nothing happening. */
-    .to(cards, { opacity: 1, x: 0, ...MOTION.hero.fan }, "-=0.35");
+      .to(cards, { opacity: 1, x: 0, ...MOTION.hero.fan }, "-=0.35")
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -328,7 +360,9 @@ const countUp = (
   at: number | string,
   figures: Figures,
 ) => {
-  const cells = gsap.utils.toArray<HTMLElement>(root.querySelectorAll("[data-count]"));
+  const cells = gsap.utils.toArray<HTMLElement>(
+    root.querySelectorAll("[data-count]"),
+  );
 
   cells.forEach((cell, i) => {
     /*
@@ -435,7 +469,9 @@ const meters = (
   vars: gsap.TweenVars,
   stagger: number,
 ) => {
-  const bars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll("[data-meter]"));
+  const bars = gsap.utils.toArray<HTMLElement>(
+    root.querySelectorAll("[data-meter]"),
+  );
 
   bars.forEach((bar, i) => {
     const pct = Number(bar.dataset.meter);
@@ -486,7 +522,10 @@ export function alonePanels(el: HTMLElement) {
    */
   const travel = () => {
     const scale = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
-    const overhang = Math.max(0, (viewport.clientWidth / scale - stage.offsetWidth) / 2);
+    const overhang = Math.max(
+      0,
+      (viewport.clientWidth / scale - stage.offsetWidth) / 2,
+    );
     return stage.offsetWidth / 2 + overhang + 8;
   };
 
@@ -510,9 +549,11 @@ export function alonePanels(el: HTMLElement) {
   for (const panel of panels) fullHeight.set(panel, panel.offsetHeight);
   /* Captured before anything overwrites it, so re-measuring cannot read back a
      height this timeline itself set. */
-  const grown = (panel: HTMLElement) => fullHeight.get(panel) ?? panel.offsetHeight;
+  const grown = (panel: HTMLElement) =>
+    fullHeight.get(panel) ?? panel.offsetHeight;
   const shortHeight = (panel: HTMLElement) =>
-    panel.querySelector<HTMLElement>("[data-reveal='bar']")?.offsetTop ?? grown(panel);
+    panel.querySelector<HTMLElement>("[data-reveal='bar']")?.offsetTop ??
+    grown(panel);
 
   gsap.set(bars, { opacity: 1 });
   gsap.set(panels, { height: (_i, panel: HTMLElement) => shortHeight(panel) });
@@ -521,7 +562,11 @@ export function alonePanels(el: HTMLElement) {
     .to(panels, { x: 0, ...MOTION.alone.cards })
     .to(vs, { opacity: 0.7, scale: 1, ...MOTION.alone.vs }, "-=0.5")
     /* Last, and only once both panels have landed. */
-    .to(panels, { height: (_i, panel: HTMLElement) => grown(panel), ...MOTION.alone.bar }, "-=0.15");
+    .to(
+      panels,
+      { height: (_i, panel: HTMLElement) => grown(panel), ...MOTION.alone.bar },
+      "-=0.15",
+    );
 
   /* `<` is the start of the growth above rather than its end: the figures count
      while the rails are coming out, not after they have arrived. */
@@ -571,8 +616,10 @@ export function approveDiagram(el: HTMLElement) {
     const scale = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
     return Math.max(0, (viewport.clientWidth / scale - stage.offsetWidth) / 2);
   };
-  const offLeft = (node: HTMLElement) => -(overhang() + node.offsetLeft + node.offsetWidth);
-  const offRight = (node: HTMLElement) => overhang() + stage.offsetWidth - node.offsetLeft;
+  const offLeft = (node: HTMLElement) =>
+    -(overhang() + node.offsetLeft + node.offsetWidth);
+  const offRight = (node: HTMLElement) =>
+    overhang() + stage.offsetWidth - node.offsetLeft;
   /*
    * Far enough down that the bar clears the stage floor, which .stage-viewport
    * clips — plus its own height again, because it carries an ambient glow well
@@ -582,25 +629,46 @@ export function approveDiagram(el: HTMLElement) {
   const below = (node: HTMLElement) =>
     stage.offsetHeight - node.offsetTop + node.offsetHeight;
 
-  gsap.set(request, { opacity: 1, x: (_i, node: HTMLElement) => offLeft(node) });
+  gsap.set(request, {
+    opacity: 1,
+    x: (_i, node: HTMLElement) => offLeft(node),
+  });
   gsap.set(votes, { opacity: 1, x: (_i, node: HTMLElement) => offRight(node) });
   gsap.set(ledger, { opacity: 1, y: (_i, node: HTMLElement) => below(node) });
   gsap.set(squad, { opacity: 1, scale: 0, y: MOTION.approve.pop.hop });
   gsap.set(halo, { opacity: 0 });
-  gsap.set(chips, { opacity: 0, scale: 0.7, y: 14, transformOrigin: "50% 100%" });
+  gsap.set(chips, {
+    opacity: 0,
+    scale: 0.7,
+    y: 14,
+    transformOrigin: "50% 100%",
+  });
 
   const tl = beat();
   const land = { duration: MOTION.approve.land, ease: MOTION.approve.slide };
   tl.to(request, { x: 0, ...land }, 0)
     .to(votes, { x: 0, ...land }, "<")
     .to(ledger, { y: 0, ...land }, "<")
-    .to(squad, { scale: 1, y: 0, duration: MOTION.approve.land, ease: MOTION.approve.pop.ease }, "<")
+    .to(
+      squad,
+      {
+        scale: 1,
+        y: 0,
+        duration: MOTION.approve.land,
+        ease: MOTION.approve.pop.ease,
+      },
+      "<",
+    )
     .to(halo, { opacity: 1, ...MOTION.approve.glow }, "<");
 
   trace(tl, el, "-=0.25");
 
   /* Picked up as the light reaches the far end, so the two read as one move. */
-  tl.to(chips, { opacity: 1, scale: 1, y: 0, ...MOTION.approve.chips }, "<+=0.8");
+  tl.to(
+    chips,
+    { opacity: 1, scale: 1, y: 0, ...MOTION.approve.chips },
+    "<+=0.8",
+  );
 
   return tl;
 }
@@ -639,7 +707,9 @@ export function worksCards(el: HTMLElement) {
  * — a loop nobody can see is just a ticker callback burning frames.
  */
 export function worksAmbient(el: HTMLElement) {
-  const rings = gsap.utils.toArray<HTMLElement>(el.querySelectorAll("[data-glow]"));
+  const rings = gsap.utils.toArray<HTMLElement>(
+    el.querySelectorAll("[data-glow]"),
+  );
   const tl = gsap.timeline({ paused: true, repeat: -1, yoyo: true });
 
   /*
@@ -757,7 +827,9 @@ export function intelHub(el: HTMLElement) {
  * and is already going by the time there is anything to see.
  */
 export function intelAmbient(el: HTMLElement) {
-  const glow = gsap.utils.toArray<HTMLElement>(el.querySelectorAll("[data-glow]"));
+  const glow = gsap.utils.toArray<HTMLElement>(
+    el.querySelectorAll("[data-glow]"),
+  );
   const tl = gsap.timeline({ paused: true, repeat: -1, yoyo: true });
 
   tl.to(glow, {
@@ -801,7 +873,11 @@ export function inviteCard(el: HTMLElement) {
 
   return beat()
     .to(card, { opacity: 1, y: 0, scale: 1, ...MOTION.invite.card }, 0)
-    .to(items, { opacity: 1, y: 0, scale: 1, ...MOTION.invite.items }, "-=0.35");
+    .to(
+      items,
+      { opacity: 1, y: 0, scale: 1, ...MOTION.invite.items },
+      "-=0.35",
+    );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -820,7 +896,11 @@ export function inviteCard(el: HTMLElement) {
 
 export function earlyCard(el: HTMLElement) {
   const card = q(el, "card");
-  gsap.set(card, { opacity: 1, y: MOTION.early.rise, rotationZ: MOTION.early.turn });
+  gsap.set(card, {
+    opacity: 1,
+    y: MOTION.early.rise,
+    rotationZ: MOTION.early.turn,
+  });
   return beat().to(card, { y: 0, rotationZ: 0, ...MOTION.early.card });
 }
 
@@ -829,7 +909,12 @@ export function earlyForm(el: HTMLElement) {
   const fields = q(el, "field");
   const cta = q(el, "cta");
 
-  gsap.set(copy, { opacity: 0, scale: 0, y: MOTION.copy.rise, transformOrigin: "50% 100%" });
+  gsap.set(copy, {
+    opacity: 0,
+    scale: 0,
+    y: MOTION.copy.rise,
+    transformOrigin: "50% 100%",
+  });
   gsap.set(fields, { opacity: 0, y: MOTION.early.fieldRise });
   gsap.set(cta, {
     opacity: 0,
@@ -839,7 +924,14 @@ export function earlyForm(el: HTMLElement) {
   });
 
   return beat()
-    .to(copy, { opacity: 1, scale: 1, y: 0, duration: MOTION.copy.duration, ease: MOTION.copy.ease, stagger: MOTION.copy.stagger })
+    .to(copy, {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      duration: MOTION.copy.duration,
+      ease: MOTION.copy.ease,
+      stagger: MOTION.copy.stagger,
+    })
     .to(fields, { opacity: 1, y: 0, ...MOTION.early.fields }, "-=0.3")
     .to(cta, { opacity: 1, rotationX: 0, ...MOTION.early.cta }, "-=0.35");
 }

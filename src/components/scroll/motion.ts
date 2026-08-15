@@ -43,7 +43,7 @@ export const MOTION = {
    * Every beat's timeScale. The numbers below are written as the proportions
    * they were tuned at; this is what turns them into a pace.
    */
-  pace: 1,
+  pace: 1.75,
 
   /*
    * Where every section fires: one entry per section, in the order they happen
