@@ -4,38 +4,42 @@ import { useRef, type ReactNode } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { MOTION, ON_LOAD } from "./motion";
+import { setDeckAt, setDeckNavigator } from "./deck";
+import { MOTION } from "./motion";
 import { SECTIONS } from "./sections";
 import { navbarDrop } from "./timelines";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /*
- * Scroll decides when a section plays, and nothing else.
+ * The page as a deck.
  *
- * The page scrolls the way any page does — the wheel moves it, the scrollbar
- * means what it says, and nothing is ever pinned, held or scrolled for you.
- * What the sequence adds is timing: a section waits until it is in front of the
- * reader, then plays at its own speed, to the end, once.
+ * The sections are stacked in one windowful — see .scene in globals.css — and
+ * only one of them is showing. A scroll gesture does not move the page: it
+ * hands the window to the next section, which fades in over the last and plays
+ * its own entrance at its own speed. One gesture, one section, forwards or
+ * back.
  *
- * One trigger per section. That is only honest because a section is exactly one
- * screen tall (see .screen in globals.css) — the heading and the diagram under
- * it are on screen at the same moment, so one arrival can speak for both. Each
- * section used to carry a trigger per beat, and an anchor in the markup for
- * each of those, because a section could be twice the height of the window and
- * a single trigger would play its lower half below the fold.
+ * So there is nothing to scroll through and nothing to land halfway into. The
+ * distance between two sections is a crossfade rather than a gap, which is what
+ * makes the page read as one thing changing rather than seven going past.
  *
- * The beats inside a section still play in order. They queue behind each other
- * off the one trigger, which is what `free` below is for.
- *
- * The hero is the exception, because it is on screen before there is any
- * scrolling to respond to: it fires off the page load (start: ON_LOAD).
- *
- * Once is the whole contract. Nothing rewinds on the way back up: scrolling
- * away from something you have already watched arrive and watching it leave
- * again backwards is a second animation nobody asked for, and it makes the page
- * feel like it is resisting the scroll rather than responding to it.
+ * The deck holds a gesture only while it has somewhere to go. Past the last
+ * section a wheel event is left completely alone and the page scrolls into the
+ * footer the way any page would; coming back up, the deck takes over again the
+ * moment the document is back at the top. That handover is the whole of the
+ * page's relationship with real scrolling.
  */
+
+/** Keys that mean "next" and "previous" to a page. */
+const FORWARD = ["ArrowDown", "PageDown", " ", "Spacebar"];
+const BACK = ["ArrowUp", "PageUp"];
+
+/** Somewhere a key press means something else — the Early Access form. */
+const typing = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"].includes(target.tagName));
 
 export default function ScrollSequence({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
@@ -45,13 +49,10 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
       const mm = gsap.matchMedia();
 
       /*
-       * Below the breakpoint, and for anyone who asked for reduced motion, the
-       * page is ordinary: no triggers, no timelines, nothing hidden. The CSS
-       * start state is behind the same query, so the server-rendered markup is
-       * already correct and there is nothing to undo. It is also the breakpoint
-       * the one-screen layout starts at, which is not a coincidence — a section
-       * that is allowed to be taller than the window is a section whose lower
-       * half would animate out of sight.
+       * Below the gate, and for anyone who asked for reduced motion, there is no
+       * deck: no stacking, no crossfades, no gestures taken. The sections are an
+       * ordinary column and the CSS start state is behind the same query, so the
+       * server-rendered markup is already correct and there is nothing to undo.
        */
       mm.add(`not all and ${MOTION.enabled}`, () => {});
 
@@ -59,263 +60,298 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         const find = (id: string) =>
           document.querySelector<HTMLElement>(`[data-sequence-section='${id}']`);
 
-        /* --- navbar ----------------------------------------------------- */
-
+        /* The navbar is not in the deck. It sits above it and stays there, which
+           is why the deck is a window less its height. */
         const navEl = find("navbar");
-        const navDone = navEl
-          ? (navbarDrop(navEl).timeScale(MOTION.pace).play().duration() /
-              MOTION.pace) *
-            1000
-          : 0;
+        if (navEl) navbarDrop(navEl).timeScale(MOTION.pace).play();
 
-        /* --- sections --------------------------------------------------- */
+        /* --- the cards -------------------------------------------------- */
 
-        for (const spec of SECTIONS) {
+        const cards = SECTIONS.map((spec) => {
           const el = find(spec.id);
           if (!el) {
             console.warn(`[ScrollSequence] no element for section "${spec.id}"`);
-            continue;
+            return null;
           }
 
           /*
-           * When the section's last beat will have finished, as a timestamp.
-           *
-           * Every beat in a section now goes off on the same frame, so this is
-           * the only thing putting them in order: each one asks how long is
-           * left of the queue, adds its own delay to that, and books the slot
-           * after itself. A negative delay eats into the beat above it, which
-           * is how two beats overlap without either naming the other.
-           *
-           * The hero's opening navbar is in front of all of it, which is why
-           * the clock starts there rather than at now.
+           * The section's beats, in order, in one paused timeline — the same
+           * factories and the same delays as ever, a negative one still
+           * overlapping the beat above it. It is restarted every time the
+           * section is handed the window, so arriving looks the same on the way
+           * back up as it did the first time.
            */
-          let free = performance.now() + navDone;
+          const beats = gsap.timeline({ paused: true });
+          let cursor = 0;
+          for (const b of spec.beats) {
+            const child = b.play(el);
+            /* A child has to be running for its parent to render it; these come
+               back paused because they used to be played one at a time. */
+            child.paused(false);
+            const at = Math.max(0, cursor + (b.delay ?? 0));
+            beats.add(child, at);
+            cursor = at + child.duration();
+          }
+          beats.timeScale(MOTION.pace);
 
-          /* Kept so the ambient below can wait for the section to finish
-             arriving before it starts. */
-          const played: gsap.core.Timeline[] = [];
-
-          const queue = spec.beats.map((b) => {
-            const tl = b.play(el).timeScale(MOTION.pace);
-            played.push(tl);
-
-            return () => {
-              const now = performance.now();
-              const wait = Math.max(0, (free - now) / 1000) + (b.delay ?? 0);
-              free = now + (wait + tl.duration() / MOTION.pace) * 1000;
-              /*
-               * delayedCall rather than tl.delay(). A timeline's own delay is
-               * spent as its parent plays it in; calling play() on a paused
-               * root timeline starts it from the playhead and the delay is
-               * simply never applied — the beats all fired at once.
-               *
-               * `> 0` rather than truthy: a beat with a negative delay at the
-               * head of an empty queue works out to a negative wait, which is
-               * not something to hand to a timer.
-               */
-              if (wait > 0) gsap.delayedCall(wait, () => tl.play());
-              else tl.play();
-            };
-          });
-
-          const arrive = () => queue.forEach((fire) => fire());
-
-          /* The section already on screen has no arrival to wait for — the
-             reader is looking at it — so it goes off with the page instead. */
-          if (spec.start === ON_LOAD) arrive();
-          else
-            ScrollTrigger.create({
-              trigger: el,
-              start: spec.start,
-              /*
-               * `once` rather than a toggle: the trigger kills itself after
-               * firing, so there is nothing left to run backwards, and nothing
-               * left measuring on every scroll for the rest of the page's life.
-               */
-              once: true,
-              onEnter: arrive,
-            });
-
-          /*
-           * Motion that runs on its own clock, held back by two conditions.
-           *
-           * On screen, because a loop nobody is looking at is a ticker callback
-           * burning frames for the life of the page. And arrived — the section's
-           * last beat has played out — because ambient motion is what a thing
-           * does once it is there. The connector lights are the case that makes
-           * this necessary rather than tidy: the visibility trigger fires as the
-           * section's top crosses the bottom of the window, seconds before the
-           * diagram animates, and a light started then would be running down a
-           * line that has not been drawn yet, with the wipe uncovering it
-           * already halfway along.
-           */
+          /* Motion that never finishes — the connector lights, the engine's
+             bloom. It waits for the section to finish arriving, and the deck
+             drops it the moment the section is handed on. */
           const loops = [spec.ambient ?? []].flat().map((make) => make(el));
-          if (loops.length) {
-            let onScreen = false;
-            let arrived = false;
-            const sync = () =>
-              loops.forEach((loop) => (onScreen && arrived ? loop.play() : loop.pause()));
+          if (loops.length)
+            beats.eventCallback("onComplete", () =>
+              loops.forEach((loop) => loop.play()),
+            );
 
-            ScrollTrigger.create({
-              trigger: el,
-              start: "top bottom",
-              end: "bottom top",
-              onToggle: (self) => {
-                onScreen = self.isActive;
-                sync();
-              },
-            });
+          return { el, beats, loops };
+        }).filter((c): c is NonNullable<typeof c> => !!c);
 
-            /* Beats are declared in the order they play, so the last one
-               finishing is the section finishing. A section with an ambient and
-               no beats has nothing to wait for. */
-            const last = played[played.length - 1];
-            if (last)
-              last.eventCallback("onComplete", () => {
-                arrived = true;
-                sync();
-              });
-            else {
-              arrived = true;
-              sync();
-            }
-          }
-        }
+        if (!cards.length) return;
 
-        /* --- settling --------------------------------------------------- */
+        /* --- state ------------------------------------------------------ */
 
-        /*
-         * The page coming to rest on a section rather than between two.
+        let index = 0;
+        /** A crossfade is running, so the deck is not listening. */
+        let busy = false;
+        /**
+         * Who this gesture belongs to, decided on its first event and held for
+         * the rest of it.
          *
-         * Every section is exactly one screen, so there is a right answer for
-         * where a scroll should stop — and without this it mostly stops
-         * somewhere else. Measured at 1440x900: an ordinary flick came to rest
-         * up to 360px off a section boundary, which is 40% of the window given
-         * over to the section you were leaving.
-         *
-         * This is a settle, not a hijack. It never moves the page while the
-         * reader is scrolling, only once they have stopped; it never carries
-         * them past what they asked for, only the rest of the way to the
-         * nearest section; and a new scroll interrupts it. Everything below the
-         * last section is left alone entirely — see snapTo.
+         * A gesture is dozens of events and the answer can change underneath it
+         * — the deck runs out of cards halfway through a flick, or the page
+         * reaches the top of the document halfway through one. Deciding per
+         * event meant a single flick stepping onto the last card and then
+         * scrolling on into the footer with the same push, and a single flick
+         * back up scrolling to the top and then stepping back a card. One
+         * gesture now does one of the two things.
          */
-        const stops = () => {
-          const found: number[] = [];
-          for (const spec of SECTIONS) {
-            const el = find(spec.id);
-            if (!el) continue;
-            found.push(Math.round(el.getBoundingClientRect().top + window.scrollY));
-          }
-          if (!found.length) return found;
+        let owner: "deck" | "page" | null = null;
+        /** The one step this gesture is allowed. */
+        let stepped = false;
+        let quiet = 0;
+        /**
+         * Whether the reader has been let out of the deck, downwards.
+         *
+         * The document is taller than the deck — the footer is under it — so it
+         * CAN be scrolled at any time, and a handful of things scroll it that
+         * this file never hears about: a wheel event that arrives in the moment
+         * between the page painting and this controller being hydrated, a
+         * browser restoring the scroll position of a reload, a scrollbar
+         * dragged, an element being focused into view. Every one of them lands
+         * the reader in the footer from the hero with the deck untouched behind
+         * it, which is exactly the "scroll down from the hero and get the
+         * footer" this is here to stop.
+         *
+         * So the deck holds the document at the top until it has actually been
+         * scrolled through, or until the rail is asked for the footer directly.
+         */
+        let released = false;
 
-          /* The hero's rest position is the top of the page, not the top of the
-             hero: the navbar sits above it and is part of it, and the two
-             together are one screen. */
-          if (navEl) found[0] = Math.max(0, found[0] - navEl.offsetHeight);
-
-          /* The end of the last section, which is where the footer starts. It
-             is a rest position like any other; past it, nothing is. */
-          const last = find(SECTIONS[SECTIONS.length - 1].id);
-          if (last)
-            found.push(Math.round(last.getBoundingClientRect().bottom + window.scrollY));
-
-          /*
-           * Held to somewhere the page can actually go. On a window taller than
-           * the footer the footer's top is past the end of the document, so it
-           * is a rest position nobody can reach — and an unreachable last stop
-           * takes the "past the end, nothing pulls" rule with it, leaving the
-           * whole footer being dragged back to the section above it. Clamped,
-           * the last stop becomes the bottom of the page, which on a window
-           * that tall shows the footer whole anyway.
-           */
-          const max = ScrollTrigger.maxScroll(window);
-          return found.map((stop) => Math.min(stop, max));
+        /** The gesture is over once the events stop coming. */
+        const endGesture = () => {
+          window.clearTimeout(quiet);
+          quiet = window.setTimeout(() => {
+            owner = null;
+            stepped = false;
+          }, MOTION.deck.idle * 1000);
         };
 
-        /* Where the page last came to rest. "The next section" is measured from
-           here rather than from wherever the gesture happened to end, which is
-           what makes a short scroll and a long one both go forwards. */
-        let settled: number | null = null;
-
-        const nearest = (rest: number[], y: number) =>
-          rest.reduce((best, stop) =>
-            Math.abs(stop - y) < Math.abs(best - y) ? stop : best,
-          );
-
-        ScrollTrigger.create({
-          start: 0,
-          end: () => ScrollTrigger.maxScroll(window),
-          snap: {
-            snapTo: (progress) => {
-              const max = ScrollTrigger.maxScroll(window);
-              if (!max) return progress;
-
-              const y = progress * max;
-              const rest = stops();
-              if (!rest.length) return progress;
-
-              /*
-               * Nothing pulls once the last section is behind you. The footer
-               * is 1878px of links and legal text — it is not a screen, it is a
-               * footer, and it has to scroll like one.
-               *
-               * This is the whole reason the rule is "past the end" rather than
-               * "further than half a screen from any section": with a distance
-               * cut-off the footer's own top stays in range for 495px, so every
-               * wheel gesture inside it was dragged straight back to the top of
-               * it and the footer could not be read at all.
-               */
-              if (y >= rest[rest.length - 1]) {
-                settled = null;
-                return progress;
-              }
-
-              /* Nothing to measure a direction from: the first settle of the
-                 page, a reload part way down, a followed anchor. */
-              if (settled === null || !rest.includes(settled)) {
-                settled = nearest(rest, y);
-                return settled / max;
-              }
-
-              /* Too small to be a request. Without this a trackpad under a
-                 resting hand is a section. */
-              const moved = y - settled;
-              if (Math.abs(moved) < window.innerHeight * MOTION.settle.deadzone)
-                return settled / max;
-
-              /*
-               * Everything ahead of where they were, in the direction they went
-               * — and of that, as far as they actually got, but never less than
-               * one section. So a wheel notch is one section, a hard throw is
-               * however many it carried, and neither is ever answered by going
-               * back to where it started.
-               */
-              const from = settled;
-              const ahead =
-                moved > 0
-                  ? rest.filter((stop) => stop > from)
-                  : rest.filter((stop) => stop < from).reverse();
-              if (!ahead.length) return settled / max;
-
-              const passed = ahead.filter((stop) =>
-                moved > 0 ? stop <= y : stop >= y,
-              );
-              settled = passed.length ? passed[passed.length - 1] : ahead[0];
-              return settled / max;
-            },
-            duration: MOTION.settle.duration,
-            delay: MOTION.settle.delay,
-            ease: MOTION.settle.ease,
-          },
+        /* The page opens on the first card, already showing, playing. */
+        cards.forEach((card, i) => {
+          if (i) gsap.set(card.el, { autoAlpha: 0 });
         });
+        cards[0].beats.restart();
+
+        /**
+         * Hand the window to a particular card.
+         *
+         * The two halves are one movement: the card arriving fades up over the
+         * card leaving rather than after it, so there is never a frame with
+         * nothing on screen — and its entrance starts underneath the crossfade,
+         * so by the time it is fully there it is already assembling itself.
+         *
+         * Every other card is faded out, not just the one that was showing.
+         * A gesture only ever moves by one, but the navigation rail can jump
+         * across the deck, and it can be clicked again while a crossfade from
+         * the last click is still running — so at that moment there are two
+         * cards on their way out and only naming one of them leaves the other
+         * stranded at full opacity on top of everything.
+         */
+        const footerEl = document.querySelector("footer");
+
+        const show = (next: number) => {
+          /* Past the last card is the footer, which is not a card — it is the
+             page underneath the deck. Let go of the top and take them down. */
+          if (next >= cards.length) {
+            released = true;
+            setDeckAt(index, true);
+            footerEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+          }
+
+          if (next === index || next < 0) {
+            /* Asked for the card already showing, from down in the footer:
+               nothing to crossfade, but they still want to be back at it. */
+            if (next === index && window.scrollY > 0) {
+              released = false;
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              setDeckAt(index, false);
+            }
+            return;
+          }
+
+          released = false;
+          const to = cards[next];
+          index = next;
+          busy = true;
+
+          cards.forEach((card, i) => {
+            if (i === next) return;
+            card.loops.forEach((loop) => loop.pause());
+            gsap.to(card.el, {
+              autoAlpha: 0,
+              duration: MOTION.deck.fade,
+              ease: MOTION.deck.ease,
+            });
+          });
+
+          gsap.fromTo(
+            to.el,
+            { autoAlpha: 0 },
+            {
+              autoAlpha: 1,
+              duration: MOTION.deck.fade,
+              ease: MOTION.deck.ease,
+              onComplete: () => {
+                busy = false;
+              },
+            },
+          );
+          to.beats.restart();
+          setDeckAt(next, false);
+          if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+
+        const go = (dir: 1 | -1) => show(index + dir);
+
+        /* The rail can now ask for a card by name. Withdrawn on teardown, which
+           is what puts it back to plain scrolling below the gate. */
+        setDeckNavigator(show);
+
+        /**
+         * Whether the deck wants this gesture, or the page should have it.
+         *
+         * Only ever at the very top of the document: below that the reader is in
+         * the footer and the page is an ordinary page. Forward past the last
+         * card is the handover — the event is left alone and the document
+         * scrolls, which is how the footer is reached at all.
+         */
+        const wanted = (dir: 1 | -1) =>
+          window.scrollY <= 0 &&
+          (dir > 0 ? index < cards.length - 1 : index > 0);
 
         /*
-         * Images settle after first paint and change every section's height, so
-         * the trigger points measured at mount are wrong until they land.
+         * The document held at the top for as long as the deck has not been
+         * scrolled through.
+         *
+         * This is the backstop for everything that moves the page without going
+         * through the handlers below — see `released`. It runs once at setup
+         * too, which is what catches the two cases nothing else can: a wheel
+         * event during hydration, and a browser restoring the scroll position
+         * of a reload.
          */
-        const onLoad = () => ScrollTrigger.refresh();
-        window.addEventListener("load", onLoad);
-        return () => window.removeEventListener("load", onLoad);
+        const onScroll = () => {
+          if (!released) {
+            if (window.scrollY > 0) window.scrollTo(0, 0);
+            return;
+          }
+          setDeckAt(index, window.scrollY > 0);
+        };
+
+        /* --- gestures --------------------------------------------------- */
+
+        const onWheel = (e: WheelEvent) => {
+          const dir = e.deltaY > 0 ? 1 : -1;
+          if (owner === null) {
+            owner = wanted(dir) ? "deck" : "page";
+            /* Declining a forward gesture at the last card IS the handover:
+               this is the reader asking to leave, and the only thing that opens
+               the document up. */
+            if (owner === "page" && dir > 0 && window.scrollY <= 0)
+              released = index >= cards.length - 1;
+          }
+          /*
+           * Every event pushes the end of the gesture back, so it is only over
+           * once the wheel has actually stopped. This is the whole of "one
+           * gesture, one section": a trackpad flick is dozens of events and its
+           * momentum keeps sending them long after the fingers have lifted, and
+           * without this the deck would run end to end on a single push.
+           */
+          endGesture();
+          if (owner === "page") return;
+
+          e.preventDefault();
+          if (stepped || busy) return;
+          if (Math.abs(e.deltaY) < MOTION.deck.threshold) return;
+          stepped = true;
+          go(dir);
+        };
+
+        let touch = 0;
+        const onTouchStart = (e: TouchEvent) => {
+          touch = e.touches[0]?.clientY ?? 0;
+          owner = null;
+          stepped = false;
+        };
+        const onTouchMove = (e: TouchEvent) => {
+          const travel = touch - (e.touches[0]?.clientY ?? touch);
+          const dir = travel > 0 ? 1 : -1;
+          if (owner === null) {
+            owner = wanted(dir) ? "deck" : "page";
+            if (owner === "page" && dir > 0 && window.scrollY <= 0)
+              released = index >= cards.length - 1;
+          }
+          endGesture();
+          if (owner === "page") return;
+
+          e.preventDefault();
+          if (stepped || busy) return;
+          if (Math.abs(travel) < MOTION.deck.swipe) return;
+          stepped = true;
+          go(dir);
+        };
+
+        const onKey = (e: KeyboardEvent) => {
+          if (typing(e.target)) return;
+          const forward = FORWARD.includes(e.key);
+          if (!forward && !BACK.includes(e.key)) return;
+          const dir = forward ? 1 : -1;
+          if (!wanted(dir)) {
+            if (dir > 0 && window.scrollY <= 0 && index >= cards.length - 1)
+              released = true;
+            return;
+          }
+          e.preventDefault();
+          if (busy) return;
+          go(dir);
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+        window.addEventListener("wheel", onWheel, { passive: false });
+        window.addEventListener("touchstart", onTouchStart, { passive: true });
+        window.addEventListener("touchmove", onTouchMove, { passive: false });
+        window.addEventListener("keydown", onKey);
+
+        return () => {
+          setDeckNavigator(null);
+          window.clearTimeout(quiet);
+          window.removeEventListener("scroll", onScroll);
+          window.removeEventListener("wheel", onWheel);
+          window.removeEventListener("touchstart", onTouchStart);
+          window.removeEventListener("touchmove", onTouchMove);
+          window.removeEventListener("keydown", onKey);
+        };
       });
     },
     { scope: root },
@@ -325,8 +361,15 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
     <div ref={root} className="contents">
       {children}
       <noscript>
-        {/* Without JS nothing ever plays, so undo the CSS start state. */}
-        <style dangerouslySetInnerHTML={{ __html: "[data-reveal]{opacity:1}" }} />
+        {/* Without JS nothing ever plays and no gesture is ever taken, so undo
+            the CSS start state — the elements inside a section, and the six
+            sections stacked behind the first. */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              "[data-reveal]{opacity:1}.scene>.screen{opacity:1;visibility:visible;position:static}.scene{height:auto}.scene-track{height:auto}",
+          }}
+        />
       </noscript>
     </div>
   );

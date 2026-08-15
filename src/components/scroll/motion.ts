@@ -11,17 +11,6 @@
  * Distances are px, angles degrees.
  */
 
-/**
- * A section that plays as soon as the page is ready rather than when it is
- * scrolled to — written in `trigger` below wherever a ScrollTrigger start
- * position would otherwise go.
- *
- * Only the hero uses it, and only because it is the part of the page that is
- * already there before there is any scrolling to respond to. Everything further
- * down waits to be arrived at, which is the whole point of the system.
- */
-export const ON_LOAD = "load";
-
 export const MOTION = {
   /*
    * The gate for the entire system. Below this the page renders static and no
@@ -43,119 +32,69 @@ export const MOTION = {
    * Every beat's timeScale. The numbers below are written as the proportions
    * they were tuned at; this is what turns them into a pace.
    */
-  pace: 1.75,
+  pace: 1.8,
 
-  /*
-   * Where every section fires: one entry per section, in the order they happen
-   * down the page.
-   *
-   * One trigger per section, not one per beat. A section is exactly one screen
-   * tall (see .screen in globals.css), so its heading and its diagram are in
-   * front of the reader at the same moment — and splitting a section into
-   * separately-triggered arrivals was answering a problem the layout no longer
-   * has. The beats inside a section still play in order; they queue behind each
-   * other off this single trigger, which is the controller's job.
-   *
-   * Nothing here is shared or derived. Each key is a section id, sections.ts
-   * reads its start from that key by name, and changing one line moves exactly
-   * one section and nothing else. The duplication is the point — a value
-   * repeated six times is six values that happen to agree, not one value six
-   * sections are stuck with.
-   *
-   * The syntax is ScrollTrigger's, "<point on the section> <point in the
-   * window>": "top 40%" fires once the section's top edge has climbed to 40% of
-   * the way down the window — which, the section being a screen tall, is with
-   * about 60% of it showing. A LOWER percentage fires LATER, because the
-   * section has to travel further up the screen to get there.
-   *
-   * 40 rather than something later because arriving is not instant: the funnel
-   * takes about four seconds to fill, so a trigger that waited for the section
-   * to fill the window would spend most of that time behind a reader who has
-   * already moved on. Started a little over halfway in, it lands as they do.
-   */
-  trigger: {
-    /**
-     * The one section that does not wait for a scroll that has not happened
-     * yet: it is the page opening. Its beats fire off the load and queue in
-     * reading order — the navbar drops, the copy comes up under it
-     * (hero.afterNav), and the card scene follows the copy (hero.afterCopy).
-     */
-    hero: ON_LOAD,
-
-    alone: "top 40%",
-
-    approve: "top 40%",
-
-    works: "top 40%",
-
-    intelligence: "top 40%",
-
-    invitation: "top 40%",
-
-    early: "top 40%",
-  },
-
-  /* --- settling --------------------------------------------------------- */
+  /* --- the deck --------------------------------------------------------- */
 
   /**
-   * How the page comes to rest on a section instead of between two.
+   * The sections as a deck rather than a column: one gesture forward, one
+   * section. Scroll does not move the page at all while the deck has somewhere
+   * to go — it hands over to the next section, which fades in over the last and
+   * plays its own entrance.
    *
-   * Done here rather than with CSS scroll snapping, and measured rather than
-   * assumed. `scroll-snap-type: mandatory` lands every position exactly, but it
-   * decides on each gesture in isolation, by whichever position is nearest: a
-   * single 400px wheel detent ends closer to where it started than to the next
-   * section, so it is snapped straight back and the page does not move at all.
-   * Five detents 30ms apart are five gestures, so they do not move it either.
-   * Only one continuous sweep of most of a screen gets anywhere. `proximity`
-   * keeps the wheel working and gives up on the problem, coming to rest
-   * 300-380px into a section about half the time.
+   * Not scrubbed. Tying the animation to the scroll position means the reader is
+   * still doing the scrolling, one notch at a time, for as long as the animation
+   * lasts; a gesture that means "next" should mean it once.
    *
-   * Nearest is the wrong rule here whoever implements it, which is the other
-   * half of why this is not CSS: it puts the decision at the halfway mark, so
-   * half of every gesture a reader makes is answered by putting them back where
-   * they started. Going where they were headed is `deadzone` below.
-   *
-   * Waiting for the scrolling to stop is what fixes it: detents accumulate into
-   * one distance first, and only then does the page settle. It also settles
-   * over a duration with an ease, where the browser's own snap is a cut.
-   *
-   * Not scaled by `pace`. This is not a beat — it is the page arriving where
-   * the reader was already going, and it should take the same time whatever
-   * speed the animations are running at.
+   * Below the deck's last section the page is ordinary again and the footer
+   * scrolls the way a footer does. That handover is the only place a wheel event
+   * inside the deck is left alone.
    */
-  settle: {
+  deck: {
+    /** The crossfade between the section going out and the one coming in. */
+    fade: 0.55,
+    ease: "power2.inOut",
     /**
-     * Quiet time after the last scroll event before the page settles.
-     *
-     * The whole mechanism rests on this. Too short and a slow wheel is judged
-     * one detent at a time, which is CSS mandatory snapping again; too long and
-     * the page moves after the reader has decided they have stopped.
+     * The smallest wheel movement that counts as meaning something. Below it a
+     * resting hand on a trackpad is a section.
      */
-    delay: 0.12,
+    threshold: 12,
+    /** And on a touch screen, in px of travel. */
+    swipe: 40,
     /**
-     * How far the page has to move before it counts as going somewhere, as a
-     * fraction of the window.
+     * Quiet time after the last wheel event before another gesture is taken.
      *
-     * The settle is DIRECTIONAL: a scroll down goes to the top of the next
-     * section, however short it was, and a scroll up goes back to the top of
-     * the previous one. That is what makes the page navigable a section at a
-     * time — one notch of a wheel, one section — where snapping to whichever
-     * section is nearest put the decision at the halfway mark and sent
-     * everything short of half a screen straight back where it came from.
-     *
-     * Which leaves the opposite failure to guard: with any movement at all
-     * counting, a trackpad brushed by a resting hand is a full screen. This is
-     * the width of that guard, and the only thing between here and a page that
-     * jumps when nobody asked it to.
+     * This is what makes one flick one section. A trackpad sends dozens of
+     * events per gesture and keeps sending them as the momentum decays, so
+     * without it a single flick would run the length of the deck. Every event
+     * pushes this back; the deck only listens again once they stop.
      */
-    deadzone: 0.06,
-    /**
-     * How long the slide takes, floor and ceiling. Scaled between them by the
-     * distance left to travel, so nudging back 40px does not take as long as
-     * carrying most of a screen.
-     */
-    duration: { min: 0.18, max: 0.5 },
-    ease: "power2.out",
+    idle: 0.18,
+  },
+
+  /* --- the navigation rail ---------------------------------------------- */
+
+  /**
+   * The lit marker on the rail of dots, travelling from the section you were on
+   * to the section you asked for.
+   *
+   * One light that moves rather than two that swap: a dot going out while
+   * another comes on is two events, and the reader has to work out that they
+   * were the same one. Something that travels the distance says it for them,
+   * and on a rail seven dots long the distance is the only thing that tells you
+   * how far you just went.
+   *
+   * The squash is what stops it reading as a sprite being repositioned. It
+   * stretches along the direction of travel as it leaves and rounds out as it
+   * lands — the oldest trick there is, and the reason this feels like a bead of
+   * light rather than a div with a new `top`.
+   */
+  rail: {
+    travel: { duration: 0.55, ease: "power3.inOut" },
+    /** Thrown forward: taller than it is wide, for the length of the trip. */
+    squash: { scaleY: 1.9, scaleX: 0.68, duration: 0.2, ease: "power2.out" },
+    /** And rounding out at the far end, overshooting just enough to land. */
+    settle: { duration: 0.5, ease: "elastic.out(1, 0.55)" },
   },
 
   /* --- navbar ----------------------------------------------------------- */
@@ -295,7 +234,7 @@ export const MOTION = {
     glow: { duration: 1.1, ease: "power1.out" },
 
     /** The ledger counts itself in, one member at a time. */
-    chips: { duration: 1, stagger: 0.3, ease: "back.out(2)" },
+    chips: { duration: 0.8, stagger: 0.3, ease: "back.out(2)" },
   },
 
   /* --- connectors ------------------------------------------------------- */
@@ -310,8 +249,8 @@ export const MOTION = {
    * a glow that stops dead at the far end just becomes a parked highlight.
    */
   trace: {
-    lines: { duration: 1.5, ease: "none" },
-    spark: { duration: 1.15, ease: "none" },
+    lines: { duration: 1, ease: "none" },
+    spark: { duration: 1, ease: "none" },
     /** Between one run and the next where a diagram has several in series. */
     stagger: 0.25,
     /**
@@ -323,7 +262,7 @@ export const MOTION = {
      * short enough and three diagrams pulsing away turn into the thing the eye
      * keeps going back to instead of the content they wire together.
      */
-    gap: 6,
+    gap: 4,
     /** Endpoint dots and flow ticks: the things a drawn line arrives at. */
     node: { duration: 0.5, ease: "power2.out" },
   },
@@ -366,7 +305,7 @@ export const MOTION = {
    */
   intel: {
     rise: 72,
-    members: { duration: 1.5, stagger: 0.1, ease: "power3.out" },
+    members: { duration: 1, stagger: 0.1, ease: "power3.out" },
 
     /**
      * What is *on* each score card: the number counts up while the meter under
@@ -394,7 +333,7 @@ export const MOTION = {
        */
       after: 0.3,
     },
-    signals: { duration: 1.5, ease: "power3.out" },
+    signals: { duration: 1, ease: "power3.out" },
 
     /**
      * The four category cards, which fill the signal container rather than

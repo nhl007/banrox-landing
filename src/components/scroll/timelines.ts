@@ -2,18 +2,24 @@ import gsap from "gsap";
 import { MOTION } from "./motion";
 
 /*
- * One factory per beat. Each returns a single PAUSED timeline that the
- * controller plays once, when the thing it belongs to comes into view.
+ * One factory per beat. Each returns a single PAUSED timeline, which the
+ * controller nests into its section's timeline and drives from the scroll.
  *
  * Sections are split into beats rather than given one timeline each because a
- * section is taller than the window: a heading and the diagram under it are
- * never on screen at the same moment, so they cannot honestly share a trigger.
- * Each beat animates only what is in front of the reader when it fires, and
- * sections.ts is where a beat is married to the element that fires it.
+ * section arrives in an order — the heading, then the diagram, then whatever
+ * the diagram hands down — and beats are that order written out. sections.ts is
+ * where they are declared, with the delay that overlaps each one onto the last.
  *
- * Nothing here ever runs backwards. A beat plays forward, once, and that is the
- * whole life of it — so a factory is free to do things that could not be undone,
- * and free to measure the DOM at the moment it is built.
+ * These DO run backwards. The scene scrubs a section's beats against its window
+ * of scroll (see ScrollSequence), so scrolling up rewinds them — a figure counts
+ * back down, a connector un-draws itself. That was not always true: they used to
+ * play forward once and never again, and a factory was free to do things that
+ * could not be undone. Anything added here now has to survive being reversed,
+ * which in practice means tweening properties rather than performing actions.
+ *
+ * Measuring the DOM at build time is still fine, and still deliberate: the
+ * stages scale with the window, so distances are read through functions that
+ * re-measure rather than captured once.
  */
 
 const q = (root: HTMLElement, role: string) =>

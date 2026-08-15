@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { inter, interTight, ztFormom } from "./fonts";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import DeckNav from "@/components/scroll/DeckNav";
 import ScrollSequence from "@/components/scroll/ScrollSequence";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <NavBar />
           {children}
           <Footer />
+          <DeckNav />
         </ScrollSequence>
       </body>
     </html>

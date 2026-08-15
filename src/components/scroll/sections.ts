@@ -62,19 +62,27 @@ export type SectionSpec = {
   /** Matches data-sequence-section in the markup. */
   id: string;
   /**
-   * Where the whole section fires, as a ScrollTrigger start position — or
-   * ON_LOAD for the section already on screen when the page opens. Always read
-   * from MOTION.trigger rather than written here: that keeps every trigger
-   * point on the page in one ordered list, and makes it impossible to add a
-   * section without deciding where it goes off.
+   * What the section is called in the navigation rail, which is the only place
+   * a reader ever sees it. Kept here rather than in the rail so that adding a
+   * section is still one entry in one file.
    */
-  start: string;
+  label: string;
+  /**
+   * What moves this section's beats along.
+   *
+   * "scroll" is the scene: the section owns a window of the track and its
+   * animation is scrubbed across it, so the reader advances it themselves.
+   *
+   * "load" is for the one section that cannot be — the page opening. The hero
+   * is on screen before there is any scrolling to respond to, and scrubbing it
+   * would mean opening on an empty window until somebody moved the wheel. It
+   * plays on a clock instead, and only its dissolve belongs to the scroll.
+   */
+  plays?: "scroll" | "load";
   beats: Beat[];
   /** One, or several — they are independent and need not share a clock. */
   ambient?: Ambient | Ambient[];
 };
-
-const T = MOTION.trigger;
 
 export const SECTIONS: SectionSpec[] = [
   {
@@ -90,7 +98,8 @@ export const SECTIONS: SectionSpec[] = [
      * scrolled to.
      */
     id: "hero",
-    start: T.hero,
+    label: "Squad Card",
+    plays: "load",
     beats: [
       { play: heroCopy, delay: MOTION.hero.afterNav },
       { play: heroCards, delay: MOTION.hero.afterCopy },
@@ -98,18 +107,18 @@ export const SECTIONS: SectionSpec[] = [
   },
   {
     id: "alone",
-    start: T.alone,
+    label: "Alone Vs Together",
     beats: [{ play: copyIn }, { play: alonePanels, delay: -0.35 }],
   },
   {
     id: "approve",
-    start: T.approve,
+    label: "Squad Approves",
     beats: [{ play: copyIn }, { play: approveDiagram, delay: -0.35 }],
     ambient: traceLoop,
   },
   {
     id: "works",
-    start: T.works,
+    label: "How Squad Works",
     beats: [{ play: copyIn }, { play: worksCards, delay: -0.35 }],
     ambient: [worksAmbient, traceLoop],
   },
@@ -126,7 +135,7 @@ export const SECTIONS: SectionSpec[] = [
      * — and it lands in about four.
      */
     id: "intelligence",
-    start: T.intelligence,
+    label: "Intelligence Layer",
     beats: [
       { play: copyIn },
       { play: intelMembers, delay: -0.6 },
@@ -140,7 +149,7 @@ export const SECTIONS: SectionSpec[] = [
   },
   {
     id: "invitation",
-    start: T.invitation,
+    label: "Invite Your Squad",
     beats: [{ play: copyIn }, { play: inviteCard, delay: -0.35 }],
   },
   {
@@ -149,7 +158,7 @@ export const SECTIONS: SectionSpec[] = [
      * beats run the other way round — card first, words second.
      */
     id: "early",
-    start: T.early,
+    label: "Early Access",
     beats: [{ play: earlyCard }, { play: earlyForm, delay: -1.2 }],
   },
 ];

@@ -351,15 +351,100 @@ body {
   width: 100%;
 }
 
+/* ---------------------------------------------------------------------------
+ * The scene.
+ *
+ * Above the gate the sections stop being a column you scroll down and become
+ * states of one window: all seven stacked in the same box, one visible at a
+ * time, each dissolving into the next. Scroll is what advances them — see the
+ * controller — so the page reads as a single thing changing rather than as
+ * seven things going past.
+ *
+ * The track is the scroll that buys. It is the only element here with any real
+ * height: one window per section for their animations to play out over, plus
+ * one more so the last of them is still on screen when the scene lets go and
+ * the footer arrives. The scene sticks to the top of the window for all of it.
+ *
+ * Sticky rather than a pinned element. ScrollTrigger's pin works by wrapping
+ * the element and inserting a spacer of its own, which is a second opinion
+ * about the page's height alongside the track's — and the height is the one
+ * thing here that has to be simple, because every section's scroll range is
+ * measured off it. Sticky needs no spacer, no wrapper and no refresh.
+ */
+/*
+ * Off by default and switched on by the gate, rather than the other way round:
+ * a plain wrapper around a column of sections is what a phone gets, what a
+ * reduced-motion reader gets, and what anyone with no JavaScript gets, so it is
+ * what the stylesheet should say before it says anything else.
+ */
+.scene-track {
+  position: relative;
+}
+
+/*
+ * The scene is gated on prefers-reduced-motion as well as on size, and it is
+ * the ONLY layout here that is.
+ *
+ * Because the scene is not a layout that works on its own. Six of its seven
+ * sections are stacked underneath the first at opacity 0, and the only thing
+ * that will ever reveal them is the controller — so a window that takes this
+ * layout and does not run the controller shows the hero and nothing else, for
+ * the whole page. Measured: a reduced-motion desktop got exactly that.
+ *
+ * Sections being one window tall, below, is a different matter and stays on the
+ * size gate alone: it is a complete layout by itself, it just happens to be the
+ * one the scene is built out of.
+ */
+@media (min-width: 768px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+  /*
+   * The deck has no scroll of its own — that is the whole idea. It is exactly
+   * one windowful and never moves; a gesture changes which section is showing
+   * rather than where the page is.
+   *
+   * Less the navbar, because the navbar is above it and stays there. The deck
+   * is what is left of the window, so at the top of the document the bar and
+   * the whole of a section are on screen together and nothing is ever cropped
+   * or waiting to be scrolled to.
+   */
+  .scene-track {
+    height: calc(100svh - var(--nav-h));
+  }
+
+  .scene {
+    position: relative;
+    height: 100%;
+  }
+
+  /*
+   * Stacked, not queued. Every section is the same box — the whole window —
+   * and only their opacity says which one you are looking at.
+   */
+  .scene > .screen {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+
+  /*
+   * The state the page opens in, held in CSS because the markup is
+   * server-rendered and paints before the controller exists: the hero is the
+   * scene, and the other six are behind it waiting to be dissolved to.
+   *
+   * visibility as well as opacity, so the six that are not on screen are not
+   * catching clicks meant for the one that is. The controller animates
+   * autoAlpha, which is the same pair.
+   */
+  .scene > .screen:not(:first-child) {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Sections are one window tall wherever the window can hold one, scene or no
+   scene — see the note on the gate above. */
 @media (min-width: 768px) and (min-height: 480px) {
   .screen {
     height: 100svh;
-  }
-
-  /* The navbar sits on top of the hero and belongs to it, so the hero's screen
-     is what the window has left after it. */
-  .screen-hero {
-    height: calc(100svh - var(--nav-h));
   }
 }
 
@@ -698,5 +783,233 @@ body {
   }
   .footer-mark {
     animation: footer-mark 11s ease-in-out infinite alternate;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The navigation rail — one dot per section, down the right-hand edge.
+ *
+ * The deck has no scrollbar, because the page does not move while you are in
+ * it, so nothing else on screen says how many sections there are or which one
+ * you are on. This does both, and takes you across the deck in one move.
+ *
+ * Hidden below md. There is no deck there — the page is a column with a real
+ * scrollbar of its own — and a fixed rail on a phone is 40px of the width gone
+ * to something the scrollbar already says.
+ */
+.deck-nav {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .deck-nav {
+    position: fixed;
+    top: 50%;
+    right: clamp(0.5rem, 1.6vw, 1.75rem);
+    z-index: 60;
+    display: block;
+    transform: translateY(-50%);
+  }
+}
+
+.deck-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 12px;
+}
+
+/* The wire the beads are strung on. Faded at both ends so it reads as a rail
+   passing through rather than a bar with two hard stops. */
+.deck-rail::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(226, 230, 255, 0.22) 14%,
+    rgba(226, 230, 255, 0.22) 86%,
+    transparent
+  );
+}
+
+/*
+ * The travelling light. Positioned by GSAP on the y axis only — see MOTION.rail
+ * — so everything here is what it looks like standing still.
+ */
+.deck-mark {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(133, 133, 233, 0.75),
+    rgba(62, 90, 255, 0.32) 45%,
+    transparent 72%
+  );
+  box-shadow: 0 0 22px 6px rgba(38, 75, 255, 0.35);
+}
+
+.deck-dot {
+  position: relative;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  place-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.deck-bead {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(226, 230, 255, 0.35);
+  transition:
+    background-color 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.deck-dot[aria-current] .deck-bead {
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+  transform: scale(1.5);
+}
+
+.deck-dot:hover .deck-bead,
+.deck-dot:focus-visible .deck-bead {
+  background: #ffffff;
+  transform: scale(1.9);
+}
+
+.deck-dot:focus-visible {
+  outline: none;
+}
+
+/*
+ * The preview, which is the whole reason the rail is worth having: seven
+ * identical dots tell you where you are and nothing about where you would be
+ * going.
+ *
+ * It comes in *from* the bead rather than simply appearing — sliding across,
+ * scaling up and resolving out of a blur, with a hairline drawing itself back
+ * to the dot it belongs to. Three properties, one curve, so it arrives as one
+ * object instead of three effects finishing at different times.
+ */
+.deck-peek {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 16px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: 1px solid rgba(226, 230, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(8, 8, 20, 0.72);
+  box-shadow:
+    0 18px 40px -20px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(10px, -50%) scale(0.94);
+  filter: blur(3px);
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease,
+    transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+/* The hairline joining the card to its bead, drawn from the card outwards. */
+.deck-peek::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 12px;
+  height: 1px;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(226, 230, 255, 0.5), transparent);
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.deck-dot:hover .deck-peek,
+.deck-dot:focus-visible .deck-peek {
+  opacity: 1;
+  transform: translate(0, -50%) scale(1);
+  filter: blur(0);
+}
+
+.deck-dot:hover .deck-peek::after,
+.deck-dot:focus-visible .deck-peek::after {
+  transform: translateY(-50%) scaleX(1);
+}
+
+.deck-peek-index {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  color: var(--color-brand-lighter);
+}
+
+.deck-peek-name {
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A ring leaving the marker, so the current section is the one thing on the
+     rail that is alive rather than merely brighter. */
+  @keyframes deck-pulse {
+    from {
+      opacity: 0.5;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.9);
+    }
+  }
+
+  .deck-mark::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(133, 133, 233, 0.7);
+    border-radius: 999px;
+    animation: deck-pulse 2.6s ease-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-bead,
+  .deck-peek,
+  .deck-peek::after {
+    transition: none;
+  }
+
+  .deck-peek {
+    filter: none;
   }
 }

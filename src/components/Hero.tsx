@@ -53,16 +53,11 @@ function HeroGlow() {
  *
  * Nothing here waits to be scrolled to: the section fires off the page load, in
  * the order it reads — see the hero entry in sections.ts.
- *
- * .screen-hero rather than .screen, because the navbar is the top of this
- * section rather than a strip above it, and its 72px comes out of the hero's
- * screen. That is also what retired the assist that used to scroll the page
- * down to the fan: with the whole hero in one window there is nowhere to go.
  */
 export default function Hero() {
   return (
     <section
-      className="screen screen-hero relative w-full overflow-x-clip"
+      className="screen relative w-full overflow-x-clip"
       data-sequence-section="hero"
     >
       <div className="screen-body">
