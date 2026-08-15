@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { ChevronDown } from "@/components/ui/icons";
 
@@ -19,7 +19,7 @@ function NavLink({ item }: { item: NavItem }) {
   return (
     <Link
       href={item.href}
-      className="flex items-center gap-1 text-base tracking-[-0.32px] text-ink transition-opacity hover:opacity-70"
+      className="text-ink flex items-center gap-1 text-base tracking-[-0.32px] transition-opacity hover:opacity-70"
     >
       {item.label}
       {item.hasDropdown ? <ChevronDown /> : null}
@@ -30,6 +30,26 @@ function NavLink({ item }: { item: NavItem }) {
 export default function NavBar() {
   const [open, setOpen] = useState(false);
 
+  /*
+   * The drawer covers the page, so the page must not scroll underneath it —
+   * otherwise a swipe over the overlay moves the deck behind it and closing the
+   * menu drops you somewhere you did not choose to be. Also closed by Escape,
+   * because a full-screen overlay with no keyboard way out is a trap.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
     /*
       The transform goes on the pill, not the <header>: the header keeps its
@@ -37,7 +57,13 @@ export default function NavBar() {
       that reads as dropping in and folding away.
     */
     <header
-      className="w-full px-4 pt-4 sm:px-6 lg:px-[100px]"
+      /*
+        pb-4 on the phone only. --nav-h is the bar's slot in flow and is read by
+        the deck, which does not exist below the gate — so this is space the
+        phone can have and the deck cannot. It is what separates the pill from
+        the first thing under it, the hero's own top padding being the rest.
+      */
+      className="w-full px-4 pt-4 pb-4 sm:px-6 sm:pb-0 lg:px-[100px]"
       data-sequence-section="navbar"
     >
       <nav
@@ -47,14 +73,15 @@ export default function NavBar() {
         <Link
           href="/"
           aria-label="Banrox home"
-          className="relative block h-6 w-[110px] shrink-0"
+          className="relative flex h-11 w-[110px] shrink-0 items-center sm:h-6"
         >
           <Image
             src="/logo.png"
             alt="Banrox"
-            fill
+            width={110}
+            height={24}
             sizes="110px"
-            className="object-contain"
+            className="h-6 w-[110px] object-contain"
             priority
           />
         </Link>
@@ -77,12 +104,14 @@ export default function NavBar() {
           <Button href="/signup" variant="primary">
             Sign Up
           </Button>
+          {/* 44x44, which is the smallest a finger can be asked to hit. */}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
+            aria-controls="nav-drawer"
             aria-label="Toggle navigation"
-            className="ml-1 flex size-10 items-center justify-center rounded-lg text-ink md:hidden"
+            className="text-ink ml-1 flex size-11 items-center justify-center rounded-lg transition-colors active:bg-black/10 md:hidden"
           >
             <span className="relative block h-4 w-5">
               <span
@@ -100,20 +129,98 @@ export default function NavBar() {
         </div>
       </nav>
 
-      {/* No mobile layout was specified in Figma; this keeps the links reachable. */}
-      {open ? (
-        <div className="bg-nav-pill mx-auto mt-2 flex w-full max-w-[1240px] flex-col gap-4 rounded-xl border-[1.5px] border-white/20 p-4 md:hidden">
+      {/*
+        A full-screen overlay rather than a panel tucked under the pill. The
+        page behind it is a deck on a tablet and a long column on a phone, and
+        either way a menu that shares the screen with it competes with whatever
+        is moving underneath.
+
+        Rendered always and hidden with translate rather than mounted on demand,
+        so it can slide rather than appear — and every link closes it, including
+        the ones that only change the hash.
+      */}
+      <div
+        id="nav-drawer"
+        className={`fixed inset-0 z-[70] md:hidden ${open ? "" : "pointer-events-none"}`}
+        aria-hidden={!open}
+      >
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Close navigation"
+          onClick={() => setOpen(false)}
+          className={`absolute inset-0 h-full w-full bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div
+          className={`bg-nav-pill absolute top-0 right-0 flex h-full w-[min(20rem,85vw)] flex-col gap-2 overflow-y-auto p-6 pt-5 shadow-2xl transition-transform duration-300 ease-out ${
+            open ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {/*
+            The drawer gets its own header rather than leaving a gap where the
+            pill would be. The pill is *behind* this panel once it slides in, so
+            without these the menu is a sheet of links with no mark on it and no
+            visible way out but the strip of page down the left edge.
+          */}
+          <div className="mb-3 flex items-center justify-between">
+            <Link
+              href="/"
+              onClick={() => setOpen(false)}
+              tabIndex={open ? 0 : -1}
+              aria-label="Banrox home"
+              className="flex h-11 items-center"
+            >
+              <Image
+                src="/logo.png"
+                alt="Banrox"
+                width={110}
+                height={24}
+                sizes="110px"
+                className="h-6 w-[110px] object-contain"
+              />
+            </Link>
+            {/* The same two bars the hamburger is built from, crossed — so the
+                mark that opened the menu is the mark that closes it. */}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              tabIndex={open ? 0 : -1}
+              aria-label="Close navigation"
+              className="text-ink -mr-2 flex size-11 items-center justify-center rounded-lg transition-colors active:bg-black/10"
+            >
+              <span className="relative block h-4 w-5">
+                <span className="absolute top-1/2 left-0 block h-0.5 w-full rotate-45 rounded bg-current" />
+                <span className="absolute top-1/2 left-0 block h-0.5 w-full -rotate-45 rounded bg-current" />
+              </span>
+            </button>
+          </div>
+
           {navItems.map((item) => (
-            <NavLink key={item.href} item={item} />
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              tabIndex={open ? 0 : -1}
+              className="text-ink flex min-h-[52px] items-center rounded-lg px-3 text-lg font-medium tracking-[-0.02em] transition-colors active:bg-black/10"
+            >
+              {item.label}
+            </Link>
           ))}
+
+          <span className="my-2 block h-px bg-black/10" />
+
           <Link
             href="/login"
-            className="text-base tracking-[-0.32px] text-ink sm:hidden"
+            onClick={() => setOpen(false)}
+            tabIndex={open ? 0 : -1}
+            className="text-ink flex min-h-[52px] items-center rounded-lg px-3 text-lg font-medium tracking-[-0.02em] transition-colors active:bg-black/10"
           >
             Login
           </Link>
         </div>
-      ) : null}
+      </div>
     </header>
   );
 }

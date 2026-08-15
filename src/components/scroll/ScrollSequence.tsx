@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -43,6 +44,23 @@ const typing = (target: EventTarget | null) =>
 
 export default function ScrollSequence({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
+  /*
+   * This component lives in the root layout, and a layout does NOT unmount when
+   * the route changes — only <main> does. So navigating to another page and
+   * back replaces every section element while this effect, and every element
+   * reference it closed over, carries happily on pointing at DOM that is no
+   * longer in the document.
+   *
+   * The new sections then keep the state the stylesheet gives them before the
+   * controller has touched them: every [data-reveal] at opacity 0 and six of
+   * the seven cards at visibility hidden. Which is to say the page comes back
+   * empty, with only the footer — because the footer is the one thing on it
+   * that was never waiting to be revealed.
+   *
+   * Re-running on the path is the fix, and revertOnUpdate is half of it: the
+   * old context has to be torn down before the new one measures anything.
+   */
+  const pathname = usePathname();
 
   useGSAP(
     () => {
@@ -354,7 +372,7 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         };
       });
     },
-    { scope: root },
+    { scope: root, dependencies: [pathname], revertOnUpdate: true },
   );
 
   return (

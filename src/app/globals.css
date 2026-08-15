@@ -42,13 +42,11 @@
   --nav-h: 72px;
 
   /* Shared by .bg-brand-radial and .bg-brand-cta — see the note on each. */
-  --gradient-brand-radial: radial-gradient(
-    ellipse 53% 176% at 50% 50%,
-    var(--color-brand-lighter) 0%,
-    var(--color-brand-mid) 50%,
-    var(--color-brand) 75%,
-    var(--color-brand-deep) 100%
-  );
+  --gradient-brand-radial: radial-gradient(ellipse 53% 176% at 50% 50%,
+      var(--color-brand-lighter) 0%,
+      var(--color-brand-mid) 50%,
+      var(--color-brand) 75%,
+      var(--color-brand-deep) 100%);
 }
 
 @theme inline {
@@ -74,6 +72,16 @@
 
   /* Tailwind's default radius scale already matches the design (lg 8, xl 12,
      2xl 16, 4xl 32), so it is left untouched. */
+
+  /*
+   * The breakpoints, moved onto the three the design is actually drawn for:
+   * phone up to 640, tablet 641-1024, desktop above. Tailwind's own `sm` is
+   * 640px, which would have put a 640px phone — the exact top of the phone
+   * range — into tablet styles while the motion gate at 641 left it a phone.
+   * One pixel, but it is the pixel the whole layout turns on.
+   */
+  --breakpoint-sm: 641px;
+  --breakpoint-lg: 1025px;
 
   --font-sans: var(--font-inter);
   --font-heading: var(--font-inter-tight);
@@ -139,31 +147,26 @@ body {
      * solid #fff across a few percent of the gradient line to read as light
      * rather than as a slightly brighter stretch of ring.
      */
-    linear-gradient(
-      100deg,
+    linear-gradient(100deg,
       transparent calc(var(--cta-sheen) - 26%),
       rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) - 12%),
       rgba(255, 255, 255, 1) calc(var(--cta-sheen) - 3.5%),
       rgba(255, 255, 255, 1) calc(var(--cta-sheen) + 3.5%),
       rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) + 12%),
-      transparent calc(var(--cta-sheen) + 26%)
-    ),
-    radial-gradient(
-      ellipse 23% 100% at 50% 0%,
+      transparent calc(var(--cta-sheen) + 26%)),
+    radial-gradient(ellipse 23% 100% at 50% 0%,
       rgba(255, 255, 255, 1) 0%,
-      rgba(255, 255, 255, 0) 100%
-    ),
-    linear-gradient(
-      180deg,
+      rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg,
       rgba(255, 255, 255, 0.4) 0%,
-      rgba(255, 255, 255, 0.09) 100%
-    ),
+      rgba(255, 255, 255, 0.09) 100%),
     var(--gradient-brand-radial);
   background-origin: border-box;
   background-clip: padding-box, border-box, border-box, border-box, border-box;
 }
 
 @media (prefers-reduced-motion: no-preference) {
+
   /*
    * Registered above rather than left as a plain custom property because only a
    * registered one interpolates — unregistered, this would jump between
@@ -188,24 +191,31 @@ body {
     0% {
       --cta-sheen: -30%;
     }
+
     6% {
       --cta-sheen: 10%;
     }
+
     14% {
       --cta-sheen: 30%;
     }
+
     28% {
       --cta-sheen: 50%;
     }
+
     42% {
       --cta-sheen: 70%;
     }
+
     50% {
       --cta-sheen: 90%;
     }
+
     56% {
       --cta-sheen: 130%;
     }
+
     100% {
       --cta-sheen: 130%;
     }
@@ -229,21 +239,17 @@ body {
  * and works at every box size these appear at.
  */
 .bg-vignette {
-  background-image: radial-gradient(
-    ellipse at center,
-    rgba(33, 33, 33, 0.004) 0%,
-    rgba(33, 33, 33, 0.04) 100%
-  );
+  background-image: radial-gradient(ellipse at center,
+      rgba(33, 33, 33, 0.004) 0%,
+      rgba(33, 33, 33, 0.04) 100%);
   backdrop-filter: blur(2px);
 }
 
 /* Section badges — a barely-there wash over the dark page. */
 .bg-badge {
-  background-image: linear-gradient(
-    184.41deg,
-    rgba(226, 230, 255, 0.04) 9.68%,
-    rgba(133, 133, 233, 0.04) 79.28%
-  );
+  background-image: linear-gradient(184.41deg,
+      rgba(226, 230, 255, 0.04) 9.68%,
+      rgba(133, 133, 233, 0.04) 79.28%);
 }
 
 /*
@@ -251,22 +257,18 @@ body {
  * white gradient rather than flat white.
  */
 .text-gradient-score {
-  background-image: linear-gradient(
-    to left,
-    rgba(255, 255, 255, 0.5) 0%,
-    #ffffff 100%
-  );
+  background-image: linear-gradient(to left,
+      rgba(255, 255, 255, 0.5) 0%,
+      #ffffff 100%);
   background-clip: text;
   color: transparent;
 }
 
 /* Bureau wordmarks (Experian / TransUnion / Equifax). */
 .text-gradient-bureau {
-  background-image: linear-gradient(
-    191.86deg,
-    #e2e6ff 3.7%,
-    var(--color-brand-lighter) 51.9%
-  );
+  background-image: linear-gradient(191.86deg,
+      #e2e6ff 3.7%,
+      var(--color-brand-lighter) 51.9%);
   background-clip: text;
   color: transparent;
 }
@@ -292,7 +294,7 @@ body {
  * stack and scroll, which is what a phone does.
  *
  * ---------------------------------------------------------------------------
- * THE GATE — (min-width: 768px) and (min-height: 480px) — is repeated on every
+ * THE GATE — (min-width: 641px) and (min-height: 480px) — is repeated on every
  * block below and on MOTION.enabled and the [data-reveal] rule. They must all
  * say the same thing. A window on one side of it for the layout and the other
  * side for the controller is a section that is not a screen being animated as
@@ -311,14 +313,34 @@ body {
   display: flex;
   flex-direction: column;
   /*
-   * The vertical rhythm answers the window's *height*, because height is the
-   * axis everything now competes for. At 900px these land on roughly what the
-   * artboard specifies; at 720 they hand about 60px back to the diagram, which
-   * is where it buys the most.
+   * On a phone this padding is the space *between* sections, and it is the only
+   * thing that says one has ended: they are a column of full-width cards and
+   * diagrams on the same dark ground, with no rule or band between them, so a
+   * thin gap reads as one long section rather than seven. 56px each side gives
+   * 112px of nothing, which is a break.
+   *
+   * Not height-relative down here. A phone's section is as tall as its contents
+   * — often two or three windows — so svh would be measuring the gap against
+   * something the section has no relationship to.
    */
-  --screen-pad: clamp(1.25rem, 4svh, 4rem);
-  --screen-gap: clamp(0.75rem, 3.2svh, 3.75rem);
+  --screen-pad: 3.5rem;
+  --screen-gap: 2rem;
   padding-block: var(--screen-pad);
+}
+
+/*
+ * From the gate up the same two numbers mean something else entirely. A section
+ * is exactly one window there, so this is not space between sections — there is
+ * no between — it is what the section spends on its own margins instead of on
+ * the diagram. Hence the answer to the window's *height*: at 900px these land
+ * on roughly what the artboard specifies; at 720 they hand about 60px back to
+ * the diagram, which is where it buys the most.
+ */
+@media (min-width: 641px) {
+  .screen {
+    --screen-pad: clamp(1.25rem, 4svh, 4rem);
+    --screen-gap: clamp(0.75rem, 3.2svh, 3.75rem);
+  }
 }
 
 .screen-body {
@@ -342,13 +364,31 @@ body {
   width: 100%;
 }
 
-/** Everything under the heading, and the only thing that gives. */
+/**
+ * Everything under the heading, and the only thing that gives.
+ *
+ * A column on a phone and a row from the gate up. That is what lets a diagram
+ * drop its stage (see .stage-fluid) and have its parts simply stack — the parts
+ * are the same elements either way, and only their container's direction says
+ * whether they are a diagram or a list.
+ */
 .screen-payload {
   position: relative;
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+@media (min-width: 641px) {
+  .screen-payload {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -395,7 +435,8 @@ body {
  * size gate alone: it is a complete layout by itself, it just happens to be the
  * one the scene is built out of.
  */
-@media (min-width: 768px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+@media (min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+
   /*
    * The deck has no scroll of its own — that is the whole idea. It is exactly
    * one windowful and never moves; a gesture changes which section is showing
@@ -419,7 +460,7 @@ body {
    * Stacked, not queued. Every section is the same box — the whole window —
    * and only their opacity says which one you are looking at.
    */
-  .scene > .screen {
+  .scene>.screen {
     position: absolute;
     inset: 0;
     height: auto;
@@ -434,7 +475,7 @@ body {
    * catching clicks meant for the one that is. The controller animates
    * autoAlpha, which is the same pair.
    */
-  .scene > .screen:not(:first-child) {
+  .scene>.screen:not(:first-child) {
     opacity: 0;
     visibility: hidden;
   }
@@ -442,29 +483,79 @@ body {
 
 /* Sections are one window tall wherever the window can hold one, scene or no
    scene — see the note on the gate above. */
-@media (min-width: 768px) and (min-height: 480px) {
+@media (min-width: 641px) and (min-height: 480px) {
   .screen {
     height: 100svh;
   }
 }
 
 /*
- * Type that answers the window's height as well as its width.
+ * Type, mobile first.
  *
- * A heading sized only in vw is the same 48px on a 1440x900 desktop as on a
- * 1440x720 laptop — and on the second one that is 48px taken straight out of
- * the diagram underneath it. min() of the two lets whichever dimension is
- * scarcer decide, which is what fitting on a screen means.
+ * The base values are the phone's, and the gate raises them — rather than the
+ * other way round, where a desktop size sits in the base and every small screen
+ * is an exception to it. On a phone these are absolute sizes with a little room
+ * to breathe; from 641px up they answer the window's *height* as well as its
+ * width, because that is where a section has to fit one.
+ *
+ * Body text bottoms out at 1rem. Below 16px iOS zooms the page on focus and
+ * everything else is a squint, so the floor is not a matter of taste.
  */
 .type-hero {
-  font-size: clamp(2.25rem, min(6.1vw, 8.6svh), 4.5rem);
+  font-size: clamp(1.7rem, 7vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
 }
+
 .type-title {
-  font-size: clamp(1.75rem, min(3.9vw, 5.6svh), 3rem);
+  font-size: clamp(1.625rem, 6.6vw, 2.125rem);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
 }
+
 .type-lede {
-  font-size: clamp(0.875rem, min(1.15vw, 2svh), 1rem);
+  font-size: 1rem;
+  line-height: 1.55;
+  letter-spacing: normal;
 }
+
+/*
+ * From the gate up, the sizes the desktop was built at — height-aware, because
+ * a section is one window there and the heading is competing with the diagram
+ * under it for the same pixels. Unchanged from what desktop already had.
+ */
+@media (min-width: 641px) {
+  .type-hero {
+    font-size: clamp(2.25rem, min(6.1vw, 8.6svh), 4.5rem);
+    line-height: 1;
+    letter-spacing: normal;
+  }
+
+  .type-title {
+    font-size: clamp(1.75rem, min(3.9vw, 5.6svh), 3rem);
+    line-height: 1;
+    letter-spacing: normal;
+  }
+
+  .type-lede {
+    font-size: clamp(0.875rem, min(1.15vw, 2svh), 1rem);
+    line-height: 1.5;
+  }
+}
+
+/*
+ * Measure. A line of text much past 75 characters is hard to come back to on
+ * the next line, and on a phone a centred paragraph of three ragged lines reads
+ * worse than the same words left-aligned — so long copy squares up below the
+ * gate and only centres when there is room for it to be a tidy shape.
+ */
+.type-measure {
+  max-width: 68ch;
+  margin-inline: auto;
+  text-align: center;
+}
+
+
 
 /* ---------------------------------------------------------------------------
  * Fixed-geometry "stages". Sections whose overlap geometry must survive (the
@@ -532,6 +623,96 @@ body {
 }
 
 /*
+ * Opt-out, for a stage whose contents are a fluid card rather than an artboard.
+ *
+ * Some payloads are only in a stage because the desktop wants them at an exact
+ * size — the invite card is a flex column that would lay itself out perfectly
+ * well at any width. Scaling it to a phone is the wrong tool twice over: it
+ * shrinks the type along with the box, so a 16px paragraph arrives at 8px.
+ *
+ * `display: contents` on the whole chain removes the viewport, the sizer and
+ * the stage from layout entirely, leaving the card a direct child of the
+ * payload and free to be fluid. From the gate up the three of them come back
+ * and the artboard behaves exactly as it did.
+ */
+/*
+ * The one rule in this file written as a max-width, and it has to be.
+ *
+ * Restoring these three at 641px means naming a display value for them, and
+ * there is no single right one: the works stage carries Tailwind's `flex` to
+ * lay its three step cards out in a row, while the others are plain blocks.
+ * An unlayered `display: block` here beat that layered utility and stacked the
+ * three cards on desktop — which is exactly the bug it caused.
+ *
+ * Scoped to the phone instead, nothing above the gate is touched at all and
+ * every stage keeps whatever display it was given.
+ */
+@media (max-width: 640px) {
+
+  .stage-fluid,
+  .stage-fluid .stage-sizer,
+  .stage-fluid .stage {
+    display: contents;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The step-card illustrations, which are artboards inside a fluid card.
+ *
+ * A step card reflows perfectly well on a phone — it is a heading and a
+ * paragraph — but the 360x260 panel at the top of it does not. Every ring, the
+ * four avatars placed *on* one of them, the score badges, the connector runs
+ * between them and the five-column bar chart are all at coordinates measured
+ * against those 360 pixels. Stretched to the card's width the panel grew and
+ * the coordinates did not: the avatars came off their ring, the wires stopped
+ * reaching the badges they join, and the chart's last column ran out past the
+ * panel's edge.
+ *
+ * So the panel is scaled rather than reflowed, and it is the one thing in a
+ * step card that is. There is no phone rebuild of "four faces arranged on a
+ * circle" — it is a single illustration, and the fit works out at 0.80-0.88
+ * across phone widths, which costs nothing that matters. Compare .stage-fluid,
+ * which does the opposite for payloads that only *look* like artboards.
+ *
+ * Three elements of its own rather than the stage ones, for one reason: a
+ * .stage-viewport becomes a *size* container at 641px, and inside a step card
+ * there is no definite height for 100cqh to resolve against. This only ever
+ * needs the width, and above the gate it does nothing at all — the card is 392
+ * wide, its content box is exactly 360, and the panel is already the size it
+ * was drawn at.
+ */
+.figure-fit {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .figure-fit {
+    container-type: inline-size;
+  }
+
+  .figure-sizer {
+    /* tan(atan2(a, b)) is length-over-length division — see .stage-sizer. */
+    --figure-scale: min(tan(atan2(100cqw, 360px)), 1);
+    position: relative;
+    /* The scaled box, reserved in layout, and centred once the card is wide
+       enough that the clamp stops biting. */
+    width: calc(360px * var(--figure-scale));
+    height: calc(260px * var(--figure-scale));
+    margin-inline: auto;
+  }
+
+  .figure-stage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 360px;
+    height: 260px;
+    transform-origin: top left;
+    transform: scale(var(--figure-scale));
+  }
+}
+
+/*
  * Opt-in clip, for a stage whose contents leave the artboard — pieces that
  * animate in from off screen, and decoration that overhangs the frame it was
  * drawn in.
@@ -564,7 +745,8 @@ body {
   overflow: visible;
 }
 
-@media (min-width: 768px) and (min-height: 480px) {
+@media (min-width: 641px) and (min-height: 480px) {
+
   /*
    * Height is a constraint too, once the section is a fixed screen. `size`
    * rather than `inline-size` is what makes 100cqh mean anything — it is only
@@ -613,7 +795,7 @@ body {
   pointer-events: none;
 }
 
-@media (min-width: 768px) and (min-height: 480px) {
+@media (min-width: 641px) and (min-height: 480px) {
   .stage-backdrop {
     container-type: size;
   }
@@ -629,7 +811,7 @@ body {
  * page either flashes or never appears. Phones and reduced-motion get the
  * finished page straight from the server, unhidden, with no controller at all.
  */
-@media (min-width: 768px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+@media (min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
   [data-reveal] {
     opacity: 0;
   }
@@ -662,32 +844,26 @@ body {
  * line falls.
  */
 .ring-orbit {
-  background: conic-gradient(
-    from 0deg,
-    rgba(150, 190, 255, 0) 0deg,
-    rgba(150, 190, 255, 0.12) 18deg,
-    rgba(198, 222, 255, 0.38) 31deg,
-    rgba(235, 244, 255, 0.8) 38deg,
-    rgba(150, 190, 255, 0) 43deg
-  );
-  -webkit-mask-image: radial-gradient(
-    closest-side,
-    transparent 0 88.2%,
-    rgba(0, 0, 0, 0.12) 88.9%,
-    #000 89.2%,
-    #000 89.45%,
-    rgba(0, 0, 0, 0.12) 89.9%,
-    transparent 90.6%
-  );
-  mask-image: radial-gradient(
-    closest-side,
-    transparent 0 88.2%,
-    rgba(0, 0, 0, 0.12) 88.9%,
-    #000 89.2%,
-    #000 89.45%,
-    rgba(0, 0, 0, 0.12) 89.9%,
-    transparent 90.6%
-  );
+  background: conic-gradient(from 0deg,
+      rgba(150, 190, 255, 0) 0deg,
+      rgba(150, 190, 255, 0.12) 18deg,
+      rgba(198, 222, 255, 0.38) 31deg,
+      rgba(235, 244, 255, 0.8) 38deg,
+      rgba(150, 190, 255, 0) 43deg);
+  -webkit-mask-image: radial-gradient(closest-side,
+      transparent 0 88.2%,
+      rgba(0, 0, 0, 0.12) 88.9%,
+      #000 89.2%,
+      #000 89.45%,
+      rgba(0, 0, 0, 0.12) 89.9%,
+      transparent 90.6%);
+  mask-image: radial-gradient(closest-side,
+      transparent 0 88.2%,
+      rgba(0, 0, 0, 0.12) 88.9%,
+      #000 89.2%,
+      #000 89.45%,
+      rgba(0, 0, 0, 0.12) 89.9%,
+      transparent 90.6%);
   /*
    * Off unless the keyframes below run. A comet parked at a fixed angle is a
    * bright smear on one side of the ring, which is worse than the plain circle
@@ -729,6 +905,7 @@ body {
  * that writes `transform` clobbers whatever else was in it.
  */
 @media (prefers-reduced-motion: no-preference) {
+
   /*
    * Translate only, and in 3D. This layer is a 1823px starfield rasterized
    * across the full width of the window; a scale on it would re-raster the
@@ -738,6 +915,7 @@ body {
     from {
       transform: translate3d(0, 0, 0);
     }
+
     to {
       transform: translate3d(-1.6%, -10px, 0);
     }
@@ -758,6 +936,7 @@ body {
       opacity: 0.68;
       transform: scale(0.99);
     }
+
     to {
       opacity: 1;
       transform: scale(1.016);
@@ -769,6 +948,7 @@ body {
       opacity: 0.4;
       transform: translate3d(0, 8px, 0);
     }
+
     to {
       opacity: 1;
       transform: translate3d(0, -8px, 0);
@@ -778,9 +958,11 @@ body {
   .footer-drift {
     animation: footer-drift 96s ease-in-out infinite alternate;
   }
+
   .footer-horizon {
     animation: footer-horizon 13s ease-in-out infinite alternate;
   }
+
   .footer-mark {
     animation: footer-mark 11s ease-in-out infinite alternate;
   }
@@ -804,7 +986,7 @@ body {
   display: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 641px) {
   .deck-nav {
     position: fixed;
     top: 50%;
@@ -839,13 +1021,11 @@ body {
   left: 50%;
   width: 1px;
   transform: translateX(-50%);
-  background: linear-gradient(
-    180deg,
-    transparent,
-    rgba(226, 230, 255, 0.18) 12%,
-    rgba(226, 230, 255, 0.18) 88%,
-    transparent
-  );
+  background: linear-gradient(180deg,
+      transparent,
+      rgba(226, 230, 255, 0.18) 12%,
+      rgba(226, 230, 255, 0.18) 88%,
+      transparent);
 }
 
 /*
@@ -859,11 +1039,9 @@ body {
   width: 1px;
   transform-origin: top center;
   transform: translateX(-50%) scaleY(0);
-  background: linear-gradient(
-    180deg,
-    rgba(133, 133, 233, 0.9),
-    rgba(62, 90, 255, 0.55)
-  );
+  background: linear-gradient(180deg,
+      rgba(133, 133, 233, 0.9),
+      rgba(62, 90, 255, 0.55));
   box-shadow: 0 0 6px rgba(62, 90, 255, 0.55);
   pointer-events: none;
 }

@@ -20,13 +20,17 @@ export const MOTION = {
    * to the queries that make a section one screen, since a section that is not
    * a screen cannot honestly be animated on one trigger.
    *
+   * 641px is the top of the phone range — below it the page is rebuilt as a
+   * column that was designed for a phone rather than a desktop folded into one,
+   * and none of this runs. Above it a tablet gets the deck, scaled.
+   *
    * The height half is what a phone held sideways fails: 932x430 passes the
    * width test, and at that height the heading is most of the window, so the
    * card fan fitted into what was left came out at 0.076 scale. Measured. See
    * the note above .screen in globals.css.
    */
   enabled:
-    "(min-width: 768px) and (min-height: 480px) and (prefers-reduced-motion: no-preference)",
+    "(min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference)",
 
   /**
    * Every beat's timeScale. The numbers below are written as the proportions
@@ -242,7 +246,7 @@ export const MOTION = {
      * it only reads if the diagram arrives as a single object rather than as
      * four elements taking turns. Only the ease differs between them.
      */
-    land: 2,
+    land: 1,
     slide: "power3.out",
     /**
      * The Squad card is the one with nowhere to travel from, so it scales up out

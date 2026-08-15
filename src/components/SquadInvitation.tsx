@@ -37,7 +37,7 @@ export default function SquadInvitation() {
     >
       <div className="screen-body">
         <div
-          className="screen-copy mx-auto flex max-w-[604px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6"
+          className="screen-copy mx-auto flex max-w-[604px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6"
           data-node-id="9304:25729"
         >
           <div className="flex" data-reveal="copy">
@@ -58,7 +58,7 @@ export default function SquadInvitation() {
           </h2>
 
           <p
-            className="font-sans type-lede w-full text-center leading-[1.5] tracking-[-0.32px] text-white opacity-70"
+            className="font-sans type-lede type-measure w-full tracking-[-0.32px] text-white opacity-70"
             data-node-id="9304:25739"
             data-reveal="copy"
           >
@@ -74,8 +74,8 @@ export default function SquadInvitation() {
             fits the container exactly — so with no gutter it would touch both
             sides of the screen. Above 604px the scale is capped at 1 and the
             padding costs nothing. */}
-        <div className="screen-payload px-6" data-node-id="9304:25740">
-          <div className="stage-viewport">
+        <div className="screen-payload px-5 sm:px-6" data-node-id="9304:25740">
+          <div className="stage-viewport stage-fluid">
             <div
               className="stage-sizer"
               style={
@@ -87,7 +87,7 @@ export default function SquadInvitation() {
             >
               <div className="stage">
                 <div
-                  className="content-stretch relative flex w-full flex-col items-center gap-[16px] overflow-hidden rounded-[32px] border-[1.5px] border-solid border-white/15 bg-white/[0.03] p-[16px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[2px]"
+                  className="content-stretch relative flex w-full flex-col items-center gap-4 overflow-hidden rounded-3xl border-[1.5px] border-solid border-white/15 bg-white/[0.03] p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[2px] sm:gap-[16px] sm:rounded-[32px] sm:p-[16px]"
                   data-node-id="9304:25742"
                   data-name="Step 3 Content"
                   data-reveal="card"
@@ -146,12 +146,12 @@ export default function SquadInvitation() {
 
                   {/* Invite Link Bar */}
                   <div
-                    className="content-stretch relative flex h-[48px] w-full shrink-0 items-center justify-between overflow-hidden rounded-[8px] border-[1.5px] border-solid border-[rgba(255,255,255,0.1)] bg-white/[0.04] py-[16px] pr-[4px] pl-[20px] backdrop-blur-sm"
+                    className="content-stretch relative flex w-full shrink-0 flex-col items-stretch gap-3 overflow-hidden rounded-lg border-[1.5px] border-solid border-[rgba(255,255,255,0.1)] bg-white/[0.04] p-3 backdrop-blur-sm sm:h-[48px] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:py-[16px] sm:pr-[4px] sm:pl-[20px]"
                     data-node-id="9304:25749"
                     data-reveal="item"
                   >
                     <p
-                      className="font-sans relative shrink-0 text-[14px] leading-none font-normal whitespace-nowrap text-white opacity-70 select-all"
+                      className="font-sans relative shrink-0 overflow-hidden text-base leading-none font-normal text-ellipsis whitespace-nowrap text-white opacity-70 select-all sm:text-[14px]"
                       data-node-id="9304:25750"
                     >
                       {inviteUrl}
@@ -161,7 +161,7 @@ export default function SquadInvitation() {
                     <Button
                       type="button"
                       onClick={handleCopy}
-                      className="content-stretch relative flex h-[40px] shrink-0 items-center gap-[8px] py-[16px] pr-[16px] pl-[12px] !rounded-[4px]"
+                      className="content-stretch relative flex h-11 shrink-0 items-center justify-center gap-[8px] py-[16px] pr-[16px] pl-[12px] !rounded-[4px] sm:h-[40px]"
                       variant="primary"
                       data-node-id="9304:25751"
                       data-name="CTA - Primary"
@@ -174,7 +174,7 @@ export default function SquadInvitation() {
                         <CopyIcon className="size-[16px]" />
                       </div>
                       <span
-                        className="font-sans relative shrink-0 text-[12px] leading-none font-medium tracking-[-0.24px] whitespace-nowrap text-white"
+                        className="font-sans relative shrink-0 text-base leading-none font-medium tracking-[-0.24px] whitespace-nowrap text-white sm:text-[12px]"
                         data-node-id="9304:25755"
                       >
                         {copied ? "Copied!" : "Copy Link"}
@@ -189,14 +189,14 @@ export default function SquadInvitation() {
                     data-reveal="item"
                   >
                     <div
-                      className="font-heading relative shrink-0 text-[28px] leading-[0] font-normal tracking-[-0.28px] whitespace-nowrap"
+                      className="font-heading relative shrink-0 text-2xl leading-[0] font-normal tracking-[-0.28px] whitespace-nowrap sm:text-[28px]"
                       data-node-id="9304:25757"
                     >
                       <p className="mb-0 leading-[1.2]">Your squad.</p>
                       <p className="leading-[1.2]">Your line.</p>
                     </div>
                     <p
-                      className="font-sans relative w-full shrink-0 text-[16px] leading-[1.5] font-normal tracking-[-0.32px] opacity-70"
+                      className="font-sans relative w-full shrink-0 text-base leading-[1.55] font-normal tracking-[-0.32px] opacity-70"
                       data-node-id="9304:25758"
                     >
                       Apply together. Qualify for more. Spend in your lane.

@@ -39,7 +39,7 @@ export default function MemberScoreCard({
   meterPercent,
 }: MemberScoreCardProps) {
   return (
-    <div className="relative h-[172px] w-[260px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[rgba(8,8,20,0.2)]">
+    <div className="relative h-[172px] w-full shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[rgba(8,8,20,0.2)] sm:w-[260px] sm:max-w-none">
       <Image
         src="/intel/score-glow-1.svg"
         alt=""
@@ -72,7 +72,11 @@ export default function MemberScoreCard({
       <div className="bg-vignette relative flex h-full flex-col items-center gap-4 p-4">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
-            <AvatarRing size={40} person={person} framing={VOTE_FRAMING[personKey]} />
+            <AvatarRing
+              size={40}
+              person={person}
+              framing={VOTE_FRAMING[personKey]}
+            />
             <p className="font-heading text-[16px] leading-none whitespace-nowrap text-white">
               {memberLabel}
             </p>
@@ -96,7 +100,9 @@ export default function MemberScoreCard({
 
         <div className="flex w-full flex-col items-start gap-2">
           <div className="flex w-full items-start justify-between text-[14px] leading-none whitespace-nowrap">
-            <p className={`font-heading font-medium ${RATING_TONE[rating]}`}>{rating}</p>
+            <p className={`font-heading font-medium ${RATING_TONE[rating]}`}>
+              {rating}
+            </p>
             <p className="font-heading text-white/50">300-850</p>
           </div>
           <div className="relative h-1.5 w-full rounded-[20px] bg-white/10">

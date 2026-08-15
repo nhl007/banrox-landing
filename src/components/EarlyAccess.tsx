@@ -20,19 +20,46 @@ import { ArrowUpRight, CreditCard } from "@/components/ui/icons";
  * in a section whose card sat between 80 and 340, which is where the two
  * percentages come from.
  */
-function Glow({ src, top, offsetX }: { src: string; top: string; offsetX: number }) {
+function Glow({
+  src,
+  top,
+  offsetX,
+}: {
+  src: string;
+  top: string;
+  offsetX: number;
+}) {
   return (
     <div
       className="pointer-events-none absolute -z-10 size-103 -translate-x-1/2"
       style={{ top, left: `calc(50% + ${offsetX}px)` }}
     >
       <div className="absolute inset-[-63.11%]">
-        <Image src={src} alt="" width={932} height={932} className="block size-full max-w-none" />
+        <Image
+          src={src}
+          alt=""
+          width={932}
+          height={932}
+          className="block size-full max-w-none"
+        />
       </div>
     </div>
   );
 }
 
+/*
+ * A labelled field.
+ *
+ * The label is a real one above the input rather than a placeholder standing in
+ * for it: a placeholder is gone the moment there is anything in the box, which
+ * is exactly when someone checking their own typing wants to know what the box
+ * was for. It is hidden from sm: up, where the artboard's single row of two
+ * bare inputs is the design and there is no room for it.
+ *
+ * text-base is not a size choice. iOS zooms the whole page in when a focused
+ * input is under 16px, and the page is a deck — the zoom does not go away when
+ * the field is blurred.
+ */
 function Field({
   name,
   type = "text",
@@ -47,16 +74,24 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <input
-      name={name}
-      type={type}
-      aria-label={label}
-      placeholder={label}
-      autoComplete={autoComplete}
-      required={required}
-      className="bg-vignette h-12 w-full rounded-lg border-[1.5px] border-white/30 pr-1 pl-5 text-sm text-white placeholder:text-white/70 focus-visible:border-white/60 focus-visible:outline-none sm:min-w-px sm:flex-1"
-      data-reveal="field"
-    />
+    <div className="flex w-full flex-col gap-2 sm:min-w-px sm:flex-1 sm:gap-0">
+      <label
+        htmlFor={name}
+        className="text-base leading-none font-medium text-white/70 sm:sr-only"
+      >
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type={type}
+        placeholder={label}
+        autoComplete={autoComplete}
+        required={required}
+        className="bg-vignette h-12 w-full rounded-lg border-[1.5px] border-white/30 pr-1 pl-5 text-base text-white placeholder:text-white/70 focus-visible:border-white/60 focus-visible:outline-none sm:text-sm"
+        data-reveal="field"
+      />
+    </div>
   );
 }
 
@@ -73,7 +108,7 @@ export default function EarlyAccess() {
           everywhere else. The card keeps its 420x260 proportions and scales
           rather than reflowing.
         */}
-        <div className="screen-payload px-6">
+        <div className="screen-payload px-5 sm:px-6">
           <Glow src="/early/glow-back.svg" top="79%" offsetX={0} />
           <Glow src="/early/glow-front.svg" top="117%" offsetX={60} />
 
@@ -99,13 +134,13 @@ export default function EarlyAccess() {
           </div>
         </div>
 
-        <div className="screen-copy mx-auto flex max-w-204 flex-col items-center gap-[clamp(1rem,3.2svh,3.75rem)] px-6">
-          <div className="flex w-full flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)]">
+        <div className="screen-copy mx-auto flex max-w-204 flex-col items-center gap-8 px-5 sm:gap-[clamp(1rem,3.2svh,3.75rem)] sm:px-6">
+          <div className="flex w-full flex-col items-center gap-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)]">
             <div className="flex" data-reveal="copy">
               <Badge icon={<CreditCard />}>Early Access</Badge>
             </div>
             <h2
-              className="font-heading w-full text-center text-[clamp(1.75rem,min(4.55vw,6.4svh),3.5rem)] leading-none font-normal"
+              className="font-heading type-title w-full text-center sm:text-[clamp(1.75rem,min(4.55vw,6.4svh),3.5rem)] sm:leading-none"
               data-reveal="copy"
             >
               Be first.
@@ -113,7 +148,7 @@ export default function EarlyAccess() {
               Bring <span className="font-display italic">your squad.</span>
             </h2>
             <p
-              className="type-lede w-full text-center leading-normal tracking-[-0.32px] text-white/70"
+              className="type-lede type-measure w-full tracking-[-0.32px] text-white/70"
               data-reveal="copy"
             >
               Join the waitlist for Squad Card. When we launch, your group is
@@ -121,8 +156,8 @@ export default function EarlyAccess() {
             </p>
           </div>
 
-          <form className="flex w-full flex-col items-center gap-[clamp(1rem,3.2svh,3.75rem)]">
-            <div className="flex w-full flex-col gap-4 sm:flex-row">
+          <form className="flex w-full flex-col items-center gap-8 sm:gap-[clamp(1rem,3.2svh,3.75rem)]">
+            <div className="flex w-full flex-col gap-5 sm:flex-row sm:gap-4">
               <Field
                 name="firstName"
                 label="First Name"
@@ -139,7 +174,7 @@ export default function EarlyAccess() {
 
             <div className="flex w-full flex-col items-center gap-4">
               <p
-                className="w-full text-center text-xs leading-normal tracking-[-0.24px] text-white/70"
+                className="w-full text-center text-base leading-normal tracking-[-0.24px] text-white/70 sm:text-xs"
                 data-reveal="field"
               >
                 <span className="font-medium text-white">2,847</span> people on
@@ -147,8 +182,13 @@ export default function EarlyAccess() {
               </p>
               {/* The wrapper takes the hinge: Button owns its own hover
                   transform, and two owners on one transform collide. */}
-              <div className="flex" data-reveal="cta">
-                <Button type="submit" size="lg" icon={<ArrowUpRight />}>
+              <div className="flex w-full sm:w-auto" data-reveal="cta">
+                <Button
+                  type="submit"
+                  size="lg"
+                  icon={<ArrowUpRight />}
+                  className="w-full justify-center sm:w-auto"
+                >
                   Join the Waitlist
                 </Button>
               </div>

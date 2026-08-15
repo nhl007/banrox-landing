@@ -22,7 +22,7 @@ export default function SignalCard({ icon, title, rows, reveal }: SignalCardProp
   return (
     <div
       data-reveal={reveal}
-      className="relative flex h-[194px] w-[230px] shrink-0 flex-col items-center gap-4 overflow-hidden rounded-xl border border-white/10 p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+      className="relative flex w-full shrink-0 flex-col items-center gap-4 overflow-hidden rounded-xl border border-white/10 p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] sm:h-[194px] sm:w-[230px]"
     >
       <div className="bg-vignette pointer-events-none absolute inset-0 bg-[rgba(8,8,20,0.2)]" />
 
@@ -30,7 +30,7 @@ export default function SignalCard({ icon, title, rows, reveal }: SignalCardProp
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/40 bg-white/[0.04]">
           <SignalIcon icon={icon} />
         </span>
-        <p className="font-heading w-[130px] text-[16px] leading-[1.2] text-white/70">
+        <p className="font-heading w-full text-[16px] leading-[1.2] text-white/70 sm:w-[130px]">
           {title[0]}
           <br />
           {title[1]}

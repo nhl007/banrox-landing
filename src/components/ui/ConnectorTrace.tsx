@@ -59,6 +59,16 @@ const SOFT = "#ffffff 0%, rgba(137,163,255,0.7) 38%, rgba(43,88,250,0) 82%";
 
 export type ConnectorTraceProps = {
   src: string;
+  /**
+   * Extra classes on the run's own box.
+   *
+   * What it exists for is `hidden sm:block`, on a run whose two endpoints stop
+   * being in the same place on a phone — the approve diagram stacks into a
+   * column there, so a wire drawn between two of its parts is joining
+   * coordinates that no longer describe anything. A run inside an artboard that
+   * survives intact, scaled, keeps its wire and passes nothing.
+   */
+  className?: string;
   /** The artwork's own size, in stage units. */
   width: number;
   height: number;
@@ -121,6 +131,7 @@ export default function ConnectorTrace({
   pad = 0,
   flipX = false,
   flipY = false,
+  className = "",
   children,
 }: ConnectorTraceProps) {
   /* Its own inverse, which is what lets the same string undo it below. */
@@ -148,14 +159,16 @@ export default function ConnectorTrace({
       : { left: 0, right: 0 };
   const mask = {
     maskImage: OFFSETS.map(() => `url(${src})`).join(","),
-    maskPosition: OFFSETS.map(([x, y]) => `${x + pad}px ${y + pad}px`).join(","),
+    maskPosition: OFFSETS.map(([x, y]) => `${x + pad}px ${y + pad}px`).join(
+      ",",
+    ),
     maskSize: OFFSETS.map(() => `${width}px ${height}px`).join(","),
     maskRepeat: OFFSETS.map(() => "no-repeat").join(","),
   };
 
   return (
     <div
-      className="pointer-events-none absolute"
+      className={`pointer-events-none absolute ${className}`.trim()}
       style={{
         left: left - pad,
         top: top - pad,

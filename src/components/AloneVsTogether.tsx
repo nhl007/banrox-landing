@@ -41,7 +41,7 @@ function Separator({ tone }: { tone: "negative" | "success" }) {
 function AloneCard() {
   return (
     <ComparisonCard variant="alone" reveal="card-left">
-      <div className="absolute top-[148px] left-1/2 flex w-[216px] -translate-x-1/2 flex-col items-center gap-5">
+      <div className="flex w-full flex-col items-center gap-5 px-4 pt-6 sm:absolute sm:top-[148px] sm:left-1/2 sm:w-[216px] sm:-translate-x-1/2 sm:px-0 sm:pt-0">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
             <AvatarRing size={56} tone="muted">
@@ -53,7 +53,7 @@ function AloneCard() {
                 style={{ width: 23.91, height: 26.65 }}
               />
             </AvatarRing>
-            <p className="font-heading text-[16px] leading-[1.2] whitespace-nowrap text-white/50">
+            <p className="font-heading text-base leading-[1.2] whitespace-nowrap text-white/50">
               Applying Alone
             </p>
           </div>
@@ -77,41 +77,53 @@ function AloneCard() {
           </div>
         </div>
 
-        <p className="font-heading w-full text-center text-[12px] leading-[1.4] text-white opacity-50">
+        <p className="font-heading w-full text-center text-base leading-[1.5] text-white opacity-50 sm:text-[12px] sm:leading-[1.4]">
           File, on its own. High DTI. Rebuilding score. No approval.
         </p>
       </div>
 
-      <PersonChip person="lilit" reason="Income too low" left={367} top={47} />
-      <PersonChip
-        person="aram"
-        reason="Recent account issue"
-        left={34}
-        top={100}
-      />
-      <PersonChip
-        person="mika"
-        reason="Limited credit history"
-        left={16}
-        top={353}
-      />
-      <PersonChip
-        person="david"
-        reason="High utilization"
-        left={381}
-        top={376}
-      />
+      {/* Scattered around the panel on the artboard, a wrapped row underneath
+          the verdict on a phone: their positions mean "all around you", which a
+          564px frame can say and a 320px one cannot. */}
+      <div className="flex flex-wrap justify-center gap-2 px-4 pt-5 sm:contents">
+        <PersonChip
+          person="lilit"
+          reason="Income too low"
+          left={367}
+          top={47}
+        />
+        <PersonChip
+          person="aram"
+          reason="Recent account issue"
+          left={34}
+          top={100}
+        />
+        <PersonChip
+          person="mika"
+          reason="Limited credit history"
+          left={16}
+          top={353}
+        />
+        <PersonChip
+          person="david"
+          reason="High utilization"
+          left={381}
+          top={376}
+        />
+      </div>
 
-      <StrengthBar
-        reveal="bar"
-        title="Alone Strength"
-        note="Not enough approval power."
-        stats={[
-          { value: "502", label: "Credit Score" },
-          { value: "68%", label: "DTI" },
-          { value: "$4.5k", label: "Income" },
-        ]}
-      />
+      <div className="px-4 pt-5 pb-5 sm:contents">
+        <StrengthBar
+          reveal="bar"
+          title="Alone Strength"
+          note="Not enough approval power."
+          stats={[
+            { value: "502", label: "Credit Score" },
+            { value: "68%", label: "DTI" },
+            { value: "$4.5k", label: "Income" },
+          ]}
+        />
+      </div>
     </ComparisonCard>
   );
 }
@@ -119,7 +131,7 @@ function AloneCard() {
 function SquadCard() {
   return (
     <ComparisonCard variant="squad" reveal="card-right">
-      <div className="absolute top-[133.5px] left-[calc(50%+1px)] flex w-[241px] -translate-x-1/2 flex-col items-center gap-5">
+      <div className="flex w-full flex-col items-center gap-5 px-4 pt-6 sm:absolute sm:top-[133.5px] sm:left-[calc(50%+1px)] sm:w-[241px] sm:-translate-x-1/2 sm:px-0 sm:pt-0">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
             {/* AvatarRing is itself `relative`, so placement goes on a wrapper
@@ -159,26 +171,30 @@ function SquadCard() {
           </div>
         </div>
 
-        <p className="w-[192px] text-center text-[12px] leading-[1.4] tracking-[-0.24px] text-white/50">
+        <p className="w-full max-w-[192px] text-center text-base leading-[1.5] tracking-[-0.24px] text-white/50 sm:text-[12px] sm:leading-[1.4]">
           Same file. Backed by three others and one shared reserve.
         </p>
       </div>
 
-      <PersonChip person="lilit" approved left={336} top={42} />
-      <PersonChip person="aram" approved left={22} top={76} />
-      <PersonChip person="mika" approved left={16} top={327} />
-      <PersonChip person="david" approved left={373} top={373} />
+      <div className="flex flex-wrap justify-center gap-2 px-4 pt-5 sm:contents">
+        <PersonChip person="lilit" approved left={336} top={42} />
+        <PersonChip person="aram" approved left={22} top={76} />
+        <PersonChip person="mika" approved left={16} top={327} />
+        <PersonChip person="david" approved left={373} top={373} />
+      </div>
 
-      <StrengthBar
-        reveal="bar"
-        title="Squad Strength"
-        note="Higher approval power."
-        stats={[
-          { value: "712", label: "Avg Squad score", positive: true },
-          { value: "34%", label: "Avg DTI", positive: true },
-          { value: "$21.5K", label: "Combined Income", positive: true },
-        ]}
-      />
+      <div className="px-4 pt-5 pb-5 sm:contents">
+        <StrengthBar
+          reveal="bar"
+          title="Squad Strength"
+          note="Higher approval power."
+          stats={[
+            { value: "712", label: "Avg Squad score", positive: true },
+            { value: "34%", label: "Avg DTI", positive: true },
+            { value: "$21.5K", label: "Combined Income", positive: true },
+          ]}
+        />
+      </div>
     </ComparisonCard>
   );
 }
@@ -187,7 +203,7 @@ export default function AloneVsTogether() {
   return (
     <section className="screen relative w-full" data-sequence-section="alone">
       <div className="screen-body">
-        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
           </div>
@@ -205,7 +221,7 @@ export default function AloneVsTogether() {
               for more.
             </h2>
             <p
-              className="type-lede max-w-[604px] leading-[1.5] tracking-[-0.32px] text-white/70"
+              className="type-lede type-measure max-w-[604px] tracking-[-0.32px] text-white/70"
               data-reveal="copy"
             >
               Squad combines your profiles into one group application.
@@ -223,8 +239,8 @@ export default function AloneVsTogether() {
           on both axes: `overflow-x: clip` beside the existing `overflow-y:
           hidden` computes back to `hidden`, leaving it a scroll container.
         */}
-        <div className="screen-payload">
-          <div className="stage-viewport stage-viewport-clip">
+        <div className="screen-payload px-5 sm:px-0">
+          <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"
               style={
@@ -234,17 +250,19 @@ export default function AloneVsTogether() {
                 } as React.CSSProperties
               }
             >
-              <div className="stage">
-                <div className="flex h-full items-start gap-28">
+              <div className="stage w-full sm:w-auto">
+                <div className="flex w-full flex-col items-stretch gap-4 sm:h-full sm:flex-row sm:items-start sm:gap-28">
                   <AloneCard />
+                  {/* Between the two panels on a phone, dead centre of the row
+                      from sm: up — the same word doing the same job either way. */}
+                  <span
+                    className="font-display self-center text-[40px] leading-none text-white italic opacity-70 my-6 sm:my-0 sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:self-auto sm:text-[48px]"
+                    data-reveal="vs"
+                  >
+                    VS
+                  </span>
                   <SquadCard />
                 </div>
-                <span
-                  className="font-display absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[48px] leading-none text-white italic opacity-70"
-                  data-reveal="vs"
-                >
-                  VS
-                </span>
               </div>
             </div>
           </div>

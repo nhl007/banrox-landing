@@ -59,8 +59,22 @@ export default function ComparisonCard({
     // 564x628 frame. A CSS border would eat 2px of the padding box and shift
     // every absolutely-placed child inward by 2px.
     <div
-      className={`relative shrink-0 overflow-hidden rounded-3xl ring-2 ring-white/10 bg-[rgba(0,3,20,0.7)] ${className}`.trim()}
-      style={{ width: CARD_W, height: CARD_H }}
+      /*
+       * Fluid on a phone, exact from the gate up.
+       *
+       * The height has to go with the width: everything inside is placed in the
+       * artboard's coordinates and the panel is 564 wide, so at 320 the chips
+       * would be outside it and the strength rail below the fold of it. On a
+       * phone the panel is a plain column instead — see the section — and its
+       * height is whatever that column needs.
+       */
+      className={`relative w-full shrink-0 overflow-hidden rounded-3xl bg-[rgba(0,3,20,0.7)] ring-2 ring-white/10 sm:h-[var(--card-h)] sm:w-[var(--card-w)] ${className}`.trim()}
+      style={
+        {
+          "--card-w": `${CARD_W}px`,
+          "--card-h": `${CARD_H}px`,
+        } as React.CSSProperties
+      }
       data-reveal={reveal}
     >
       {isSquad ? (
@@ -98,7 +112,7 @@ export default function ComparisonCard({
         width={619}
         height={716}
         data-animate="texture"
-        className="pointer-events-none absolute left-0 max-w-none"
+        className="pointer-events-none absolute left-0 hidden max-w-none sm:block"
         style={{ top: isSquad ? -3 : -5.5 }}
       />
 
@@ -112,7 +126,7 @@ export default function ComparisonCard({
          */
         <div
           key={ring.src}
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+          className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 sm:block"
           style={{
             width: ring.size,
             height: ring.size,

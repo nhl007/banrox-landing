@@ -30,7 +30,7 @@ export default function ScoreBadge({
       <AvatarRing size={30} person={person} framing={SCORE_FRAMING[personKey]} />
       <div className="flex w-[38px] flex-col items-start gap-1 leading-none">
         <p className="font-heading text-[16px] text-white">{score}</p>
-        <p className={`font-heading text-[12px] ${RATING_TONE[rating]}`}>
+        <p className={`font-heading text-sm sm:text-[12px] ${RATING_TONE[rating]}`}>
           {rating}
         </p>
       </div>

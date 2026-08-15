@@ -109,6 +109,14 @@ const SIGNALS: {
  * these with the blur/glow baked in, so the asset is larger than the node it
  * belongs to; `left`/`top` are the asset's own top-left in stage coordinates.
  */
+/*
+ * Decoration placed in stage coordinates — glows, arcs, the convergence dot.
+ *
+ * Hidden below the gate rather than repositioned: every one of them describes a
+ * distance between two things on the artboard, and on a phone those things are
+ * stacked in a column instead. An arc drawn between the row that was and the
+ * box that was is a line pointing at nothing.
+ */
 function StageArt({
   src,
   left,
@@ -130,7 +138,7 @@ function StageArt({
       alt=""
       width={width}
       height={height}
-      className="pointer-events-none absolute max-w-none"
+      className="pointer-events-none absolute hidden max-w-none sm:block"
       style={{ left, top }}
       data-reveal={reveal}
     />
@@ -144,7 +152,7 @@ export default function IntelligenceLayer() {
       data-sequence-section="intelligence"
     >
       <div className="screen-body">
-        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<Brain />}>Intelligence Layer</Badge>
           </div>
@@ -166,13 +174,13 @@ export default function IntelligenceLayer() {
             against the next one's 628), so it is the section that pays most for
             being fitted into a screen: on a short window this is where the
             scale bottoms out first. */}
-        <div className="screen-payload">
+        <div className="screen-payload px-5 sm:px-0">
           {/* stage-viewport-clip: the funnel's ambient glow is a 1189px asset on
               a 1112px stage, so it overhangs the artboard on every side. The top
               and bottom of it were always cropped; clipping the sides too keeps
               a window near the stage's own width from raising a scrollbar for
               39px of blur. */}
-          <div className="stage-viewport stage-viewport-clip">
+          <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"
               style={
@@ -195,11 +203,15 @@ export default function IntelligenceLayer() {
 
                 {/* Row 1: four member score cards. */}
                 <div
-                  className="absolute flex gap-6"
+                  className="flex w-full flex-col items-center gap-4 sm:absolute sm:flex-row sm:gap-6"
                   style={{ left: 0, top: 0 }}
                 >
                   {SCORES.map((s) => (
-                    <div key={s.memberLabel} data-reveal="member">
+                    <div
+                      className="w-full"
+                      key={s.memberLabel}
+                      data-reveal="member"
+                    >
                       <MemberScoreCard person={PEOPLE[s.personKey]} {...s} />
                     </div>
                   ))}
@@ -208,6 +220,7 @@ export default function IntelligenceLayer() {
                 {/* The fan from the four cards down into the signal row — so the
                     light runs down it, the direction the whole diagram flows. */}
                 <ConnectorTrace
+                  className="hidden sm:block"
                   src="/intel/connector-top.svg"
                   width={853}
                   height={120.5}
@@ -249,7 +262,7 @@ export default function IntelligenceLayer() {
                     stroke over the 8px padding, and a real border would eat 2px
                     the four 230px cards need. */}
                 <div
-                  className="bg-vignette absolute flex h-[210px] w-[960px] gap-2 rounded-2xl bg-[rgba(8,8,20,0.2)] p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+                  className="bg-vignette flex w-full flex-col gap-3 rounded-2xl bg-[rgba(8,8,20,0.2)] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] sm:absolute sm:h-[210px] sm:w-[960px] sm:flex-row sm:gap-2 sm:p-2"
                   style={{ left: 76.5, top: 282 }}
                   data-reveal="signals"
                 >
@@ -271,6 +284,7 @@ export default function IntelligenceLayer() {
                     the light has to be held to the stroke's own width or it
                     paints the shadow's disc instead of the wire. */}
                 <ConnectorTrace
+                  className="hidden sm:block"
                   src="/intel/hub-connector.svg"
                   width={46}
                   height={64}
@@ -284,7 +298,7 @@ export default function IntelligenceLayer() {
                 />
 
                 <div
-                  className="absolute"
+                  className="flex w-full justify-center sm:absolute sm:block sm:w-auto"
                   style={{ left: 385, top: 532 }}
                   data-reveal="hub"
                 >
@@ -294,6 +308,7 @@ export default function IntelligenceLayer() {
                 {/* Connector: hub down into the approved pill. Only a pixel wide,
                     so the padding is what gives its bloom anywhere to spread. */}
                 <ConnectorTrace
+                  className="hidden sm:block"
                   src="/intel/pill-connector.svg"
                   width={1}
                   height={40}
@@ -305,8 +320,8 @@ export default function IntelligenceLayer() {
                 />
 
                 <div
-                  className="bg-vignette absolute flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
-                  style={{ left: 387, top: 908, width: 338 }}
+                  className="bg-vignette flex w-full max-w-[338px] flex-wrap items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] sm:absolute sm:h-10 sm:w-[338px] sm:flex-nowrap sm:whitespace-nowrap"
+                  style={{ left: 387, top: 908 }}
                   data-reveal="verdict"
                 >
                   <Tick size={16} />

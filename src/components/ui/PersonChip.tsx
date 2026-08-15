@@ -29,23 +29,23 @@ export default function PersonChip({
 
   return (
     <div
-      className="absolute flex h-[66px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-2 backdrop-blur-[3px]"
+      className="flex h-[66px] w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-2 backdrop-blur-[3px] sm:absolute"
       style={{ left, top }}
       data-animate="chip"
     >
       <AvatarRing size={48} person={p} framing={CHIP_FRAMING[person]} />
 
       <div className="flex flex-col items-start gap-1.5">
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex sm:flex-col items-start gap-1">
           <div className="flex items-center gap-1">
-            <span className="font-heading text-[12px] leading-none font-medium whitespace-nowrap text-white">
+            <span className="font-heading text-sm sm:text-[12px] leading-none font-medium whitespace-nowrap text-white">
               {p.name}
             </span>
             {approved ? <VerifiedCheck size={8} /> : null}
           </div>
           <div className="flex items-center gap-0.5">
             {approved ? <Tick size={12} /> : <Cancel size={12} />}
-            <span className="font-heading text-[10px] leading-[1.2] whitespace-nowrap text-white/70">
+            <span className="font-heading text-sm sm:text-[10px] leading-[1.2] whitespace-nowrap text-white/70">
               {approved ? "Approved" : "Declined"}
             </span>
           </div>
@@ -54,7 +54,7 @@ export default function PersonChip({
         {reason ? (
           <>
             <span className="block h-px w-full bg-white/10" />
-            <span className="font-heading text-[10px] leading-none whitespace-nowrap text-white/50">
+            <span className="font-heading text-sm sm:text-[10px] leading-none whitespace-nowrap text-white/50">
               {reason}
             </span>
           </>

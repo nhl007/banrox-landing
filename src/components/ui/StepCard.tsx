@@ -16,7 +16,7 @@ export type StepCardProps = {
 export default function StepCard({ figure, title, description }: StepCardProps) {
   return (
     <div
-      className="relative flex h-[508px] w-full flex-col items-center gap-4 overflow-hidden rounded-3xl border-[1.5px] border-white/10 p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]"
+      className="relative flex w-full flex-col items-center gap-4 overflow-hidden rounded-3xl border-[1.5px] border-white/10 p-4 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] sm:h-[508px]"
     >
       <div className="pointer-events-none absolute inset-0 rounded-3xl" />
 

@@ -146,7 +146,7 @@ function Step2Figure() {
           rating="Fair"
         />
       </div>
-      <div className="absolute top-[16px] left-[245px]">
+      <div className="absolute top-[16px] right-[17px] ">
         <ScoreBadge
           person={PEOPLE.mika}
           personKey="mika"
@@ -154,7 +154,7 @@ function Step2Figure() {
           rating="Poor"
         />
       </div>
-      <div className="absolute top-[164px] left-[245px]">
+      <div className="absolute top-[164px] right-[17px]">
         <ScoreBadge
           person={PEOPLE.david}
           personKey="david"
@@ -182,12 +182,12 @@ function Step2Figure() {
           data-glow=""
         />
         <div className="relative flex flex-col items-center gap-2 text-center">
-          <p className="font-heading text-[10px] tracking-[1px] text-white uppercase opacity-40">
+          <p className="font-heading text-sm tracking-[1px] text-white uppercase opacity-40 text-[10px]">
             Group Score
           </p>
           <div className="flex flex-col items-center gap-1 leading-none">
             <p className="font-heading text-[24px] text-white">718</p>
-            <p className="font-heading text-success text-[12px] font-semibold">
+            <p className="font-heading text-success text-sm font-semibold sm:text-[12px]">
               Good
             </p>
           </div>
@@ -195,11 +195,11 @@ function Step2Figure() {
       </div>
 
       <div className="absolute top-[231px] left-1/2 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap">
-        <p className="font-heading text-[14px] leading-[1.2] text-white/50">
+        <p className="font-heading text-base leading-[1.2] text-white/50 sm:text-[14px]">
           4 profiles
         </p>
         <span className="bg-white/50 block size-[3px] shrink-0 rounded-full" />
-        <p className="font-heading text-[14px] leading-[1.2] text-white/50">
+        <p className="font-heading text-base leading-[1.2] text-white/50 sm:text-[14px]">
           1 assessment
         </p>
       </div>
@@ -304,7 +304,7 @@ function Step3Figure() {
               className="w-[3px] rounded-[2px]"
               style={{ height: bar.height, backgroundColor: bar.color }}
             />
-            <div className="flex flex-col items-center text-[12px] leading-normal tracking-[-0.24px] whitespace-nowrap">
+            <div className="flex flex-col items-center text-sm leading-normal tracking-[-0.24px] whitespace-nowrap sm:text-[12px]">
               <p className="font-semibold text-white">{bar.value}</p>
               <p className="font-medium text-white/70">{bar.name}</p>
             </div>
@@ -319,7 +319,7 @@ export default function HowSquadWorks() {
   return (
     <section className="screen relative w-full" data-sequence-section="works">
       <div className="screen-body">
-        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] px-6">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<CreditCard />}>How Squad works</Badge>
           </div>
@@ -335,8 +335,8 @@ export default function HowSquadWorks() {
 
         {/* No data-reveal on the wrapper: each card grows in on its own, and a
             group fade over the top would flatten that back into one crossfade. */}
-        <div className="screen-payload">
-          <div className="stage-viewport">
+        <div className="screen-payload px-5 sm:px-0">
+          <div className="stage-viewport stage-fluid">
             <div
               className="stage-sizer"
               style={
@@ -346,22 +346,31 @@ export default function HowSquadWorks() {
                 } as React.CSSProperties
               }
             >
-              <div className="stage flex gap-8">
-                <div className="w-[392px] shrink-0" data-reveal="step">
+              <div className="stage flex w-full flex-col gap-6 sm:w-auto sm:flex-row sm:gap-8">
+                <div
+                  className="w-full shrink-0 sm:w-[392px]"
+                  data-reveal="step"
+                >
                   <StepCard
                     figure={<Step1Figure />}
                     title="Form your squad"
                     description="Invite up to 3 trusted people — friends, family, or anyone you trust financially. Each member connects their bank and authorizes a credit check."
                   />
                 </div>
-                <div className="w-[392px] shrink-0" data-reveal="step">
+                <div
+                  className="w-full shrink-0 sm:w-[392px]"
+                  data-reveal="step"
+                >
                   <StepCard
                     figure={<Step2Figure />}
                     title="Get scored as a group"
                     description="Banrox's patented group risk engine combines every member's profile into a single group assessment. Combined behavior is more stable — which is why the group qualifies for more."
                   />
                 </div>
-                <div className="w-[392px] shrink-0" data-reveal="step">
+                <div
+                  className="w-full shrink-0 sm:w-[392px]"
+                  data-reveal="step"
+                >
                   <StepCard
                     figure={<Step3Figure />}
                     title="Spend in your lane, back each other"

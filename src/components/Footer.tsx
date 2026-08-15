@@ -106,7 +106,7 @@ function ContactCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="group relative flex w-[392px] shrink-0 flex-col items-center justify-center gap-[40px] overflow-hidden rounded-[32px] border-[1.5px] border-solid border-white/15 bg-white/[0.03] p-[40px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[32px] transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-white/30 hover:bg-white/[0.06] hover:shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.14),0_20px_44px_-14px_rgba(38,75,255,0.5)]">
+    <div className="group relative flex w-full shrink-0 flex-col items-center justify-center gap-8 overflow-hidden rounded-3xl border-[1.5px] border-solid border-white/15 bg-white/[0.03] p-8 sm:w-[392px] sm:gap-[40px] sm:rounded-[32px] sm:p-[40px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[32px] transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-white/30 hover:bg-white/[0.06] hover:shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.14),0_20px_44px_-14px_rgba(38,75,255,0.5)]">
       {/* Top Light Highlight Asset (Ellipse 5979). It comes up with the card, so
           the hover reads as a light switching on rather than a box moving. */}
       <div className="pointer-events-none absolute top-[-121.5px] left-[106.84px] h-[121px] w-[356px] opacity-80 transition-opacity duration-300 ease-out group-hover:opacity-100">
@@ -139,7 +139,7 @@ export default function Footer() {
       {/* ========================================================================= */}
       {/* TOP BAND: Starfield, Horizon Glow Arc, BX Vector & Contact Cards           */}
       {/* ========================================================================= */}
-      <div className="relative h-[738px] w-full shrink-0 overflow-hidden bg-[#070712]">
+      <div className="relative w-full shrink-0 overflow-hidden bg-[#070712] py-16 sm:h-[738px] sm:py-0">
         {/*
           The sky. Sized in percentages so it keeps the artboard's own ~13%
           overhang on either side at any width — the asset is 1823 wide against
@@ -213,11 +213,14 @@ export default function Footer() {
         />
 
         {/* Contact Cards Row */}
-        <div className="absolute top-1/2 left-1/2 z-10 grid w-full max-w-[1240px] -translate-x-1/2 -translate-y-1/2 grid-cols-3 grid-rows-1 justify-center gap-[32px] px-4">
+        {/* Stacked on a phone and a row from the gate up. The absolute centring
+            goes with it: with the band content-height there is nothing to centre
+            against, and the cards are the band. */}
+        <div className="relative z-10 mx-auto grid w-full max-w-[1240px] grid-cols-1 justify-center gap-6 px-5 sm:absolute sm:top-1/2 sm:left-1/2 sm:grid-cols-3 sm:grid-rows-1 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-[32px] sm:px-4">
           <ContactCard title="Email Us">
             <a
               href="mailto:info@banrox.com"
-              className="transition-colors hover:text-white"
+              className="inline-flex min-h-[44px] items-center transition-colors hover:text-white active:text-white sm:min-h-0"
             >
               info@banrox.com
             </a>
@@ -238,7 +241,7 @@ export default function Footer() {
       {/* ========================================================================= */}
       {/* BOTTOM BAND: Brand, Socials, Navigation Grid, Disclaimers & Watermark      */}
       {/* ========================================================================= */}
-      <div className="relative h-[1140px] w-full shrink-0 overflow-hidden bg-[#080814]">
+      <div className="relative w-full shrink-0 overflow-hidden bg-[#080814] sm:h-[1140px]">
         {/*
           Top Gradient Tint Overlay — full bleed, so the band does not change
           colour at the 1440 mark.
@@ -260,7 +263,7 @@ export default function Footer() {
 
         {/* Everything below is placed against the artboard, so it lives in the
             centred 1440 column rather than in the full-bleed band. */}
-        <div className="relative mx-auto h-full w-full max-w-[1440px]">
+        <div className="relative mx-auto flex h-full w-full max-w-[1440px] flex-col gap-10 px-5 py-14 sm:block sm:gap-0 sm:px-0 sm:py-0">
           {/* Bottom Glow Ellipse Assets */}
           <div className="pointer-events-none absolute bottom-[-119px] left-[calc(50%+571.5px)] size-[669px] -translate-x-1/2">
             <div className="absolute inset-[-44.84%]">
@@ -299,11 +302,11 @@ export default function Footer() {
           </div>
 
           {/* Navigation Links Columns (Right Side) */}
-          <div className="absolute top-[80px] right-[100px] z-10 flex items-start gap-[32px] text-[16px] leading-none tracking-[-0.32px]">
+          <div className="relative z-10 grid w-full grid-cols-2 items-start gap-x-6 gap-y-10 text-[16px] leading-none tracking-[-0.32px] sm:absolute sm:top-[80px] sm:right-[100px] sm:flex sm:w-auto sm:gap-[32px]">
             {navColumns.map((column) => (
               <div
                 key={column.title}
-                className="relative flex w-[180px] shrink-0 flex-col items-start gap-[32px]"
+                className="relative flex w-full shrink-0 flex-col items-start gap-4 sm:w-[180px] sm:gap-[32px]"
               >
                 <h4 className="font-sans w-full font-semibold text-white">
                   {column.title}
@@ -312,7 +315,7 @@ export default function Footer() {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`font-sans w-full font-normal transition-colors ${
+                    className={`font-sans flex min-h-[44px] w-full items-center font-normal transition-colors sm:min-h-0 sm:block ${
                       "highlight" in item && item.highlight
                         ? "text-[#8585e9]"
                         : "text-white/70 hover:text-white"
@@ -326,12 +329,12 @@ export default function Footer() {
           </div>
 
           {/* Brand Info & Social Icons (Left Side) */}
-          <div className="absolute top-[80px] left-[100px] z-10 flex w-[298px] flex-col items-start gap-[40px]">
+          <div className="relative z-10 flex w-full flex-col items-start gap-8 sm:absolute sm:top-[80px] sm:left-[100px] sm:w-[298px] sm:gap-[40px]">
             {/* White Logomark Asset */}
             <Link
               href="/"
               aria-label="Banrox home"
-              className="relative block h-[32px] w-[150px] shrink-0 overflow-hidden"
+              className="relative flex h-11 w-[150px] shrink-0 items-center overflow-hidden sm:block sm:h-[32px]"
             >
               <Image
                 src="/footer/logo-white.svg"
@@ -358,7 +361,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="flex size-[40px] shrink-0 items-center justify-center overflow-hidden rounded-[30px] border border-solid border-white/15 bg-[rgba(255,255,255,0.02)] transition-colors hover:bg-white/10"
+                  className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[30px] border border-solid border-white/15 bg-[rgba(255,255,255,0.02)] transition-colors hover:bg-white/10 active:bg-white/15 sm:size-[40px]"
                 >
                   <Image
                     src={social.src}
@@ -373,7 +376,7 @@ export default function Footer() {
           </div>
 
           {/* Legal Disclaimer Box */}
-          <div className="font-sans absolute top-[584px] left-[100px] z-10 flex w-[1240px] flex-col items-start gap-[24px] overflow-hidden rounded-[32px] border-[1.5px] border-solid border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.1)] p-[40px] text-center text-[14px] font-normal tracking-[-0.28px] text-white backdrop-blur-md">
+          <div className="font-sans relative z-10 flex w-full flex-col items-start gap-5 overflow-hidden rounded-3xl border-[1.5px] border-solid border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.1)] p-6 text-left text-base font-normal tracking-[-0.28px] text-white backdrop-blur-md sm:absolute sm:top-[584px] sm:left-[100px] sm:w-[1240px] sm:gap-[24px] sm:rounded-[32px] sm:p-[40px] sm:text-center sm:text-[14px]">
             <p className="w-full leading-[1.5] opacity-70">
               Banrox is a financial operating system protecting Americans&apos;
               credit, identity, privacy, and business health through AI-powered
@@ -394,20 +397,20 @@ export default function Footer() {
           </div>
 
           {/* Bottom Copyright & Terms Bar */}
-          <div className="font-sans absolute top-[837px] left-[100px] z-10 flex w-[1240px] items-center justify-between text-[14px] leading-none font-normal tracking-[-0.28px] whitespace-nowrap text-white uppercase">
+          <div className="font-sans relative z-10 flex w-full flex-col items-start gap-4 text-base leading-none font-normal tracking-[-0.28px] text-white uppercase sm:absolute sm:top-[837px] sm:left-[100px] sm:w-[1240px] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:text-[14px] sm:whitespace-nowrap">
             <p className="opacity-70">
               Copyright © 2025 Banrox Inc. All rights reserved.
             </p>
-            <div className="flex items-center gap-[32px]">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
               <Link
                 href="/privacy"
-                className="opacity-70 transition-opacity hover:opacity-100"
+                className="flex min-h-[44px] items-center opacity-70 transition-opacity hover:opacity-100 sm:min-h-0"
               >
                 Privacy Policy
               </Link>
               <Link
                 href="/terms"
-                className="opacity-70 transition-opacity hover:opacity-100"
+                className="flex min-h-[44px] items-center opacity-70 transition-opacity hover:opacity-100 sm:min-h-0"
               >
                 Terms &amp; Conditions
               </Link>
@@ -415,7 +418,7 @@ export default function Footer() {
           </div>
 
           {/* Giant Bottom Typography Watermark "Banrox" */}
-          <p className="font-display pointer-events-none absolute bottom-[253px] left-[690.5px] -translate-x-1/2 translate-y-full bg-gradient-to-b from-white/5 to-white/60 bg-clip-text text-center whitespace-nowrap text-[transparent] select-none">
+          <p className="font-display pointer-events-none absolute bottom-[253px] left-[690.5px] hidden -translate-x-1/2 translate-y-full bg-gradient-to-b from-white/5 to-white/60 bg-clip-text text-center whitespace-nowrap text-[transparent] select-none sm:block">
             <span className="text-[498px] leading-none font-normal italic">
               Ban
             </span>
