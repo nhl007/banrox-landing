@@ -70,15 +70,15 @@ export type SectionSpec = {
    */
   label: string;
   /**
-   * What moves this section's beats along.
+   * What sets this section's beats going.
    *
-   * "scroll" is the scene: the section owns a window of the track and its
-   * animation is scrubbed across it, so the reader advances it themselves.
+   * "scroll" is the default and what six of the seven do: the section plays its
+   * entrance the first time it is scrolled into view, once, and never again —
+   * see the controller.
    *
-   * "load" is for the one section that cannot be — the page opening. The hero
-   * is on screen before there is any scrolling to respond to, and scrubbing it
-   * would mean opening on an empty window until somebody moved the wheel. It
-   * plays on a clock instead, and only its dissolve belongs to the scroll.
+   * "load" is for the one section that cannot wait to be scrolled to, because
+   * it is the page opening. The hero is already in front of the reader before
+   * there is any scrolling to respond to, so it plays on a clock.
    */
   plays?: "scroll" | "load";
   beats: Beat[];
@@ -155,9 +155,9 @@ export const SECTIONS: SectionSpec[] = [
     ],
     /* The four passport cards breathing, and the bloom and band behind them
        drifting. Both wait for the fan to finish opening — see the controller —
-       and both stop the moment the deck hands the window on.
-       glowDrift is the one ambient every section on the deck has: whatever a
-       section's ambient light is, it is what moves it. */
+       and both stop as soon as the hero is scrolled past.
+       glowDrift is the one ambient every section has: whatever a section's
+       ambient light is, it is what moves it. */
     ambient: [heroFloat, glowDrift],
   },
   {

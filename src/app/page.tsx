@@ -4,17 +4,27 @@ import Hero from "@/components/Hero";
 import HowSquadWorks from "@/components/HowSquadWorks";
 import IntelligenceLayer from "@/components/IntelligenceLayer";
 import SquadApproves from "@/components/SquadApproves";
+import SquadCardTrail from "@/components/SquadCardTrail";
 import SquadInvitation from "@/components/SquadInvitation";
 
 export default function Home() {
   return (
     <main className="flex-1">
+      {/* Before the sections, and that is load-bearing: both are positioned
+          elements with no z-index of their own, so they paint in document order
+          and the card travels behind everything on the page. */}
+      <SquadCardTrail />
+
       {/*
-        The deck. Above the gate these seven are not a column — they are one
-        window, stacked, and a scroll gesture hands the window from one to the
-        next rather than moving the page. See .scene in globals.css and the
-        controller in scroll/ScrollSequence.tsx. Below the gate the wrapper does
-        nothing and they are an ordinary column again.
+        Seven sections, one after another, scrolled the way any page is. Each is
+        one window tall above the gate — see .screen in globals.css — and each
+        plays its own entrance as it comes into view, which the controller in
+        scroll/ScrollSequence.tsx arranges.
+
+        These two wrappers are what is left of the deck this used to be, where
+        the seven were stacked in a single windowful and a gesture handed the
+        window from one to the next. They do nothing now beyond giving the first
+        section something to be :first-child of.
       */}
       <div className="scene-track">
         <div className="scene">

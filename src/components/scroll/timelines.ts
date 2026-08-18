@@ -48,13 +48,10 @@ const inStep = () => ({
 /**
  * Where a section's ambient glow travels in from.
  *
- * The deck cuts between sections in a single frame — no dissolve, nothing
- * between the two — so what the reader sees of a handover is the arriving
- * section assembling itself. A glow that simply faded up in place would make
- * the one thing spanning the whole deck the one thing that never moved. Each
- * section's therefore comes in from its own direction, written onto the element
- * as data-glow-from and read back here: a unit-ish vector, scaled by
- * MOTION.glow.travel.
+ * A glow that simply faded up in place would make the largest thing on each
+ * screen the one thing on it that never moved. Each section's therefore comes in
+ * from its own direction, written onto the element as data-glow-from and read
+ * back here: a unit-ish vector, scaled by MOTION.glow.travel.
  *
  * Read off the element rather than passed in because the four glows that belong
  * to a diagram are revealed by that diagram's own factory, each in its own
@@ -108,6 +105,132 @@ const glowIn = (tl: gsap.core.Timeline, el: HTMLElement) => {
     0,
   );
 };
+
+/**
+ * The Squad card travelling from the hero's fan to the approve diagram's slot,
+ * driven by the scroll.
+ *
+ * Returns the machinery for the controller to hang a scrubbed ScrollTrigger on,
+ * or null if any of the three elements is missing — a page without an approve
+ * section is not an error, it just has nowhere for the card to go.
+ *
+ * ---------------------------------------------------------------------------
+ * PAGE COORDINATES, MEASURED LAZILY
+ *
+ * Both ends of the journey are fixed points on the page and the card is
+ * somewhere on the line between them, which is the whole of the geometry. The
+ * two ends are measured rather than derived because neither can be worked out
+ * from the markup: both cards sit inside a .stage, a scaled artboard whose
+ * scale comes from a container query, and the two stages are different sizes at
+ * every window width. getBoundingClientRect knows; nothing else does.
+ *
+ * Re-measured on every ScrollTrigger refresh, which is what keeps it correct
+ * across a resize. And the FIRST measurement has to wait for the hero to finish
+ * arriving: the hero's card starts its life lying flat and turned on its side,
+ * so a rect taken while that is still playing is the bounding box of a card
+ * mid-quarter-turn, and the traveller would spend the whole journey a hundred
+ * pixels from where it should have set off.
+ *
+ * ---------------------------------------------------------------------------
+ * WHAT MOVES WHAT
+ *
+ * The traveller owns its own transform and opacity outright. The hero's card
+ * only ever has its opacity written, which is why this can share it with
+ * heroCards — that one turns the card upright and never touches opacity.
+ *
+ * The approve diagram's card is not written at all, by anything: it is left at
+ * the stylesheet's opacity 0 and the traveller lands on top of it. It is still
+ * in the layout, still holding the space, still what the connectors point at.
+ */
+export function squadTrail(root: Document | HTMLElement) {
+  const card = root.querySelector<HTMLElement>("[data-squad-trail]");
+  const heroCard = root.querySelector<HTMLElement>(
+    "[data-sequence-section='hero'] [data-fan-anchor]",
+  );
+  const slot = root.querySelector<HTMLElement>(
+    "[data-sequence-section='approve'] [data-reveal='squad']",
+  );
+  if (!card || !heroCard || !slot) return null;
+
+  const { dim, out, in: back, sag } = MOTION.trail;
+
+  /** An element's box in page coordinates, which is what the card is driven in. */
+  const box = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + window.scrollX, y: r.top + window.scrollY, w: r.width };
+  };
+
+  let from = box(heroCard);
+  let to = box(slot);
+  let natural = card.offsetWidth;
+  /*
+   * Nothing is placed or painted until the hero has finished arriving.
+   *
+   * The first ScrollTrigger refresh happens on load, while the hero's Squad
+   * card is still mid-quarter-turn, and placing the traveller against that rect
+   * put a second, full-opacity Squad card on the hero for two and a half
+   * seconds — until the delayed re-measure snapped it into place. Reported, and
+   * reproduced. The card stays at opacity 0 until there is a real measurement
+   * to place it against.
+   */
+  let ready = false;
+
+  const measure = () => {
+    /* Unscaled, or the width read back is the width it was last set to. */
+    gsap.set(card, { x: 0, y: 0, scale: 1 });
+    natural = card.offsetWidth || 1;
+    from = box(heroCard);
+    to = box(slot);
+  };
+
+  /**
+   * The card's opacity along the journey: down to `dim` over the first stretch,
+   * held there for the middle, back to full over the last.
+   *
+   * Written as a function of progress rather than as keyframes on a timeline
+   * because the position is one too — one place that says where the card is and
+   * what it looks like at any point, rather than two that have to agree.
+   */
+  const fade = (p: number) => {
+    if (p <= out) return 1 - (1 - dim) * (p / out);
+    if (p >= 1 - back) return dim + (1 - dim) * ((p - (1 - back)) / back);
+    return dim;
+  };
+
+  const apply = (p: number) => {
+    if (!ready) return;
+    const w = from.w + (to.w - from.w) * p;
+    /*
+     * A sag, so the trip reads as one.
+     *
+     * The straight line between the two slots is shorter than the scroll that
+     * gets you between them — 1714px of page against 2100px of wheel at 1440x900
+     * — so a card moving evenly along it drifts UP the window for the whole
+     * journey, which is exactly backwards. Bending the path below the line
+     * pushes the first half of it downwards faster than the page moves, so the
+     * card sinks away from the hero before it is drawn back up into the slot.
+     * Zero at both ends by construction, so neither of them moves.
+     */
+    gsap.set(card, {
+      x: from.x + (to.x - from.x) * p,
+      y: from.y + (to.y - from.y) * p + sag * Math.sin(Math.PI * p),
+      scale: w / natural,
+      opacity: fade(p),
+    });
+    /* The hero's own card goes out under the traveller as it takes over. Both
+       are the same card at the same size in the same place for the whole of the
+       hand-over, so what the reader sees is one card dimming. */
+    gsap.set(heroCard, { opacity: 1 - Math.min(1, p / out) });
+  };
+
+  /** Called once the hero has settled — see MOTION.trail.settle. */
+  const arm = () => {
+    ready = true;
+    measure();
+  };
+
+  return { measure, apply, arm };
+}
 
 /**
  * The heading block: badge, headline, sub-paragraph, each scaling up out of
@@ -302,7 +425,6 @@ export function navbarDrop(el: HTMLElement) {
    */
   gsap.set(pill, {
     y: -el.offsetHeight,
-    rotationX: MOTION.navbar.fold,
     transformOrigin: "50% 0%",
     transformPerspective: 800,
     opacity: 0.2,
@@ -310,7 +432,6 @@ export function navbarDrop(el: HTMLElement) {
 
   return beat().to(pill, {
     y: 0,
-    rotationX: 0,
     opacity: 1,
     ...MOTION.navbar.drop,
   });
@@ -434,6 +555,74 @@ export function heroCards(el: HTMLElement) {
   );
 }
 
+/**
+ * The hero's fan closing again, scrubbed by the scroll.
+ *
+ * The last thing heroCards does is bring the four passport cards out from
+ * behind the Squad card; this is that, run backwards, and it is what the reader
+ * does rather than what they watch. Scroll away from the hero and the four fold
+ * back in behind the Squad card and are gone, leaving one card on the screen —
+ * which is the card that then travels down the page (see squadTrail).
+ *
+ * It replaced a straight fade. The Squad card used to simply dim out with the
+ * fan still spread around it, which said nothing: four cards fading in place is
+ * four things being switched off, and the one that carries on down the page had
+ * no reason to be the one that was left. Folding them into it makes the Squad
+ * card the thing they came out of, so what leaves the hero is what the hero was
+ * about.
+ *
+ * Backwards through the fan, too — `from: "end"` — so they close in the reverse
+ * of the order they opened.
+ *
+ * Only the four. The Squad card between them keeps its place and its size: it
+ * is about to be handed to the traveller, which is upright and unrotated, and
+ * turning it back onto its side (the other half of heroCards) would mean
+ * handing over mid-quarter-turn.
+ *
+ * Returns null if the hero is not on the page.
+ */
+export function heroFold(el: HTMLElement) {
+  const cards = q(el, "card");
+  const anchor = el.querySelector<HTMLElement>("[data-fan-anchor]");
+  if (!cards.length || !anchor) return null;
+
+  /* Where each card sits when it is stacked behind the Squad card — the same
+     measurement heroCards opens from, in the stage's own units, which is the
+     space GSAP's x lives in and which no amount of stage scaling changes. */
+  const stacked = (card: HTMLElement) =>
+    anchor.offsetLeft +
+    anchor.offsetWidth / 2 -
+    (card.offsetLeft + card.offsetWidth / 2);
+
+  /*
+   * fromTo, and both ends stated.
+   *
+   * A plain `to` records its start values the first time it renders, and a
+   * scrubbed timeline renders the moment its trigger is created — which is
+   * while heroCards is still animating these same four cards from behind the
+   * Squad card. One of them was caught at the far end of that and pinned there:
+   * folded and invisible before the reader had scrolled a hundred pixels, while
+   * the other three behaved. Measured. Stating the resting state explicitly
+   * makes this independent of when it happens to be built.
+   *
+   * immediateRender: false so that stating it is not the same as applying it —
+   * the fold must not put the cards in their resting state on creation, which
+   * would be the hero's entrance skipping to its own end.
+   */
+  return gsap.timeline({ paused: true }).fromTo(
+    cards,
+    { x: 0, opacity: 1 },
+    {
+      x: (_i, card: HTMLElement) => stacked(card),
+      opacity: 0,
+      ease: "none",
+      duration: 1,
+      stagger: { each: MOTION.hero.fold.stagger, from: "end" },
+      immediateRender: false,
+    },
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -442,7 +631,7 @@ export function heroCards(el: HTMLElement) {
  * Ambient rather than a beat: it has no arrival to be part of and no end to
  * reach. The controller holds it until heroCards has finished opening the fan —
  * a float running underneath that entrance would be moving the cards while they
- * were still travelling — and drops it the moment the deck hands the window on.
+ * were still travelling — and drops it as soon as the section is scrolled past.
  *
  * One independent tween per card rather than one tween with a stagger. A
  * staggered tween carrying repeat:-1 repeats the SET: all four restart together
@@ -479,7 +668,7 @@ export function heroFloat(el: HTMLElement) {
 /**
  * A section's ambient glow, drifting for as long as that section is on screen.
  *
- * The one ambient every section on the deck has, and it moves the largest
+ * The one ambient every section has, and it moves the largest
  * things on the page: the bloom and band behind the hero's card fan, the halo
  * behind the approve diagram, the aura behind the intelligence funnel, the pair
  * behind the Early Access card, and the section's own bloom on the three
@@ -510,7 +699,7 @@ export function heroFloat(el: HTMLElement) {
  *
  * Ambient, so the controller holds it until the section has finished arriving —
  * it would otherwise be dragging a bloom sideways while it was still travelling
- * in — and drops it the moment the deck hands the window on.
+ * in — and drops it as soon as the section is scrolled past.
  */
 export function glowDrift(el: HTMLElement) {
   const { scale, shift, duration, step, stagger, ease } = MOTION.glow.drift;
@@ -810,7 +999,10 @@ export function alonePanels(el: HTMLElement) {
 export function approveDiagram(el: HTMLElement) {
   const request = q(el, "request");
   const votes = q(el, "votes");
-  const squad = q(el, "squad");
+  /* No `squad` here. This diagram's Squad card slot is filled by the card that
+     travelled down from the hero — see squadTrail — so the element itself is
+     never revealed; it stays at the stylesheet's opacity 0 and does nothing but
+     hold the space the traveller lands in and the connectors point at. */
   const halo = q(el, "squad-glow");
   const ledger = q(el, "ledger");
   const chips = q(el, "chip");
@@ -832,7 +1024,6 @@ export function approveDiagram(el: HTMLElement) {
   gsap.set(request, { opacity: from, x: -shift });
   gsap.set(votes, { opacity: from, x: shift });
   gsap.set(ledger, { opacity: from, y: lift });
-  gsap.set(squad, { opacity: from, y: lift });
   glowStart(halo);
   gsap.set(chips, { opacity: from, y: lift / 4 });
 
@@ -843,7 +1034,6 @@ export function approveDiagram(el: HTMLElement) {
   tl.to(request, { opacity: 1, x: 0, ...inStep() }, 0)
     .to(votes, { opacity: 1, x: 0, ...inStep() }, "<")
     .to(ledger, { opacity: 1, y: 0, ...inStep() }, "<")
-    .to(squad, { opacity: 1, y: 0, ...inStep() }, "<")
     .to(halo, { opacity: 1, x: 0, y: 0, ...MOTION.approve.glow }, "<");
 
   trace(tl, el, "-=0.25");
@@ -993,7 +1183,11 @@ export function intelSignals(el: HTMLElement) {
 
   /* The dot and the run that lands on it belong to the connector rather than to
      the row, so they stay chained off the row's own end. */
-  tl.to(nodes, { opacity: 1, ...MOTION.trace.node }, MOTION.copy.duration - 0.3);
+  tl.to(
+    nodes,
+    { opacity: 1, ...MOTION.trace.node },
+    MOTION.copy.duration - 0.3,
+  );
   traceRuns(tl, fan, "-=0.2");
   return tl;
 }

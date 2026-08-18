@@ -392,100 +392,132 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
- * The scene.
+ * The sections, as a column.
  *
- * Above the gate the sections stop being a column you scroll down and become
- * states of one window: all seven stacked in the same box, one visible at a
- * time, each dissolving into the next. Scroll is what advances them — see the
- * controller — so the page reads as a single thing changing rather than as
- * seven things going past.
+ * Which is all they are: seven blocks one after another, and the reader scrolls
+ * them. There is nothing here that holds the page, snaps it, pins it or takes a
+ * gesture from it — scrolling moves the document by exactly as much as was
+ * asked for and stops wherever it is let go.
  *
- * The track is the scroll that buys. It is the only element here with any real
- * height: one window per section for their animations to play out over, plus
- * one more so the last of them is still on screen when the scene lets go and
- * the footer arrives. The scene sticks to the top of the window for all of it.
- *
- * Sticky rather than a pinned element. ScrollTrigger's pin works by wrapping
- * the element and inserting a spacer of its own, which is a second opinion
- * about the page's height alongside the track's — and the height is the one
- * thing here that has to be simple, because every section's scroll range is
- * measured off it. Sticky needs no spacer, no wrapper and no refresh.
- */
-/*
- * Off by default and switched on by the gate, rather than the other way round:
- * a plain wrapper around a column of sections is what a phone gets, what a
- * reduced-motion reader gets, and what anyone with no JavaScript gets, so it is
- * what the stylesheet should say before it says anything else.
+ * That was not always true. Above the gate these used to be a deck: all seven
+ * stacked in one windowful at `position: absolute`, six of them held at
+ * `opacity: 0; visibility: hidden`, and a controller intercepting every wheel,
+ * touch and key event so that one gesture handed the window from one section to
+ * the next. The wrappers below are what is left of it, and they are now doing
+ * nothing but existing — kept because the markup names them and a page that
+ * scrolls needs no wrapper at all to do it.
  */
 .scene-track {
   position: relative;
 }
 
 /*
- * The scene is gated on prefers-reduced-motion as well as on size, and it is
- * the ONLY layout here that is.
+ * Sections are one window tall wherever the window can hold one.
  *
- * Because the scene is not a layout that works on its own. Six of its seven
- * sections are stacked underneath the first at opacity 0, and the only thing
- * that will ever reveal them is the controller — so a window that takes this
- * layout and does not run the controller shows the hero and nothing else, for
- * the whole page. Measured: a reduced-motion desktop got exactly that.
+ * This is the layout the design is drawn for — a heading and a diagram fitted
+ * into one screen rather than a screen grown to hold them — and it is a
+ * complete layout on its own, which is why it sits on the size gate alone and
+ * not on the motion one. It happens to be what the deck was built out of; it
+ * does not depend on the deck, and it outlived it.
  *
- * Sections being one window tall, below, is a different matter and stays on the
- * size gate alone: it is a complete layout by itself, it just happens to be the
- * one the scene is built out of.
+ * The first section shares its window with the navbar above it, which is in
+ * flow and not sticky: without this the hero would be a full window tall with
+ * 72px of bar on top of it, and its last 72px would sit below the fold with
+ * nothing to say it was there.
  */
-@media (min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
-
-  /*
-   * The deck has no scroll of its own — that is the whole idea. It is exactly
-   * one windowful and never moves; a gesture changes which section is showing
-   * rather than where the page is.
-   *
-   * Less the navbar, because the navbar is above it and stays there. The deck
-   * is what is left of the window, so at the top of the document the bar and
-   * the whole of a section are on screen together and nothing is ever cropped
-   * or waiting to be scrolled to.
-   */
-  .scene-track {
-    height: calc(100svh - var(--nav-h));
-  }
-
-  .scene {
-    position: relative;
-    height: 100%;
-  }
-
-  /*
-   * Stacked, not queued. Every section is the same box — the whole window —
-   * and only their opacity says which one you are looking at.
-   */
-  .scene>.screen {
-    position: absolute;
-    inset: 0;
-    height: auto;
-  }
-
-  /*
-   * The state the page opens in, held in CSS because the markup is
-   * server-rendered and paints before the controller exists: the hero is the
-   * scene, and the other six are behind it waiting to be switched to.
-   *
-   * visibility as well as opacity, so the six that are not on screen are not
-   * catching clicks meant for the one that is. The controller sets autoAlpha,
-   * which is the same pair — set, not tweened: the swap is a cut.
-   */
-  .scene>.screen:not(:first-child) {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
-/* Sections are one window tall wherever the window can hold one, scene or no
-   scene — see the note on the gate above. */
 @media (min-width: 641px) and (min-height: 480px) {
   .screen {
     height: 100svh;
+  }
+
+  .scene>.screen:first-child {
+    height: calc(100svh - var(--nav-h));
+  }
+
+  /*
+   * And a band of nothing between them.
+   *
+   * On the deck there was no between: one section replaced another in a single
+   * frame and the question never arose. Scrolled, seven full-height screens
+   * butted edge to edge run together — the foot of one diagram and the head of
+   * the next heading meet with nothing between them to say which belongs to
+   * which, and the reader is never given a moment where they are looking at
+   * neither.
+   *
+   * A sixth of the window is that moment: enough that the section being left is
+   * off the top before the one being arrived at has anything to say, and not so
+   * much that it reads as the page having ended. It was a fifth, which was a
+   * fraction too generous — the gap started to read as an absence rather than a
+   * breath. It is also where one section's
+   * light goes out and the next one's has not yet come up, so the gap reads as
+   * the dark between two lit rooms rather than as padding.
+   *
+   * ONE rule for every pair, with no section special-cased: `+` puts the same
+   * margin above all six of them, so the rhythm never changes as you scroll.
+   * Between, not around — the page still opens flush under the navbar and ends
+   * flush against the footer, which are edges rather than neighbours.
+   *
+   * Not below the gate. There a section is as tall as its contents rather than
+   * as tall as the window, so svh would be measuring the gap against something
+   * it has no relationship to — and the phones already have their between, in
+   * the 56px of --screen-pad each section carries top and bottom.
+   */
+  .scene>.screen+.screen {
+    margin-top: clamp(4rem, 16svh, 11.2rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The travelling Squad card.
+ *
+ * See SquadCardTrail for what it is and why it is a third card rather than one
+ * of the two real ones. This is only its place on the page.
+ *
+ * Absolute against the initial containing block — nothing above it in the tree
+ * is positioned — so its origin is the top left of the DOCUMENT and the
+ * controller can drive it in page coordinates: the hero's slot and the approve
+ * slot are two fixed points on the page and the card is somewhere on the line
+ * between them.
+ *
+ * Zero-sized on purpose. It is an origin, not a box; the card inside it is what
+ * has any extent, and keeping the wrapper at nothing means it can never widen
+ * the document and raise a scrollbar however far the card is driven.
+ *
+ * Off below the gate and under reduced motion, where there is no controller to
+ * drive it — and there the approve diagram's own Squad card is visible in the
+ * ordinary way, because the rule that hides it is behind the same query.
+ */
+.squad-trail {
+  display: none;
+}
+
+@media (min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+  .squad-trail {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /*
+   * Starts invisible and stays that way until the controller has measured where
+   * the hero's card is: the page is server-rendered and paints before any of
+   * this exists, and an unplaced card would flash at the document's top left
+   * corner for a frame.
+   *
+   * top left origin, so the scale the controller gives it is measured from the
+   * same corner its x/y are — the two compose into one placement instead of
+   * fighting over where the middle is.
+   */
+  .squad-trail-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transform-origin: top left;
   }
 }
 
@@ -849,14 +881,33 @@ body {
  * .screen-body is then raised over it explicitly, because a positioned element
  * paints over static content whatever the source order says.
  *
- * Clipped, because a section here is one card of a deck: light spilling past
- * its edges would paint over the navbar above it and the footer below, and
+ * Clipped, because a section owns one window and no more: light spilling past
+ * its edges would paint over the section above it and the one below, and
  * neither of those belongs to it.
  */
 .screen-glow {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  /*
+   * Clipped sideways and open top and bottom, which is a deliberate pair.
+   *
+   * Sideways, because a section is as wide as the window and nothing may reach
+   * past it: a bloom hanging off the left or right edge is scrollable overflow
+   * and raises a horizontal scrollbar. (`clip` is the one overflow value that
+   * may be paired with `visible` on the other axis without forcing it to
+   * `auto`, which is the whole reason this can be split.)
+   *
+   * Open vertically, because the light is supposed to carry over. The glows
+   * that belong to a diagram were never clipped — the hero's bloom runs a long
+   * way past the foot of its section, which is what makes the hand-off into the
+   * section below read as one room rather than two. Clipping this one meant the
+   * hero's light fell away across the gap and Alone Vs Together's did not pick
+   * it up until well inside its own heading. Measured, in mean blue across the
+   * boundary: 91 at the hero's last row, 65 by the time the next heading
+   * arrived.
+   */
+  overflow-x: clip;
+  overflow-y: visible;
   pointer-events: none;
 }
 
@@ -1089,8 +1140,8 @@ body {
 
 /*
  * The lit part, from the first stop down to the one you are on. Laid out at
- * full length by the component and scaled from its top edge, so stepping
- * through the deck never touches layout.
+ * full length by the component and scaled from its top edge, so moving the
+ * marker never touches layout.
  */
 .deck-fill {
   position: absolute;

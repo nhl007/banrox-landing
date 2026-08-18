@@ -26,13 +26,36 @@ const cards: Placed[] = [
       aspect: "1200/1200",
     },
     bureaus: [
-      { bureau: "experian", score: 762, rating: "Good", range: "300-850", fill: 43 },
-      { bureau: "transunion", score: 748, rating: "Good", range: "300-850", fill: 41 },
-      { bureau: "equifax", score: 762, rating: "Good", range: "300-850", fill: 43 },
+      {
+        bureau: "experian",
+        score: 762,
+        rating: "Good",
+        range: "300-850",
+        fill: 43,
+      },
+      {
+        bureau: "transunion",
+        score: 748,
+        rating: "Good",
+        range: "300-850",
+        fill: 41,
+      },
+      {
+        bureau: "equifax",
+        score: 762,
+        rating: "Good",
+        range: "300-850",
+        fill: 43,
+      },
     ],
     metrics: [
       { icon: "wallet", label: "Verified income", value: "$9,800/mo" },
-      { icon: "speed", label: "Debt-to-income", value: "21%", tone: "positive" },
+      {
+        icon: "speed",
+        label: "Debt-to-income",
+        value: "21%",
+        tone: "positive",
+      },
       { icon: "pulse", label: "Cash-flow score", value: "92/100" },
       {
         icon: "shield",
@@ -56,9 +79,27 @@ const cards: Placed[] = [
       aspect: "1200/1200",
     },
     bureaus: [
-      { bureau: "experian", score: 588, rating: "Good", range: "300-850", fill: 30 },
-      { bureau: "transunion", score: 574, rating: "Good", range: "300-850", fill: 26 },
-      { bureau: "equifax", score: 607, rating: "Good", range: "300-850", fill: 32 },
+      {
+        bureau: "experian",
+        score: 588,
+        rating: "Good",
+        range: "300-850",
+        fill: 30,
+      },
+      {
+        bureau: "transunion",
+        score: 574,
+        rating: "Good",
+        range: "300-850",
+        fill: 26,
+      },
+      {
+        bureau: "equifax",
+        score: 607,
+        rating: "Good",
+        range: "300-850",
+        fill: 32,
+      },
     ],
     metrics: [
       { icon: "wallet", label: "Verified income", value: "$3,400/mo" },
@@ -86,13 +127,36 @@ const cards: Placed[] = [
       aspect: "1200/1200",
     },
     bureaus: [
-      { bureau: "experian", score: 502, rating: "Good", range: "300-850", fill: 28 },
-      { bureau: "transunion", score: 496, rating: "Good", range: "300-850", fill: 25 },
-      { bureau: "equifax", score: 513, rating: "Good", range: "300-850", fill: 34 },
+      {
+        bureau: "experian",
+        score: 502,
+        rating: "Good",
+        range: "300-850",
+        fill: 28,
+      },
+      {
+        bureau: "transunion",
+        score: 496,
+        rating: "Good",
+        range: "300-850",
+        fill: 25,
+      },
+      {
+        bureau: "equifax",
+        score: 513,
+        rating: "Good",
+        range: "300-850",
+        fill: 34,
+      },
     ],
     metrics: [
       { icon: "wallet", label: "Verified income", value: "$2,100/mo" },
-      { icon: "speed", label: "Debt-to-income", value: "68%", tone: "negative" },
+      {
+        icon: "speed",
+        label: "Debt-to-income",
+        value: "68%",
+        tone: "negative",
+      },
       { icon: "pulse", label: "Cash-flow score", value: "38/100" },
       {
         icon: "shield",
@@ -116,13 +180,36 @@ const cards: Placed[] = [
       aspect: "800/1200",
     },
     bureaus: [
-      { bureau: "experian", score: 815, rating: "Good", range: "300-850", fill: 50 },
-      { bureau: "transunion", score: 802, rating: "Good", range: "300-850", fill: 46 },
-      { bureau: "equifax", score: 829, rating: "Good", range: "300-850", fill: 53 },
+      {
+        bureau: "experian",
+        score: 815,
+        rating: "Good",
+        range: "300-850",
+        fill: 50,
+      },
+      {
+        bureau: "transunion",
+        score: 802,
+        rating: "Good",
+        range: "300-850",
+        fill: 46,
+      },
+      {
+        bureau: "equifax",
+        score: 829,
+        rating: "Good",
+        range: "300-850",
+        fill: 53,
+      },
     ],
     metrics: [
       { icon: "wallet", label: "Verified income", value: "$19,500/mo" },
-      { icon: "speed", label: "Debt-to-income", value: "18%", tone: "positive" },
+      {
+        icon: "speed",
+        label: "Debt-to-income",
+        value: "18%",
+        tone: "positive",
+      },
       { icon: "pulse", label: "Cash-flow score", value: "95/100" },
       {
         icon: "shield",

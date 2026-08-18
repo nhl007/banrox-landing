@@ -12,28 +12,27 @@ import Image from "next/image";
  *
  * Alone Vs Together, How Squad Works and Invite Your Squad had none. Rather
  * than draw something new for them, they get the same asset the hero uses,
- * placed in the section instead of in a stage — so the deck is lit by one
+ * placed in the section instead of in a stage — so the page is lit by one
  * thing throughout rather than by six of one kind and three of another.
  *
  * ---------------------------------------------------------------------------
  * WHY EACH ONE ARRIVES FROM SOMEWHERE ELSE
  *
- * The deck cuts between sections in a single frame — no dissolve, nothing
- * between the two (see the controller). What the reader sees of a handover is
- * the arriving section assembling itself, and if every section's light simply
- * faded up in place, the one thing spanning the whole deck would be the one
- * thing that never moved. So each section's light comes in from somewhere else,
- * and `from` is that direction: a unit-ish vector, scaled by MOTION.glow.travel
- * when the timeline reads it off data-glow-from. Positive y is downwards, so [0, 1]
- * arrives from below and [0, -1] from above.
+ * If every section's light simply faded up in place, the largest thing on each
+ * screen would be the one thing on it that never moved. So each section's light
+ * comes in from somewhere else, and `from` is that direction: a unit-ish
+ * vector, scaled by MOTION.glow.travel when the timeline reads it off
+ * data-glow-from. Positive y is downwards, so [0, 1] arrives from below and
+ * [0, -1] from above.
  *
  * ---------------------------------------------------------------------------
  * WHY ALONE VS TOGETHER IS LIT BEHIND ITS HEADINGS
  *
  * Because the hero is. The hero's brightest ground is the band behind its
- * headline, so that is where the reader's eye is when they leave it; putting
+ * headline, so that is where the reader's eye is as they scroll off it; putting
  * the next section's light in the same band, arriving downwards from above,
- * means the room they land in is lit where they were already looking.
+ * carries the light on from where they were already looking rather than
+ * starting it again somewhere else.
  *
  * ---------------------------------------------------------------------------
  * The boxes are percentages of the section, so one arrangement serves every
@@ -55,10 +54,10 @@ const BLOOMS: Record<string, Placed> = {
   /* Behind the headings, arriving downwards onto them — see above. Wide and
      shallow rather than round: the heading here is two long lines and a
      sub-paragraph, and the light has to be under all of it. */
-  alone: { from: [0, -1], left: "16%", top: "0%", width: "68%", height: "48%" },
+  alone: { from: [0, -1], left: "2%", top: "-20%", width: "96%", height: "70%" },
 
   /* Above the cards rather than behind them. The three step cards are the one
-     payload on the deck that is opaque and fills its screen edge to edge —
+     payload on the page that is opaque and fills its screen edge to edge —
      measured, they cover everything below 30% of the section — so light placed
      under them is light spent on nothing. What is left is the band the heading
      sits in, lit right-heavy rather than centred so that it does not simply

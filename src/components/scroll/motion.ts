@@ -22,7 +22,7 @@ export const MOTION = {
    *
    * 641px is the top of the phone range — below it the page is rebuilt as a
    * column that was designed for a phone rather than a desktop folded into one,
-   * and none of this runs. Above it a tablet gets the deck, scaled.
+   * and none of this runs. Above it a tablet gets the same page, scaled.
    *
    * The height half is what a phone held sideways fails: 932x430 passes the
    * width test, and at that height the heading is most of the window, so the
@@ -37,47 +37,6 @@ export const MOTION = {
    * they were tuned at; this is what turns them into a pace.
    */
   pace: 2.5,
-
-  /* --- the deck --------------------------------------------------------- */
-
-  /**
-   * The sections as a deck rather than a column: one gesture forward, one
-   * section. Scroll does not move the page at all while the deck has somewhere
-   * to go — it hands over to the next section, which fades in over the last and
-   * plays its own entrance.
-   *
-   * Not scrubbed. Tying the animation to the scroll position means the reader is
-   * still doing the scrolling, one notch at a time, for as long as the animation
-   * lasts; a gesture that means "next" should mean it once.
-   *
-   * Below the deck's last section the page is ordinary again and the footer
-   * scrolls the way a footer does. That handover is the only place a wheel event
-   * inside the deck is left alone.
-   */
-  deck: {
-    /*
-     * There is no fade here any more, and that is the point: the section going
-     * out and the one coming in swap in a single frame. What used to be a 0.55s
-     * crossfade is now nothing at all — see the note on `show` in the
-     * controller.
-     */
-    /**
-     * The smallest wheel movement that counts as meaning something. Below it a
-     * resting hand on a trackpad is a section.
-     */
-    threshold: 12,
-    /** And on a touch screen, in px of travel. */
-    swipe: 40,
-    /**
-     * Quiet time after the last wheel event before another gesture is taken.
-     *
-     * This is what makes one flick one section. A trackpad sends dozens of
-     * events per gesture and keeps sending them as the momentum decays, so
-     * without it a single flick would run the length of the deck. Every event
-     * pushes this back; the deck only listens again once they stop.
-     */
-    idle: 0.18,
-  },
 
   /* --- the navigation rail ---------------------------------------------- */
 
@@ -106,8 +65,7 @@ export const MOTION = {
      * The lit part of the rail, growing from the first dot to the current one.
      *
      * The ring says which section you are on; this says how far through you
-     * are, which on a deck with no scrollbar is the thing nothing else on the
-     * page tells you. Slower than the ring on purpose — the ring is the thing
+     * are, in seven steps rather than in the scrollbar's continuous inch. Slower than the ring on purpose — the ring is the thing
      * you asked for and should feel immediate, the line is the consequence and
      * can take its time catching up.
      */
@@ -139,8 +97,7 @@ export const MOTION = {
      * The page opens on it: it is the first thing that moves, and the hero's
      * copy waits on it (see hero.afterNav).
      */
-    fold: 40,
-    drop: { duration: 1.5, ease: "power3.out" },
+    drop: { duration: 1.5, ease: "power1.out" },
   },
 
   /* --- shared ----------------------------------------------------------- */
@@ -184,11 +141,11 @@ export const MOTION = {
    * `copy.rise` closely enough that a payload and the words above it read as one
    * block settling rather than two things moving at different speeds.
    *
-   * `from` is not 0. A section that arrives out of nothing opens on an empty
-   * screen and fills it, which on a deck — where the section IS the screen —
-   * means every handover flashes blank. A fifth of the way up, the whole
-   * composition is there to be read on the first frame and the entrance is it
-   * coming into focus.
+   * `from` is not 0. A section that arrives out of nothing scrolls into view as
+   * an empty screen and then fills it, which on a page of full-height sections
+   * means every one of them is blank for the moment it appears. A fifth of the
+   * way up, the whole composition is there to be read as it comes in and the
+   * entrance is it coming into focus.
    */
   enter: { from: 0.2, shift: 80, lift: 56 },
 
@@ -204,13 +161,11 @@ export const MOTION = {
    * direction rather than fading up in place, and they never settle afterwards.
    *
    * `travel` is how far a glow comes in from, along its section's own direction
-   * (data-glow in the markup). It is a good deal further than the `shift` and
-   * `lift` a card or a panel arrives on, and can afford to be: a bloom has no
-   * edge, no text and nothing to read, so a distance that would be a journey on
-   * a card is barely a movement on this. What it buys is the only thing that
-   * says which way the light came from — which matters on a deck that cuts
-   * between sections in a single frame, where otherwise the light would be the
-   * one thing spanning the whole page that never moved.
+   * (data-glow-from in the markup). It is a good deal further than the `shift`
+   * and `lift` a card or a panel arrives on, and can afford to be: a bloom has
+   * no edge, no text and nothing to read, so a distance that would be a journey
+   * on a card is barely a movement on this. What it buys is the only thing that
+   * says which way the light came from.
    */
   glow: {
     travel: 140,
@@ -251,6 +206,53 @@ export const MOTION = {
       ease: "sine.inOut",
     },
   },
+
+  /**
+   * The Squad card's journey from the hero to the approve diagram.
+   *
+   * The one piece of motion on the page the reader performs rather than
+   * watches: it has no duration, only a distance, and every frame of it is
+   * theirs. That is the right choice for this and the wrong one for everything
+   * else here — a card arriving or a wire drawing is an event, and an event
+   * scrubbed backwards and forwards by a scrollbar stops being one. This is not
+   * an event. It is an object with a position, and where it is ought to be a
+   * function of where the reader is.
+   *
+   * `dim` is what it fades to for the middle of the trip. Not zero: a card that
+   * disappears has not gone anywhere, and the whole point is that it is still
+   * there, behind the sections, on its way. A tenth is enough to follow if you
+   * look for it and not enough to compete with anything in front of it.
+   *
+   * `out` and `in` are the fractions of the journey spent dimming at the start
+   * and coming back at the end, so most of it is spent at `dim` and the two
+   * hand-overs are quick — the card is only ambiguous about which thing it is
+   * for a moment at either end.
+   *
+   * `lag` is the scrub's catch-up, in seconds. A rigid scrub locks the card to
+   * the scrollbar and it reads as a scrollbar, so it trails a fraction behind
+   * the wheel: enough weight to look like an object being carried down the page
+   * rather than a value being written to a style attribute.
+   *
+   * `sag` is how far the card falls below the straight line between the two
+   * slots, at the middle of the trip, in px.
+   *
+   * Without it the path is a straight line, and a straight line here does not
+   * look like travelling. The two slots are 1714px apart on a page that scrolls
+   * 2100px between them, so a card moving evenly along that line drifts UP the
+   * window the whole way — correct, and the opposite of what it should read as.
+   * A sag bends the first half of the trip downwards past the scroll, so the
+   * card visibly sinks away from the hero before it is drawn back up into the
+   * approve diagram's slot. Measured, at 260: it falls ~90px through the window
+   * over the first quarter and is lifted back over the last.
+   *
+   * `settle` is how long the journey's start point waits to be measured — long
+   * enough for the hero's entrance to be over, because the card it sets off
+   * from spends that entrance lying flat and turned on its side and its
+   * bounding box mid-turn is not where it ends up. Comfortably past the hero's
+   * own arrival at this pace; it costs nothing to be late, because until then
+   * there is nothing to scroll past.
+   */
+  trail: { dim: 0.1, out: 0.12, in: 0.12, lag: 0.6, settle: 2.5, sag: 260 },
 
   /* --- hero ------------------------------------------------------------- */
 
@@ -293,6 +295,23 @@ export const MOTION = {
 
     /** The fan-out from behind the Squad card, once the stack is upright. */
     fan: { duration: 2, stagger: 0.2, ease: "power1.out" },
+
+    /**
+     * And the fan closing again on the way out, scrubbed by the scroll rather
+     * than played — see heroFold.
+     *
+     * `out` is how much scrolling it takes, as a fraction of the window: the
+     * four cards are folded away by the time the reader has moved this far, and
+     * only then does the Squad card start down the page. Enough to be a
+     * movement in its own right rather than a flicker as the hero leaves, and
+     * short enough that it is over well before the hero itself is.
+     *
+     * `stagger` is a good deal tighter than the fan's own 0.2. Opening, the
+     * four cards are the event and each one wants to be seen arriving; closing,
+     * they are getting out of the way of the card that carries on, and a long
+     * stagger there just holds the hero open.
+     */
+    fold: { out: 0.6, stagger: 0.12 },
 
     /**
      * The four passport cards, breathing, once the fan has finished opening.
