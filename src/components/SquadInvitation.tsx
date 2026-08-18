@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import Badge from "@/components/ui/Badge";
 import { AddTeamIcon, CopyIcon } from "@/components/ui/icons";
+import SectionBloom from "@/components/ui/SectionBloom";
 import Button from "./ui/Button";
 
 /*
@@ -31,11 +32,15 @@ export default function SquadInvitation() {
 
   return (
     <section
-      className="screen relative w-full"
+      className="screen relative isolate w-full"
       data-node-id="9304:25728"
       data-sequence-section="invitation"
     >
-      <div className="screen-body">
+      {/* isolate above, z-10 here: between them the ambient ground is pinned
+          behind this section's content and in front of the page, and cannot
+          escape to either side of that. See .screen-glow. */}
+      <SectionBloom id="invitation" />
+      <div className="screen-body relative z-10">
         <div
           className="screen-copy mx-auto flex max-w-[604px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6"
           data-node-id="9304:25729"

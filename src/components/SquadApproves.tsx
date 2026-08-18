@@ -369,11 +369,16 @@ export default function SquadApproves() {
               className="pointer-events-none absolute max-w-none"
               style={{ left: 559 - 347, top: 176 - 347 }}
               data-reveal="squad-glow"
+              data-glow-from="-1 0.25"
             />
           </StageBackdrop>
 
-          {/* stage-viewport-clip: the request card and the vote list start off
-              the viewport edges, and the ledger bar under the stage floor. */}
+          {/* stage-viewport-clip: the request card and the vote list start a
+              nudge outboard of where they sit — see MOTION.enter.shift — and
+              the request card is already flush with the stage's left edge, so
+              its start state hangs past it. They no longer come from off the
+              *viewport*, but the clip is still what keeps that overhang from
+              raising a horizontal scrollbar. */}
           <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"

@@ -6,6 +6,7 @@ import FigurePanel from "@/components/ui/FigurePanel";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import StepCard from "@/components/ui/StepCard";
 import { CreditCard, VerifiedCheck } from "@/components/ui/icons";
+import SectionBloom from "@/components/ui/SectionBloom";
 import { PEOPLE, VOTE_FRAMING } from "@/data/people";
 
 /*
@@ -317,8 +318,15 @@ function Step3Figure() {
 
 export default function HowSquadWorks() {
   return (
-    <section className="screen relative w-full" data-sequence-section="works">
-      <div className="screen-body">
+    <section
+      className="screen relative isolate w-full"
+      data-sequence-section="works"
+    >
+      {/* isolate above, z-10 here: between them the ambient ground is pinned
+          behind this section's content and in front of the page, and cannot
+          escape to either side of that. See .screen-glow. */}
+      <SectionBloom id="works" />
+      <div className="screen-body relative z-10">
         <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<CreditCard />}>How Squad works</Badge>

@@ -31,6 +31,7 @@ function HeroGlow() {
         className="pointer-events-none absolute max-w-none"
         style={{ left: (FAN_STAGE.width - 1828) / 2, top: -405 }}
         data-reveal="glow"
+        data-glow-from="0 1"
         priority
       />
       <Image
@@ -41,6 +42,7 @@ function HeroGlow() {
         className="pointer-events-none absolute max-w-none"
         style={{ left: (FAN_STAGE.width - 2164) / 2, top: -364 }}
         data-reveal="glow"
+        data-glow-from="0 1"
         priority
       />
     </>
@@ -92,7 +94,13 @@ export default function Hero() {
           </div>
 
           {/* Stacked and full width on a phone: two side-by-side CTAs at 360px
-              are two 150px targets with the labels wrapping inside them. */}
+              are two 150px targets with the labels wrapping inside them.
+
+              md rather than lg. These are the tallest single thing in the copy
+              block after the heading, and 56px of button is 56px the card fan
+              does not get on a laptop that has none to spare. 48px is still
+              well clear of the 44px a finger needs, and the label is 16px,
+              which is the floor for body text anyway. */}
           <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4">
             <span
               className="flex w-[85%] sm:inline-flex sm:w-auto"
@@ -101,7 +109,7 @@ export default function Hero() {
               <Button
                 href="/waitlist"
                 variant="primary"
-                size="lg"
+                size="md"
                 icon={<ArrowUpRight />}
                 className="w-full justify-center sm:w-auto"
               >
@@ -115,7 +123,7 @@ export default function Hero() {
               <Button
                 href="/invite"
                 variant="secondary"
-                size="lg"
+                size="md"
                 icon={<ArrowUpRight />}
                 className="w-full justify-center sm:w-auto"
               >

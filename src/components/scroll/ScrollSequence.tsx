@@ -17,13 +17,14 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
  *
  * The sections are stacked in one windowful — see .scene in globals.css — and
  * only one of them is showing. A scroll gesture does not move the page: it
- * hands the window to the next section, which fades in over the last and plays
- * its own entrance at its own speed. One gesture, one section, forwards or
- * back.
+ * hands the window to the next section, which takes it outright and plays its
+ * own entrance at its own speed. One gesture, one section, forwards or back.
  *
  * So there is nothing to scroll through and nothing to land halfway into. The
- * distance between two sections is a crossfade rather than a gap, which is what
- * makes the page read as one thing changing rather than seven going past.
+ * handover itself is a cut with no effect over it — no crossfade, no dissolve,
+ * nothing between the two. What the reader sees of the change is the arriving
+ * section assembling itself, which is the section's own motion rather than a
+ * transition laid on top of the pair of them.
  *
  * The deck holds a gesture only while it has somewhere to go. Past the last
  * section a wheel event is left completely alone and the page scrolls into the
@@ -129,8 +130,6 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         /* --- state ------------------------------------------------------ */
 
         let index = 0;
-        /** A crossfade is running, so the deck is not listening. */
-        let busy = false;
         /**
          * Who this gesture belongs to, decided on its first event and held for
          * the rest of it.
@@ -183,17 +182,18 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         /**
          * Hand the window to a particular card.
          *
-         * The two halves are one movement: the card arriving fades up over the
-         * card leaving rather than after it, so there is never a frame with
-         * nothing on screen — and its entrance starts underneath the crossfade,
-         * so by the time it is fully there it is already assembling itself.
+         * A cut, not a dissolve. Both writes are gsap.set rather than tweens, so
+         * they land in the same frame as each other: there is no moment with two
+         * cards half-visible over one another and none with nothing on screen.
+         * What the reader sees of the change is the incoming card's own
+         * entrance, which starts on the very next line — the arrival IS the
+         * transition, and there is no separate effect laid over the top of it.
          *
-         * Every other card is faded out, not just the one that was showing.
-         * A gesture only ever moves by one, but the navigation rail can jump
-         * across the deck, and it can be clicked again while a crossfade from
-         * the last click is still running — so at that moment there are two
-         * cards on their way out and only naming one of them leaves the other
-         * stranded at full opacity on top of everything.
+         * Every other card is hidden, not just the one that was showing. A
+         * gesture only ever moves by one, but the navigation rail can jump
+         * across the deck, so more than one card can be left over — and naming
+         * only the last one would strand the others at full opacity on top of
+         * everything.
          */
         const footerEl = document.querySelector("footer");
 
@@ -221,30 +221,14 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
           released = false;
           const to = cards[next];
           index = next;
-          busy = true;
 
           cards.forEach((card, i) => {
             if (i === next) return;
             card.loops.forEach((loop) => loop.pause());
-            gsap.to(card.el, {
-              autoAlpha: 0,
-              duration: MOTION.deck.fade,
-              ease: MOTION.deck.ease,
-            });
+            gsap.set(card.el, { autoAlpha: 0 });
           });
 
-          gsap.fromTo(
-            to.el,
-            { autoAlpha: 0 },
-            {
-              autoAlpha: 1,
-              duration: MOTION.deck.fade,
-              ease: MOTION.deck.ease,
-              onComplete: () => {
-                busy = false;
-              },
-            },
-          );
+          gsap.set(to.el, { autoAlpha: 1 });
           to.beats.restart();
           setDeckAt(next, false);
           if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -309,7 +293,7 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
           if (owner === "page") return;
 
           e.preventDefault();
-          if (stepped || busy) return;
+          if (stepped) return;
           if (Math.abs(e.deltaY) < MOTION.deck.threshold) return;
           stepped = true;
           go(dir);
@@ -333,7 +317,7 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
           if (owner === "page") return;
 
           e.preventDefault();
-          if (stepped || busy) return;
+          if (stepped) return;
           if (Math.abs(travel) < MOTION.deck.swipe) return;
           stepped = true;
           go(dir);
@@ -341,6 +325,11 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
 
         const onKey = (e: KeyboardEvent) => {
           if (typing(e.target)) return;
+          /* Auto-repeat is not a gesture. A held arrow key sends ~30 events a
+             second, and the crossfade used to swallow them — a step is instant
+             now, so without this one press runs the length of the deck. This is
+             the keyboard's version of the idle window the wheel gets. */
+          if (e.repeat) return;
           const forward = FORWARD.includes(e.key);
           if (!forward && !BACK.includes(e.key)) return;
           const dir = forward ? 1 : -1;
@@ -350,7 +339,6 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
             return;
           }
           e.preventDefault();
-          if (busy) return;
           go(dir);
         };
 

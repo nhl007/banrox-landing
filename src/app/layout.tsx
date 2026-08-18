@@ -40,10 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <NavBar />
           {children}
           <Footer />
-          <DeckNav />
+          {/* <DeckNav /> */}
         </ScrollSequence>
       </body>
     </html>
   );
 }
-

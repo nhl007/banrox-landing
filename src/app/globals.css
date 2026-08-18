@@ -469,11 +469,11 @@ body {
   /*
    * The state the page opens in, held in CSS because the markup is
    * server-rendered and paints before the controller exists: the hero is the
-   * scene, and the other six are behind it waiting to be dissolved to.
+   * scene, and the other six are behind it waiting to be switched to.
    *
    * visibility as well as opacity, so the six that are not on screen are not
-   * catching clicks meant for the one that is. The controller animates
-   * autoAlpha, which is the same pair.
+   * catching clicks meant for the one that is. The controller sets autoAlpha,
+   * which is the same pair — set, not tweened: the swap is a cut.
    */
   .scene>.screen:not(:first-child) {
     opacity: 0;
@@ -525,8 +525,26 @@ body {
  * under it for the same pixels. Unchanged from what desktop already had.
  */
 @media (min-width: 641px) {
+  /*
+   * The heading and the card fan under it are dividing one window between them,
+   * and the heading was taking it. Measured before this was retuned: the hero's
+   * copy block came out 355-389px tall at every window from 768 to 1080, so
+   * everything a shorter laptop lost came off the fan alone — 0.49 scale at
+   * 1366x768 and 0.54 at 1280x800, which is the fan at half size with its
+   * labels at four or five pixels.
+   *
+   * Two changes, both here. The svh coefficient came down hardest, because that
+   * is the term that answers a short window: 7.2svh puts the h1 at 55px on a
+   * 768-tall screen where 8.6 put it at 66, and the h1 is two lines at
+   * line-height 1, so every pixel off it is two off the block. And the ceiling
+   * came down from 4.5rem to 4rem, so the tall windows that were sitting on the
+   * cap give some back too rather than only the short ones paying.
+   *
+   * The floor is deliberately still 2rem: below the gate is a different layout
+   * with its own sizes, and this one only has to survive down to 641px.
+   */
   .type-hero {
-    font-size: clamp(2.25rem, min(6.1vw, 8.6svh), 4.5rem);
+    font-size: clamp(2rem, min(5.4vw, 7.2svh), 4rem);
     line-height: 1;
     letter-spacing: normal;
   }
@@ -537,8 +555,13 @@ body {
     letter-spacing: normal;
   }
 
+  /*
+   * The lede is two lines under the heading and pays the same way, but far less
+   * of it: 14px is the bottom, because this is the one paragraph on the screen
+   * and shrinking it is the fastest way to make a hero look like a footnote.
+   */
   .type-lede {
-    font-size: clamp(0.875rem, min(1.15vw, 2svh), 1rem);
+    font-size: clamp(0.875rem, min(1.05vw, 1.75svh), 0.9375rem);
     line-height: 1.5;
   }
 }
@@ -799,6 +822,42 @@ body {
   .stage-backdrop {
     container-type: size;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * The layer a section's ambient glow is painted in.
+ *
+ * Only for the three sections that had no glow of their own — Alone Vs
+ * Together, How Squad Works, Invite Your Squad. The other four already carry
+ * one: the bloom and band behind the hero's card fan, the halo behind the
+ * approve diagram's Squad card, the aura behind the intelligence funnel, the
+ * pair behind the Early Access card. Those are artwork in their own stage's
+ * coordinates and scale with the thing they belong to, and they are animated
+ * where they stand — see glowDrift. This is the same artwork given a place to
+ * stand in the sections that have none.
+ *
+ * The layer owns its place in the paint order rather than borrowing one. An
+ * earlier attempt put light straight into a <section> at z-index -1: a section
+ * is `relative` with `z-index: auto` and so never established a stacking
+ * context, the negative layer escaped it altogether, and it landed behind the
+ * page's own background — which showed up as a solid black band across the
+ * strip under the navbar. `isolate` on the section is what makes that
+ * impossible: it is a stacking context whether or not anything inside it
+ * carries a z-index, so this layer is behind the section's content and in front
+ * of the page, and there is nowhere else for it to go.
+ *
+ * .screen-body is then raised over it explicitly, because a positioned element
+ * paints over static content whatever the source order says.
+ *
+ * Clipped, because a section here is one card of a deck: light spilling past
+ * its edges would paint over the navbar above it and the footer below, and
+ * neither of those belongs to it.
+ */
+.screen-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /*

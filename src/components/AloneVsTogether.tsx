@@ -5,6 +5,7 @@ import ComparisonCard from "@/components/ui/ComparisonCard";
 import PersonChip from "@/components/ui/PersonChip";
 import StrengthBar from "@/components/ui/StrengthBar";
 import { ArrowDataTransfer, Cancel, Tick } from "@/components/ui/icons";
+import SectionBloom from "@/components/ui/SectionBloom";
 import { CLUSTER_FRAMING, PEOPLE, type PersonKey } from "@/data/people";
 
 /*
@@ -201,8 +202,15 @@ function SquadCard() {
 
 export default function AloneVsTogether() {
   return (
-    <section className="screen relative w-full" data-sequence-section="alone">
-      <div className="screen-body">
+    <section
+      className="screen relative isolate w-full"
+      data-sequence-section="alone"
+    >
+      {/* isolate above, z-10 here: between them the ambient ground is pinned
+          behind this section's content and in front of the page, and cannot
+          escape to either side of that. See .screen-glow. */}
+      <SectionBloom id="alone" />
+      <div className="screen-body relative z-10">
         <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
@@ -232,12 +240,17 @@ export default function AloneVsTogether() {
         </div>
 
         {/*
-          stage-viewport-clip: the panels start off the viewport edges, and a
-          rightward translate in an LTR scroll container is *scrollable*
-          overflow — it would raise a horizontal scrollbar and hold it for as
-          long as the panel starts parked outside. Clipping has to be
-          on both axes: `overflow-x: clip` beside the existing `overflow-y:
-          hidden` computes back to `hidden`, leaving it a scroll container.
+          stage-viewport-clip: the panels start a little below where they sit
+          (MOTION.alone.lift) and shorter than they end up, so both extend past
+          the stage's floor on the way in.
+
+          They used to start off the viewport's left and right edges instead,
+          which is what this class was added for: a rightward translate in an
+          LTR scroll container is *scrollable* overflow, so it raised a
+          horizontal scrollbar and held it for as long as the panel was parked
+          outside. The clip still has to be on both axes — `overflow-x: clip`
+          beside the existing `overflow-y: hidden` computes back to `hidden`,
+          leaving it a scroll container.
         */}
         <div className="screen-payload px-5 sm:px-0">
           <div className="stage-viewport stage-viewport-clip stage-fluid">

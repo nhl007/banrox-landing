@@ -124,6 +124,7 @@ function StageArt({
   width,
   height,
   reveal,
+  glowFrom,
 }: {
   src: string;
   left: number;
@@ -131,6 +132,8 @@ function StageArt({
   width: number;
   height: number;
   reveal?: string;
+  /** The direction this piece's light travels in from — see glowFrom. */
+  glowFrom?: string;
 }) {
   return (
     <Image
@@ -141,6 +144,7 @@ function StageArt({
       className="pointer-events-none absolute hidden max-w-none sm:block"
       style={{ left, top }}
       data-reveal={reveal}
+      data-glow-from={glowFrom}
     />
   );
 }
@@ -199,6 +203,7 @@ export default function IntelligenceLayer() {
                   width={1189}
                   height={1189}
                   reveal="aura"
+                  glowFrom="0.7 0.7"
                 />
 
                 {/* Row 1: four member score cards. */}

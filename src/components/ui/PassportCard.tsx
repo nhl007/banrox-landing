@@ -81,6 +81,24 @@ function meterWidth({ score, fill }: BureauScore) {
 }
 
 /** Blurred triangles that bloom out of the top edge; the card clips them. */
+/*
+ * The hover response, and the whole of it: the light already at the top of the
+ * card comes up.
+ *
+ * On each image rather than on a wrapper around the three, which is the part
+ * that matters. glow-3 carries `mix-blend-plus-lighter`, and it blends against
+ * its backdrop *within its parent's stacking context* — so wrapping the set in
+ * a div with an opacity or a filter of its own would isolate that group and
+ * leave glow-3 blending against its two siblings instead of against the card.
+ * A filter on the blended element itself is applied before the blend and
+ * changes nothing about what it blends with.
+ *
+ * group/card is named rather than bare: PassportCard is dropped inside other
+ * grouped elements, and an unnamed group would be claimed by the nearest one.
+ */
+const GLOW_HOVER =
+  "transition-[filter] duration-500 ease-out group-hover/card:brightness-[1.45] motion-reduce:transition-none";
+
 function TopGlow() {
   return (
     <>
@@ -89,21 +107,21 @@ function TopGlow() {
         alt=""
         width={420}
         height={339}
-        className="pointer-events-none absolute -top-[127px] -left-20 max-w-none"
+        className={`pointer-events-none absolute -top-[127px] -left-20 max-w-none ${GLOW_HOVER}`}
       />
       <Image
         src="/card/glow-2.svg"
         alt=""
         width={341}
         height={336}
-        className="pointer-events-none absolute -top-[124px] -left-9 max-w-none"
+        className={`pointer-events-none absolute -top-[124px] -left-9 max-w-none ${GLOW_HOVER}`}
       />
       <Image
         src="/card/glow-3.svg"
         alt=""
         width={257}
         height={339}
-        className="pointer-events-none absolute -top-[127px] left-2 max-w-none mix-blend-plus-lighter"
+        className={`pointer-events-none absolute -top-[127px] left-2 max-w-none mix-blend-plus-lighter ${GLOW_HOVER}`}
       />
     </>
   );

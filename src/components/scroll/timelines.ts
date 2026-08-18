@@ -32,6 +32,84 @@ const beat = () =>
   gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
 
 /**
+ * The heading's own duration and ease, which a section's payload arrives on so
+ * that the two read as one block settling rather than as a diagram waiting its
+ * turn behind some words.
+ *
+ * Read off MOTION.copy rather than restated, because "in step with the heading"
+ * is the whole point — a second copy of the number would be one edit away from
+ * being a lie.
+ */
+const inStep = () => ({
+  duration: MOTION.copy.duration,
+  ease: MOTION.copy.ease,
+});
+
+/**
+ * Where a section's ambient glow travels in from.
+ *
+ * The deck cuts between sections in a single frame — no dissolve, nothing
+ * between the two — so what the reader sees of a handover is the arriving
+ * section assembling itself. A glow that simply faded up in place would make
+ * the one thing spanning the whole deck the one thing that never moved. Each
+ * section's therefore comes in from its own direction, written onto the element
+ * as data-glow-from and read back here: a unit-ish vector, scaled by
+ * MOTION.glow.travel.
+ *
+ * Read off the element rather than passed in because the four glows that belong
+ * to a diagram are revealed by that diagram's own factory, each in its own
+ * place in its own beat, and the markup is the only thing all of them share.
+ */
+export const glowFrom = (el: HTMLElement) => {
+  const [fx = 0, fy = 0] = (el.dataset.glowFrom ?? "").split(" ").map(Number);
+  const { travel } = MOTION.glow;
+  return { x: travel * fx, y: travel * fy };
+};
+
+/** The start state that goes with it: out of nothing, and displaced. */
+const glowStart = (els: HTMLElement[]) =>
+  els.forEach((el) => gsap.set(el, { opacity: 0, ...glowFrom(el) }));
+
+/**
+ * Folds a section's own ambient glow into the beat that opens it.
+ *
+ * Only for the three sections that have no diagram to hang light on — Alone Vs
+ * Together, How Squad Works, Invite Your Squad — where the bloom is a child of
+ * the section rather than of a stage (see SectionBloom). The other four reveal
+ * theirs inside the factory that builds the diagram it belongs to, because
+ * there the glow arrives WITH its subject: the hero's bloom with the card
+ * scene, the halo with the Squad card, the aura with the funnel.
+ *
+ * Two things about it are load-bearing.
+ *
+ * It is added AFTER the beat has been built, and placed explicitly at 0. Every
+ * relative position in these factories ("-=1.5", "<") resolves against the end
+ * of the timeline as it stands at the moment it is added — written into a chain
+ * this would be read as "a second and a half before the end of everything
+ * else", which is not where the ground goes. It goes underneath, from the first
+ * frame.
+ *
+ * And it runs for exactly what the rest of the beat runs for, no longer. The
+ * controller queues the next beat behind this one's DURATION, and a timeline's
+ * duration is whatever its longest child says it is — so a background that
+ * outlasted the heading would quietly push the section's entire payload back by
+ * the difference. Measured on the hero before it was capped: 0.48s of card
+ * scene, bought by nothing. Read off the timeline rather than configured, so it
+ * cannot drift out of agreement with the copy it is under.
+ */
+const glowIn = (tl: gsap.core.Timeline, el: HTMLElement) => {
+  const glow = q(el, "glow");
+  if (!glow.length) return tl;
+
+  glowStart(glow);
+  return tl.to(
+    glow,
+    { opacity: 1, x: 0, y: 0, duration: tl.duration(), ease: MOTION.copy.ease },
+    0,
+  );
+};
+
+/**
  * The heading block: badge, headline, sub-paragraph, each scaling up out of
  * nothing as it rises.
  *
@@ -42,20 +120,22 @@ const beat = () =>
 export function copyIn(el: HTMLElement) {
   const copy = q(el, "copy");
   gsap.set(copy, {
-    opacity: 0,
-    scale: 0,
+    opacity: MOTION.enter.from,
     y: MOTION.copy.rise,
     transformOrigin: "50% 100%",
   });
 
-  return beat().to(copy, {
+  const tl = beat().to(copy, {
     opacity: 1,
-    scale: 1,
     y: 0,
     duration: MOTION.copy.duration,
     ease: MOTION.copy.ease,
     stagger: MOTION.copy.stagger,
   });
+
+  /* And the ground the words arrive on, coming in underneath them from
+     whichever direction this section's light comes from. */
+  return glowIn(tl, el);
 }
 
 /**
@@ -225,7 +305,7 @@ export function navbarDrop(el: HTMLElement) {
     rotationX: MOTION.navbar.fold,
     transformOrigin: "50% 0%",
     transformPerspective: 800,
-    opacity: 0,
+    opacity: 0.2,
   });
 
   return beat().to(pill, {
@@ -239,7 +319,7 @@ export function navbarDrop(el: HTMLElement) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Hero, movement one: the copy scales up out of nothing, then the CTAs — lying
+ * Hero, movement one: the copy rises and fades up, then the CTAs — lying
  * flat on the screen plane — hinge upright off their bottom edge.
  *
  * Held back a beat behind the navbar. Both are on screen the moment the page
@@ -250,31 +330,44 @@ export function heroCopy(el: HTMLElement) {
   const buttons = q(el, "button");
   const note = q(el, "note");
 
+  /* Rise and fade, and no scale. The heading used to grow from nothing, which
+     on a 72px h1 is a line of type sweeping up through every size between one
+     pixel and full — the words are unreadable for most of it and the block
+     under it reflows the whole way. Same start state as copyIn now. */
   gsap.set(copy, {
-    opacity: 0,
-    scale: 0,
+    opacity: 0.2,
     y: MOTION.copy.rise,
     transformOrigin: "50% 100%",
   });
-  gsap.set(note, { opacity: 0, y: 12 });
+  gsap.set(note, { opacity: 0.1, y: 12 });
   gsap.set(buttons, {
-    opacity: 0,
+    opacity: 0.1,
+    y: 12,
     rotationX: MOTION.flat.angle,
     transformOrigin: "50% 100%",
     transformPerspective: 600,
   });
 
-  return beat()
+  const tl = beat()
     .to(copy, {
       opacity: 1,
-      scale: 1,
       y: 0,
       duration: MOTION.copy.duration,
       ease: MOTION.copy.ease,
       stagger: MOTION.copy.stagger,
     })
-    .to(buttons, { opacity: 1, rotationX: 0, ...MOTION.hero.buttons }, "-=0.35")
-    .to(note, { opacity: 1, y: 0, ...MOTION.hero.note }, "-=0.4");
+    .to(
+      buttons,
+      { opacity: 1, y: 0, rotationX: 0, ...MOTION.hero.buttons },
+      "-=1.5",
+    )
+    .to(note, { opacity: 1, y: 0, ...MOTION.hero.note }, "-=1.5");
+
+  /* No glowIn here, unlike copyIn: the hero's bloom is [data-reveal='glow'] too,
+     but it belongs to the card scene and heroCards reveals it there. Revealing
+     it twice would leave two tweens writing the same opacity on the same
+     element from two different beats. */
+  return tl;
 }
 
 /**
@@ -302,7 +395,9 @@ export function heroCards(el: HTMLElement) {
     anchor.offsetWidth / 2 -
     (card.offsetLeft + card.offsetWidth / 2);
 
-  gsap.set(glow, { opacity: 0 });
+  /* The bloom and band come in from under the section, which is the direction
+     the whole hero opens from — see glowFrom. */
+  glowStart(glow);
   gsap.set(fan, {
     opacity: 0,
     rotationX: MOTION.flat.angle,
@@ -327,7 +422,7 @@ export function heroCards(el: HTMLElement) {
 
   return (
     beat()
-      .to(glow, { opacity: 1, ...MOTION.hero.glow }, 0)
+      .to(glow, { opacity: 1, x: 0, y: 0, ...MOTION.hero.glow }, 0)
       .to(fan, { opacity: 1, duration: 0.3, ease: "none" }, 0.2)
       /* Lifts off the display plane and turns upright in one movement. */
       .to(fan, { rotationX: 0, z: 0, ...MOTION.hero.lift }, "<")
@@ -337,6 +432,118 @@ export function heroCards(el: HTMLElement) {
        rather than after a pause with nothing happening. */
       .to(cards, { opacity: 1, x: 0, ...MOTION.hero.fan }, "-=0.35")
   );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The four passport cards, breathing, for as long as the hero is on screen.
+ *
+ * Ambient rather than a beat: it has no arrival to be part of and no end to
+ * reach. The controller holds it until heroCards has finished opening the fan —
+ * a float running underneath that entrance would be moving the cards while they
+ * were still travelling — and drops it the moment the deck hands the window on.
+ *
+ * One independent tween per card rather than one tween with a stagger. A
+ * staggered tween carrying repeat:-1 repeats the SET: all four restart together
+ * at the top of every cycle, which is the one thing this is written to avoid.
+ * Four tweens offset on the parent timeline stay out of phase forever.
+ *
+ * Translation only, and no rotation. The float used to carry a fifth of a
+ * degree of alternating tilt, and that fifth of a degree was the flicker: a
+ * rotation that is not even a whole pixel of movement still forces the card to
+ * be re-rastered at a new angle on every frame, and what gets redrawn is the
+ * card's own background — its gradient, its fingerprint texture, its 1px border
+ * and every line of type on it. A pure translate is a matrix the compositor can
+ * apply to a raster it already has, so nothing about the card is redrawn while
+ * it moves.
+ */
+export function heroFloat(el: HTMLElement) {
+  const { rise, duration, each, ease } = MOTION.hero.float;
+  const tl = gsap.timeline({ paused: true });
+
+  const cards = q(el, "card");
+
+  /* Promoted once, up front, and left promoted: these animate for as long as
+     the hero is on screen, so a compositor layer each means the float is a
+     matrix applied to an existing raster rather than a repaint every frame. */
+  gsap.set(cards, { willChange: "transform", force3D: true });
+
+  cards.forEach((card, i) => {
+    tl.to(card, { y: -rise, duration, ease, repeat: -1, yoyo: true }, i * each);
+  });
+
+  return tl;
+}
+
+/**
+ * A section's ambient glow, drifting for as long as that section is on screen.
+ *
+ * The one ambient every section on the deck has, and it moves the largest
+ * things on the page: the bloom and band behind the hero's card fan, the halo
+ * behind the approve diagram, the aura behind the intelligence funnel, the pair
+ * behind the Early Access card, and the section's own bloom on the three
+ * screens that had none. Whatever a section's light is, [data-glow-from] is on
+ * it and this drifts it.
+ *
+ * Not [data-glow], which is a different thing that was here first: the rings on
+ * the step cards and the layers inside the engine hub carry that, and they
+ * breathe rather than drift — see worksAmbient and intelAmbient.
+ *
+ * Same construction as heroFloat and for the same reason: one independent tween
+ * per layer rather than one tween with a stagger. A staggered tween carrying
+ * repeat:-1 repeats the SET — all its targets restart together at the top of
+ * every cycle, which is the one thing this is written to avoid.
+ *
+ * Layers also travel in opposite directions — `away` flips per layer — which is
+ * what turns two overlapping ellipses into light that shears slowly across
+ * itself instead of one plate sliding about. The y component is deliberately a
+ * fraction of the x one and inverted: equal amounts on both axes is a diagonal,
+ * and a diagonal is a direction the eye can name. This has no direction to
+ * name.
+ *
+ * `step` is the one thing that is new. The layers used to share a duration and
+ * be held apart by a stagger alone, which keeps them out of phase but on the
+ * same clock; giving each its own period as well means there is no cycle at
+ * which the set repeats at all, so a reader sitting on one section never sees
+ * the same arrangement of light twice.
+ *
+ * Ambient, so the controller holds it until the section has finished arriving —
+ * it would otherwise be dragging a bloom sideways while it was still travelling
+ * in — and drops it the moment the deck hands the window on.
+ */
+export function glowDrift(el: HTMLElement) {
+  const { scale, shift, duration, step, stagger, ease } = MOTION.glow.drift;
+  const tl = gsap.timeline({ paused: true });
+
+  const layers = gsap.utils.toArray<HTMLElement>(
+    el.querySelectorAll("[data-glow-from]"),
+  );
+
+  /* Promoted once and left promoted, like the passport cards: these animate for
+     as long as their section is on screen, so a compositor layer each is the
+     difference between stretching a raster and repainting a window's worth of
+     soft light on every frame. */
+  gsap.set(layers, { willChange: "transform", force3D: true });
+
+  layers.forEach((layer, i) => {
+    const away = i % 2 ? -1 : 1;
+    tl.to(
+      layer,
+      {
+        scale: away > 0 ? scale : 1 / scale,
+        x: shift * away,
+        y: shift * 0.4 * -away,
+        duration: duration + i * step,
+        ease,
+        repeat: -1,
+        yoyo: true,
+      },
+      i * stagger,
+    );
+  });
+
+  return tl;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -504,40 +711,25 @@ const meters = (
 };
 
 /**
- * Alone vs Together: the two panels slide in from the left and right viewport
- * edges, the VS mark fades up between them, and the strength rails arrive last,
- * counting their figures up as they open.
+ * Alone vs Together: the two panels lift into place from just below it while
+ * fading up, the VS mark comes up between them, and the strength rails arrive
+ * last, counting their figures up as they open.
  *
- * Travel is measured rather than hard-coded. The panels are flush with their
- * 1240px stage's edges, so how far off-screen they must start depends on how
- * much wider the window is than the (scaled) stage.
+ * The lift is a fixed distance in stage units — see MOTION.alone.lift — which
+ * is the whole reason it replaced the slide it used to be. Coming in from the
+ * viewport edges meant the distance depended on how much wider the window was
+ * than the scaled stage, so it had to be re-measured on every build and could
+ * not be stated anywhere. A rise is the same number at every size.
  */
 export function alonePanels(el: HTMLElement) {
   const left = q(el, "card-left");
   const right = q(el, "card-right");
   const vs = q(el, "vs");
   const bars = q(el, "bar");
-  const stage = el.querySelector(".stage") as HTMLElement;
-  const viewport = el.querySelector(".stage-viewport") as HTMLElement;
 
-  /*
-   * GSAP's x is applied inside .stage, before its scale, so the travel has to
-   * be expressed in unscaled stage units too — hence dividing the viewport
-   * width by the stage's current scale. The +8 clears the 2px outward ring and
-   * its shadow so nothing peeks at the edge.
-   */
-  const travel = () => {
-    const scale = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
-    const overhang = Math.max(
-      0,
-      (viewport.clientWidth / scale - stage.offsetWidth) / 2,
-    );
-    return stage.offsetWidth / 2 + overhang + 8;
-  };
-
-  gsap.set(vs, { opacity: 0, scale: 0.6 });
-  gsap.set(left, { opacity: 1, x: () => -travel() });
-  gsap.set(right, { opacity: 1, x: () => travel() });
+  /* No scale. It was the last grow in this section and, at 48px of display
+     italic, the one where it showed most. */
+  gsap.set(vs, { opacity: 0 });
 
   /*
    * The rails are never hidden — the panels are simply too short to contain
@@ -562,11 +754,29 @@ export function alonePanels(el: HTMLElement) {
     grown(panel);
 
   gsap.set(bars, { opacity: 1 });
-  gsap.set(panels, { height: (_i, panel: HTMLElement) => shortHeight(panel) });
+  /* After fullHeight is captured, not before — offsetHeight is unaffected by
+     opacity and transforms, but the height below overwrites the very thing it
+     was read from. */
+  gsap.set(panels, {
+    opacity: MOTION.enter.from,
+    y: MOTION.alone.lift,
+    height: (_i, panel: HTMLElement) => shortHeight(panel),
+  });
 
   const tl = beat()
-    .to(panels, { x: 0, ...MOTION.alone.cards })
-    .to(vs, { opacity: 0.7, scale: 1, ...MOTION.alone.vs }, "-=0.5")
+    /*
+     * No position argument on the first tween, and it matters: it is the FIRST
+     * thing on a fresh timeline, so a relative one has nothing to be relative
+     * to. A "-=1" here resolved against a duration of 0 and placed the tween at
+     * -1 — permanently a second into its own run — so the timeline's resting
+     * state was the panels already 97% arrived and every play began there.
+     *
+     * Overlapping this beat onto the heading is not done here either: that is
+     * WITH_HEADING on the beat in sections.ts, which is what the controller
+     * queues each beat with.
+     */
+    .to(panels, { opacity: 1, y: 0, ...MOTION.alone.cards })
+    .to(vs, { opacity: 0.7, ...MOTION.alone.vs }, "-=0.5")
     /* Last, and only once both panels have landed. */
     .to(
       panels,
@@ -584,14 +794,13 @@ export function alonePanels(el: HTMLElement) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Squad Approves: the diagram assembles from its own edges, and only then do
- * the connectors between the pieces light up.
+ * Squad Approves: the diagram gathers into place, and only then do the
+ * connectors between the pieces light up.
  *
- * The four pieces — the request card in from the left, the vote list in from
- * the right, the ledger bar up from under the stage floor, and the Squad card
- * scaling open in the middle with nowhere to come from — share one duration and
- * land on the same frame. Nothing takes a turn: the section is about a group
- * acting as one, so the diagram has to arrive as one object.
+ * The four pieces — the request card nudged in from the left, the vote list
+ * from the right, the ledger and the Squad card lifting — share one duration
+ * and land on the same frame. Nothing takes a turn: the section is about a
+ * group acting as one, so the diagram has to arrive as one object.
  *
  * Once it has, a light runs left to right along the connectors, drawing them as
  * it goes — out from the request, through the card, back along all three
@@ -605,76 +814,42 @@ export function approveDiagram(el: HTMLElement) {
   const halo = q(el, "squad-glow");
   const ledger = q(el, "ledger");
   const chips = q(el, "chip");
-  const stage = el.querySelector(".stage") as HTMLElement;
-  const viewport = el.querySelector(".stage-viewport") as HTMLElement;
+
+  const { from, shift, lift } = MOTION.enter;
 
   /*
-   * Same unit problem as the comparison panels: GSAP's x lands inside .stage,
-   * underneath the scale CSS puts on it, so every distance here has to be
-   * expressed in unscaled stage units — hence dividing the measured viewport by
-   * the stage's current scale.
+   * Left, right, up — and nothing measured. The request card and the vote list
+   * take the same nudge in the direction they already sit in, so the diagram
+   * gathers towards its own centre; the Squad card between them and the ledger
+   * under them lift instead, because neither of those has a side.
    *
-   * A piece leaves past the *viewport* edge rather than the stage's. The stage
-   * is narrower than the window on a desktop, so stopping at its edge would
-   * have both cards appear out of thin air a couple of hundred pixels in.
+   * `shift` is a fixed number of stage units, which is the whole change here:
+   * the two cards used to start past the viewport's edges, a distance that had
+   * to be re-derived from the stage's live scale on every build because the
+   * window is wider than the stage by a different amount at every size. They
+   * never leave the stage now, so there is nothing to measure.
    */
-  const overhang = () => {
-    const scale = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
-    return Math.max(0, (viewport.clientWidth / scale - stage.offsetWidth) / 2);
-  };
-  const offLeft = (node: HTMLElement) =>
-    -(overhang() + node.offsetLeft + node.offsetWidth);
-  const offRight = (node: HTMLElement) =>
-    overhang() + stage.offsetWidth - node.offsetLeft;
-  /*
-   * Far enough down that the bar clears the stage floor, which .stage-viewport
-   * clips — plus its own height again, because it carries an ambient glow well
-   * above its top edge and a glow hanging in the middle of an empty stage is
-   * the one part of it you would notice waiting.
-   */
-  const below = (node: HTMLElement) =>
-    stage.offsetHeight - node.offsetTop + node.offsetHeight;
+  gsap.set(request, { opacity: from, x: -shift });
+  gsap.set(votes, { opacity: from, x: shift });
+  gsap.set(ledger, { opacity: from, y: lift });
+  gsap.set(squad, { opacity: from, y: lift });
+  glowStart(halo);
+  gsap.set(chips, { opacity: from, y: lift / 4 });
 
-  gsap.set(request, {
-    opacity: 1,
-    x: (_i, node: HTMLElement) => offLeft(node),
-  });
-  gsap.set(votes, { opacity: 1, x: (_i, node: HTMLElement) => offRight(node) });
-  gsap.set(ledger, { opacity: 1, y: (_i, node: HTMLElement) => below(node) });
-  gsap.set(squad, { opacity: 1, scale: 0, y: MOTION.approve.pop.hop });
-  gsap.set(halo, { opacity: 0 });
-  gsap.set(chips, {
-    opacity: 0,
-    scale: 0.7,
-    y: 14,
-    transformOrigin: "50% 100%",
-  });
-
+  /* One position for all five, so they are one object arriving rather than
+     five elements taking turns — and on the heading's clock, so the diagram and
+     the words above it are one movement. */
   const tl = beat();
-  const land = { duration: MOTION.approve.land, ease: MOTION.approve.slide };
-  tl.to(request, { x: 0, ...land }, 0)
-    .to(votes, { x: 0, ...land }, "<")
-    .to(ledger, { y: 0, ...land }, "<")
-    .to(
-      squad,
-      {
-        scale: 1,
-        y: 0,
-        duration: MOTION.approve.land,
-        ease: MOTION.approve.pop.ease,
-      },
-      "<",
-    )
-    .to(halo, { opacity: 1, ...MOTION.approve.glow }, "<");
+  tl.to(request, { opacity: 1, x: 0, ...inStep() }, 0)
+    .to(votes, { opacity: 1, x: 0, ...inStep() }, "<")
+    .to(ledger, { opacity: 1, y: 0, ...inStep() }, "<")
+    .to(squad, { opacity: 1, y: 0, ...inStep() }, "<")
+    .to(halo, { opacity: 1, x: 0, y: 0, ...MOTION.approve.glow }, "<");
 
   trace(tl, el, "-=0.25");
 
   /* Picked up as the light reaches the far end, so the two read as one move. */
-  tl.to(
-    chips,
-    { opacity: 1, scale: 1, y: 0, ...MOTION.approve.chips },
-    "<+=0.8",
-  );
+  tl.to(chips, { opacity: 1, y: 0, ...MOTION.approve.chips }, "<+=0.8");
 
   return tl;
 }
@@ -682,8 +857,8 @@ export function approveDiagram(el: HTMLElement) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * How Squad Works: three step cards grow up out of nothing, then the wiring
- * inside the last two draws itself.
+ * How Squad Works: three step cards lift and fade in, then the wiring inside
+ * the last two draws itself.
  *
  * Staggered rather than simultaneous, unlike the approve diagram — these are
  * three sequential steps, and having them land one after the other is the only
@@ -694,9 +869,13 @@ export function approveDiagram(el: HTMLElement) {
  */
 export function worksCards(el: HTMLElement) {
   const steps = q(el, "step");
-  gsap.set(steps, { opacity: 1, scale: 0, y: MOTION.works.hop });
+  gsap.set(steps, { opacity: MOTION.enter.from, y: MOTION.enter.lift });
 
-  const tl = beat().to(steps, { scale: 1, y: 0, ...MOTION.works.cards }, 0);
+  const tl = beat().to(
+    steps,
+    { opacity: 1, y: 0, ...inStep(), stagger: MOTION.works.stagger },
+    0,
+  );
   /* Then the wiring inside the last two, as the cards settle. */
   trace(tl, el, "-=0.2");
   return tl;
@@ -748,12 +927,20 @@ export function intelMembers(el: HTMLElement) {
   const members = q(el, "member");
   const aura = q(el, "aura");
 
-  gsap.set(members, { opacity: 0, y: MOTION.intel.rise });
-  gsap.set(aura, { opacity: 0 });
+  gsap.set(members, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
+  glowStart(aura);
 
+  /* The row and the glow behind it on one clock, at one position. The cards
+     ran 1s against the heading's 1.5 and the aura 1.2 against both, so the
+     three things that make up the top of the funnel each finished at a
+     different moment. */
   const tl = beat()
-    .to(members, { opacity: 1, y: 0, ...MOTION.intel.members }, 0)
-    .to(aura, { opacity: 1, duration: 1.2, ease: "power1.out" }, 0);
+    .to(
+      members,
+      { opacity: 1, y: 0, ...inStep(), stagger: MOTION.intel.memberStagger },
+      0,
+    )
+    .to(aura, { opacity: 1, x: 0, y: 0, ...inStep() }, 0);
 
   /*
    * Absolute positions, and the same one for both: the score and the meter under
@@ -778,36 +965,45 @@ export function intelSignals(el: HTMLElement) {
   const nodes = q(el, "node");
   const fan = q(el, "lines").slice(0, 1);
 
-  gsap.set(signals, { opacity: 0, y: MOTION.intel.rise });
-  gsap.set(categories, { opacity: 0, ...MOTION.intel.cardFrom });
+  gsap.set(signals, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
+  gsap.set(categories, {
+    opacity: MOTION.enter.from,
+    y: MOTION.intel.cardRise,
+  });
   gsap.set(nodes, { opacity: 0 });
 
-  const tl = beat()
-    .to(signals, { opacity: 1, y: 0, ...MOTION.intel.signals }, 0)
-    .to(nodes, { opacity: 1, ...MOTION.trace.node }, "-=0.3");
-  traceRuns(tl, fan, "-=0.2");
+  const tl = beat().to(signals, { opacity: 1, y: 0, ...inStep() }, 0);
 
   /*
-   * Appended last but positioned early, at an absolute time rather than off
-   * the end of whatever precedes it. Every position above is relative, so
-   * inserting this into the chain would push the fan dot and the connector
-   * along with it — the cards would animate and the diagram's timing would
-   * quietly change with them.
+   * The four cards with the container, not after it.
+   *
+   * Appended here but positioned at 0 rather than chained: every position below
+   * is relative, so inserting this into the chain would push the fan dot and the
+   * connector along with it. They used to start at 0.45 on a 0.6s tween of their
+   * own — the container was still rising when they set off and had stopped
+   * before they landed, which is the box arriving and then being filled. They
+   * travel a quarter of what it does over the same time instead, so the row
+   * fills as it rises.
    */
   tl.to(
     categories,
-    { opacity: 1, y: 0, scale: 1, ...MOTION.intel.cards },
-    MOTION.intel.fill,
+    { opacity: 1, y: 0, ...inStep(), stagger: MOTION.intel.cardStagger },
+    0,
   );
+
+  /* The dot and the run that lands on it belong to the connector rather than to
+     the row, so they stay chained off the row's own end. */
+  tl.to(nodes, { opacity: 1, ...MOTION.trace.node }, MOTION.copy.duration - 0.3);
+  traceRuns(tl, fan, "-=0.2");
   return tl;
 }
 
 /** Row three: the engine, with the run from the signals drawing down into it. */
 export function intelHub(el: HTMLElement) {
   const hub = q(el, "hub");
-  gsap.set(hub, { opacity: 0, y: MOTION.intel.rise });
+  gsap.set(hub, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
 
-  const tl = beat().to(hub, { opacity: 1, y: 0, ...MOTION.intel.hub }, 0);
+  const tl = beat().to(hub, { opacity: 1, y: 0, ...inStep() }, 0);
   traceRuns(tl, q(el, "lines").slice(1, 2), "-=0.5");
   return tl;
 }
@@ -852,9 +1048,9 @@ export function intelAmbient(el: HTMLElement) {
 
 export function intelVerdict(el: HTMLElement) {
   const verdict = q(el, "verdict");
-  gsap.set(verdict, { opacity: 0, y: MOTION.intel.rise });
+  gsap.set(verdict, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
 
-  const tl = beat().to(verdict, { opacity: 1, y: 0, ...MOTION.intel.hub }, 0);
+  const tl = beat().to(verdict, { opacity: 1, y: 0, ...inStep() }, 0);
   traceRuns(tl, q(el, "lines").slice(2), 0);
   return tl;
 }
@@ -862,27 +1058,37 @@ export function intelVerdict(el: HTMLElement) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Squad Invitation: the invite card rises and grows into place, then fills
- * itself in.
+ * Squad Invitation: the invite card lifts and fades into place with everything
+ * on it.
  *
- * Rise and grow together rather than one then the other — a card that slides up
- * at full size reads as a panel being pushed on screen, and the growth is what
- * makes it read as arriving. Its contents wait until it has landed, so nothing
- * is animating inside a box that is itself still moving.
+ * Its contents travel a fraction of what the card does and set off at the same
+ * instant, so the whole thing reads as one panel arriving rather than a box
+ * that lands and is then filled.
  */
 export function inviteCard(el: HTMLElement) {
   const card = q(el, "card");
   const items = q(el, "item");
 
-  gsap.set(card, { opacity: 0, ...MOTION.invite.cardFrom });
-  gsap.set(items, { opacity: 0, ...MOTION.invite.itemFrom });
+  gsap.set(card, { opacity: MOTION.enter.from, y: MOTION.enter.lift });
+  gsap.set(items, { opacity: MOTION.enter.from, y: MOTION.invite.itemRise });
 
+  /*
+   * Both at position 0, both on the heading's clock.
+   *
+   * The items sit inside the card, so their travel is the card's plus their own
+   * — sharing one duration and one ease is what keeps that sum proportional the
+   * whole way down instead of the card arriving and its contents then sliding
+   * the last 22px into a box that has already stopped.
+   *
+   * Their stagger is kept: four things filling one card is the one place this
+   * section has an order worth showing.
+   */
   return beat()
-    .to(card, { opacity: 1, y: 0, scale: 1, ...MOTION.invite.card }, 0)
+    .to(card, { opacity: 1, y: 0, ...inStep() }, 0)
     .to(
       items,
-      { opacity: 1, y: 0, scale: 1, ...MOTION.invite.items },
-      "-=0.35",
+      { opacity: 1, y: 0, ...inStep(), stagger: MOTION.invite.itemStagger },
+      0,
     );
 }
 
@@ -902,12 +1108,24 @@ export function inviteCard(el: HTMLElement) {
 
 export function earlyCard(el: HTMLElement) {
   const card = q(el, "card");
+  /* The turn stays — it is the gesture the hero opened on, mirrored, and a
+     quarter turn is not a grow. Only the distance changed, from 440px (off the
+     bottom of the window) down to the shared lift. */
   gsap.set(card, {
-    opacity: 1,
-    y: MOTION.early.rise,
+    opacity: MOTION.enter.from,
+    y: MOTION.early.cardRise,
     rotationZ: MOTION.early.turn,
   });
-  return beat().to(card, { y: 0, rotationZ: 0, ...MOTION.early.card });
+  const tl = beat().to(card, {
+    opacity: 1,
+    y: 0,
+    rotationZ: 0,
+    ...MOTION.early.card,
+  });
+
+  /* The two glows behind the card arrive with it rather than with the words —
+     this section leads with its artwork, so that beat is where they begin. */
+  return glowIn(tl, el);
 }
 
 export function earlyForm(el: HTMLElement) {
@@ -915,29 +1133,53 @@ export function earlyForm(el: HTMLElement) {
   const fields = q(el, "field");
   const cta = q(el, "cta");
 
+  /* No scale here either — see heroCopy. */
   gsap.set(copy, {
-    opacity: 0,
-    scale: 0,
-    y: MOTION.copy.rise,
+    opacity: MOTION.enter.from,
+    y: MOTION.early.copyRise,
     transformOrigin: "50% 100%",
   });
-  gsap.set(fields, { opacity: 0, y: MOTION.early.fieldRise });
+  gsap.set(fields, {
+    opacity: MOTION.enter.from,
+    y: MOTION.early.fieldRise,
+  });
   gsap.set(cta, {
-    opacity: 0,
+    opacity: MOTION.enter.from,
+    y: MOTION.early.ctaRise,
     rotationX: MOTION.flat.angle,
     transformOrigin: "50% 100%",
     transformPerspective: 600,
   });
 
+  /*
+   * All three on the card's clock, and all three at position 0.
+   *
+   * The card is the thing this section is watched for — it turns as it rises,
+   * and it is the only element here that does. Everything beside it has to be
+   * travelling while it travels and stop when it stops, or the section reads as
+   * the card arriving and the form catching up afterwards. Same duration, same
+   * ease, same start: they cover different distances at different speeds and
+   * land on one frame.
+   *
+   * The `to` position argument is 0 on each rather than relative. Relative
+   * positions here had been resolving against a timeline whose duration was
+   * still 0 or already negative — "-=12" then "-=15" then "-=12" put the whole
+   * form at roughly -36 seconds, which is to say finished before the beat had
+   * begun. Nothing animated; the copy, the fields and the button were simply
+   * there while the card rose alone.
+   */
+  const withCard = MOTION.early.card;
+
   return beat()
-    .to(copy, {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      duration: MOTION.copy.duration,
-      ease: MOTION.copy.ease,
-      stagger: MOTION.copy.stagger,
-    })
-    .to(fields, { opacity: 1, y: 0, ...MOTION.early.fields }, "-=0.3")
-    .to(cta, { opacity: 1, rotationX: 0, ...MOTION.early.cta }, "-=0.35");
+    .to(
+      copy,
+      { opacity: 1, y: 0, ...withCard, stagger: MOTION.early.copyStagger },
+      0,
+    )
+    .to(
+      fields,
+      { opacity: 1, y: 0, ...withCard, stagger: MOTION.early.fieldStagger },
+      0,
+    )
+    .to(cta, { opacity: 1, y: 0, rotationX: 0, ...withCard }, 0);
 }

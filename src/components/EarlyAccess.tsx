@@ -33,6 +33,8 @@ function Glow({
     <div
       className="pointer-events-none absolute -z-10 size-103 -translate-x-1/2"
       style={{ top, left: `calc(50% + ${offsetX}px)` }}
+      data-reveal="glow"
+      data-glow-from="0.7 -0.7"
     >
       <div className="absolute inset-[-63.11%]">
         <Image

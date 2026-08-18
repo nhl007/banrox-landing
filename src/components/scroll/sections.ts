@@ -5,8 +5,10 @@ import {
   copyIn,
   earlyCard,
   earlyForm,
+  glowDrift,
   heroCards,
   heroCopy,
+  heroFloat,
   intelAmbient,
   intelHub,
   intelMembers,
@@ -84,6 +86,53 @@ export type SectionSpec = {
   ambient?: Ambient | Ambient[];
 };
 
+/**
+ * The delay that puts a section's payload on the same clock as its heading.
+ *
+ * The controller queues each beat at `max(0, cursor + delay)`, where the cursor
+ * is the end of the beat above. Handing it the heading's own duration back as a
+ * negative cancels almost all of that, so the diagram sets off a fraction after
+ * the first word rather than after the last one — and since both then run at
+ * MOTION.copy's duration and ease (see `inStep` in timelines.ts), the two travel
+ * together and land together.
+ *
+ * It used to be -0.35, which left the payload starting as the heading finished:
+ * two arrivals in a row on a screen the reader cannot scroll past, and the
+ * second one always looked like it was waiting its turn.
+ */
+const WITH_HEADING = -MOTION.copy.duration;
+
+/**
+ * The same idea for Early Access, where the reference is the card rather than a
+ * heading: this section leads with its artwork, so the copy, the form fields
+ * and the button are the things that have to keep up.
+ *
+ * Handing back the card beat's own duration cancels the cursor the controller
+ * would otherwise queue behind it, so the form starts on the card's first frame
+ * — and since all four then run at MOTION.early.card's duration and ease, they
+ * travel together and land together.
+ *
+ * It used to be -1.2, which started the form a second and a bit before the card
+ * had finished: close enough to look deliberate and far enough to look late.
+ */
+const WITH_CARD = -MOTION.early.card.duration;
+
+/**
+ * How far each row of the Intelligence funnel overlaps the one above it.
+ *
+ * The rows deliberately do NOT all start together — the funnel is a chain, each
+ * row drawing itself into the one below, and collapsing that into a single
+ * arrival would throw away the one thing the section is about. What they share
+ * is a rate: every row now runs at MOTION.copy's duration, so the overlap is
+ * stated in terms of that duration rather than as a bare number.
+ *
+ * It used to be a flat -0.8, tuned when the rows were 1s and 1.5s long. Once
+ * they all became 1.5 that fixed number stopped being the same *proportion* of
+ * a row and the funnel stretched: measured end to end at 3.14s of wall clock,
+ * against the ~4s of timeline time (1.6s at this pace) it was written for.
+ */
+const AFTER_ROW = -MOTION.copy.duration;
+
 export const SECTIONS: SectionSpec[] = [
   {
     /*
@@ -104,23 +153,30 @@ export const SECTIONS: SectionSpec[] = [
       { play: heroCopy, delay: MOTION.hero.afterNav },
       { play: heroCards, delay: MOTION.hero.afterCopy },
     ],
+    /* The four passport cards breathing, and the bloom and band behind them
+       drifting. Both wait for the fan to finish opening — see the controller —
+       and both stop the moment the deck hands the window on.
+       glowDrift is the one ambient every section on the deck has: whatever a
+       section's ambient light is, it is what moves it. */
+    ambient: [heroFloat, glowDrift],
   },
   {
     id: "alone",
     label: "Alone Vs Together",
-    beats: [{ play: copyIn }, { play: alonePanels, delay: -0.35 }],
+    beats: [{ play: copyIn }, { play: alonePanels, delay: WITH_HEADING }],
+    ambient: glowDrift,
   },
   {
     id: "approve",
     label: "Squad Approves",
-    beats: [{ play: copyIn }, { play: approveDiagram, delay: -0.35 }],
-    ambient: traceLoop,
+    beats: [{ play: copyIn }, { play: approveDiagram, delay: WITH_HEADING }],
+    ambient: [traceLoop, glowDrift],
   },
   {
     id: "works",
     label: "How Squad Works",
-    beats: [{ play: copyIn }, { play: worksCards, delay: -0.35 }],
-    ambient: [worksAmbient, traceLoop],
+    beats: [{ play: copyIn }, { play: worksCards, delay: WITH_HEADING }],
+    ambient: [worksAmbient, traceLoop, glowDrift],
   },
   {
     /*
@@ -138,19 +194,23 @@ export const SECTIONS: SectionSpec[] = [
     label: "Intelligence Layer",
     beats: [
       { play: copyIn },
-      { play: intelMembers, delay: -0.6 },
-      { play: intelSignals, delay: -0.8 },
-      { play: intelHub, delay: -0.8 },
-      { play: intelVerdict, delay: -0.8 },
+      /* Only the first row syncs with the heading. The four below it are a
+         chain — each draws itself into the one under it — so they keep their
+         own overlaps rather than all starting at once. */
+      { play: intelMembers, delay: WITH_HEADING },
+      { play: intelSignals, delay: AFTER_ROW },
+      { play: intelHub, delay: AFTER_ROW },
+      { play: intelVerdict, delay: AFTER_ROW },
     ],
     /* The engine's bloom, which is the one thing in the funnel still working
        once everything above it has arrived and settled. */
-    ambient: [intelAmbient, traceLoop],
+    ambient: [intelAmbient, traceLoop, glowDrift],
   },
   {
     id: "invitation",
     label: "Invite Your Squad",
-    beats: [{ play: copyIn }, { play: inviteCard, delay: -0.35 }],
+    beats: [{ play: copyIn }, { play: inviteCard, delay: WITH_HEADING }],
+    ambient: glowDrift,
   },
   {
     /*
@@ -159,6 +219,7 @@ export const SECTIONS: SectionSpec[] = [
      */
     id: "early",
     label: "Early Access",
-    beats: [{ play: earlyCard }, { play: earlyForm, delay: -1.2 }],
+    beats: [{ play: earlyCard }, { play: earlyForm, delay: WITH_CARD }],
+    ambient: glowDrift,
   },
 ];
