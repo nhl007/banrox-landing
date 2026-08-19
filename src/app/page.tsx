@@ -4,17 +4,11 @@ import Hero from "@/components/Hero";
 import HowSquadWorks from "@/components/HowSquadWorks";
 import IntelligenceLayer from "@/components/IntelligenceLayer";
 import SquadApproves from "@/components/SquadApproves";
-import SquadCardTrail from "@/components/SquadCardTrail";
 import SquadInvitation from "@/components/SquadInvitation";
 
 export default function Home() {
   return (
     <main className="flex-1">
-      {/* Before the sections, and that is load-bearing: both are positioned
-          elements with no z-index of their own, so they paint in document order
-          and the card travels behind everything on the page. */}
-      <SquadCardTrail />
-
       {/*
         Seven sections, one after another, scrolled the way any page is. Each is
         one window tall above the gate — see .screen in globals.css — and each

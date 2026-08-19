@@ -207,53 +207,6 @@ export const MOTION = {
     },
   },
 
-  /**
-   * The Squad card's journey from the hero to the approve diagram.
-   *
-   * The one piece of motion on the page the reader performs rather than
-   * watches: it has no duration, only a distance, and every frame of it is
-   * theirs. That is the right choice for this and the wrong one for everything
-   * else here — a card arriving or a wire drawing is an event, and an event
-   * scrubbed backwards and forwards by a scrollbar stops being one. This is not
-   * an event. It is an object with a position, and where it is ought to be a
-   * function of where the reader is.
-   *
-   * `dim` is what it fades to for the middle of the trip. Not zero: a card that
-   * disappears has not gone anywhere, and the whole point is that it is still
-   * there, behind the sections, on its way. A tenth is enough to follow if you
-   * look for it and not enough to compete with anything in front of it.
-   *
-   * `out` and `in` are the fractions of the journey spent dimming at the start
-   * and coming back at the end, so most of it is spent at `dim` and the two
-   * hand-overs are quick — the card is only ambiguous about which thing it is
-   * for a moment at either end.
-   *
-   * `lag` is the scrub's catch-up, in seconds. A rigid scrub locks the card to
-   * the scrollbar and it reads as a scrollbar, so it trails a fraction behind
-   * the wheel: enough weight to look like an object being carried down the page
-   * rather than a value being written to a style attribute.
-   *
-   * `sag` is how far the card falls below the straight line between the two
-   * slots, at the middle of the trip, in px.
-   *
-   * Without it the path is a straight line, and a straight line here does not
-   * look like travelling. The two slots are 1714px apart on a page that scrolls
-   * 2100px between them, so a card moving evenly along that line drifts UP the
-   * window the whole way — correct, and the opposite of what it should read as.
-   * A sag bends the first half of the trip downwards past the scroll, so the
-   * card visibly sinks away from the hero before it is drawn back up into the
-   * approve diagram's slot. Measured, at 260: it falls ~90px through the window
-   * over the first quarter and is lifted back over the last.
-   *
-   * `settle` is how long the journey's start point waits to be measured — long
-   * enough for the hero's entrance to be over, because the card it sets off
-   * from spends that entrance lying flat and turned on its side and its
-   * bounding box mid-turn is not where it ends up. Comfortably past the hero's
-   * own arrival at this pace; it costs nothing to be late, because until then
-   * there is nothing to scroll past.
-   */
-  trail: { dim: 0.1, out: 0.12, in: 0.12, lag: 0.6, settle: 2.5, sag: 260 },
-
   /* --- hero ------------------------------------------------------------- */
 
   hero: {
@@ -300,18 +253,47 @@ export const MOTION = {
      * And the fan closing again on the way out, scrubbed by the scroll rather
      * than played — see heroFold.
      *
+     * The one thing on the page the reader performs rather than watches: it has
+     * no duration, only a distance, and every frame of it is theirs. That is
+     * the right choice for this and the wrong one for everything else here — a
+     * card arriving or a wire drawing is an event, and an event scrubbed
+     * backwards and forwards by a scrollbar stops being one. This is not an
+     * event. It is four cards with a position, and where they are ought to be a
+     * function of where the reader is.
+     *
      * `out` is how much scrolling it takes, as a fraction of the window: the
-     * four cards are folded away by the time the reader has moved this far, and
-     * only then does the Squad card start down the page. Enough to be a
-     * movement in its own right rather than a flicker as the hero leaves, and
-     * short enough that it is over well before the hero itself is.
+     * four cards are folded away by the time the reader has moved this far.
+     * Enough to be a movement in its own right rather than a flicker as the
+     * hero leaves, and short enough that it is over well before the hero
+     * itself is.
      *
      * `stagger` is a good deal tighter than the fan's own 0.2. Opening, the
      * four cards are the event and each one wants to be seen arriving; closing,
-     * they are getting out of the way of the card that carries on, and a long
+     * they are getting out of the way of the one they came from, and a long
      * stagger there just holds the hero open.
+     *
+     * `lag` is the scrub's catch-up, in seconds. A rigid scrub locks the cards
+     * to the scrollbar and they read as a scrollbar, so they trail a fraction
+     * behind the wheel: enough weight to look like objects being folded away
+     * rather than values being written to a style attribute. The same number,
+     * within a rounding, that the deepest layers of PARALLAX.lag settle on.
+     *
+     * `settle` is how long the fold's trigger waits before it is created at
+     * all, in seconds, and it is not a nicety.
+     *
+     * A scrubbed timeline renders as soon as its ScrollTrigger exists, and at
+     * the top of the page it renders at progress 0 — which for this timeline is
+     * the four cards at x: 0, opacity: 1, their RESTING state. That is exactly
+     * where heroCards is still travelling to, so a fold built any earlier would
+     * write the end of the hero's entrance over the top of it on every frame:
+     * the fan would not open, it would simply be there. (The related bug of one
+     * card being caught mid-fan and pinned folded is fixed separately, and
+     * differently — see the note on fromTo in heroFold.)
+     *
+     * Comfortably past the hero's own arrival at this pace; it costs nothing to
+     * be late, because until then there is nothing to scroll past.
      */
-    fold: { out: 0.6, stagger: 0.12 },
+    fold: { out: 0.6, stagger: 0.12, lag: 0.6, settle: 2.5 },
 
     /**
      * The four passport cards, breathing, once the fan has finished opening.
@@ -534,15 +516,15 @@ export const MOTION = {
      * They agree; they are not the same value.
      */
     figures: {
-      count: { duration: 1.4, ease: "power1.out" },
-      meter: { duration: 1.4, ease: "power1.out" },
+      count: { duration: 1, ease: "power1.out" },
+      meter: { duration: 1, ease: "power1.out" },
       stagger: 0.1,
       /**
        * When the first card's readout starts, in seconds into the beat — held
        * just long enough that the card is legibly on its way in before the
        * number inside it starts moving.
        */
-      after: 0.3,
+      after: 0.5,
     },
 
     /**

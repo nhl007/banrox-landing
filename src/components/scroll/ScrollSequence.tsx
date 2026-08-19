@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { PARALLAX } from "./depth";
 import { MOTION } from "./motion";
+import { parallaxScene } from "./parallax";
 import { SECTIONS } from "./sections";
-import { heroFold, navbarDrop, squadTrail } from "./timelines";
+import { heroFold, navbarDrop } from "./timelines";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -42,6 +44,69 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
  * All of it is gone, and the page has no opinion about scrolling any more.
  */
 
+/**
+ * Everything the sequence writes an inline style to, as one selector.
+ *
+ * The arrivals reach [data-reveal] and the wiring inside it ([data-spark] for a
+ * connector's light, [data-glow] for the rings and hub layers that breathe,
+ * [data-meter] for the score bars, [data-fan-anchor] for the hero's Squad
+ * card); depth reaches the same [data-reveal] elements and the four wrapper
+ * layers. Nothing else on the page is touched by either.
+ *
+ * Deliberately none of these carries a transform in the markup — the three that
+ * do (.stage's perspective, SquadCard's mirrored face, ConnectorTrace's mirror)
+ * are outside this set, which is what makes it safe to strip the property
+ * outright rather than try to restore it.
+ */
+const WRITTEN = [
+  "[data-reveal]",
+  "[data-spark]",
+  "[data-glow]",
+  "[data-meter]",
+  "[data-fan-anchor]",
+  ".screen-copy",
+  ".screen-payload",
+  ".screen-glow",
+  ".stage-backdrop",
+].join(",");
+
+/**
+ * Put the page back the way the server rendered it.
+ *
+ * Run when the window crosses OUT of the motion gate — narrowed under 641px,
+ * shortened under 480px, or reduced motion switched on mid-session. Below the
+ * gate the markup is already the finished page and every inline style the
+ * sequence left behind is wrong, so the fix is to have none.
+ *
+ * GSAP's own revert is not enough here, and measurably so. Loaded at 1440x900,
+ * scrolled to 700 and then resized to 390x844, what survived the matchMedia
+ * revert was every un-arrived section sitting at its arrival's START state:
+ * "opacity: 0.2; transform: translate(0px, 60px)" on the copy blocks — which
+ * printed a 20% sub-paragraph straight through the CTA under it — and the
+ * approve diagram left 80px and 56px out of alignment. Those are MOTION.enter's
+ * own numbers. Reproduced identically for 1440x430 and for reduced motion
+ * switched on with no resize at all.
+ *
+ * No attempt is made here to work out which of the two systems failed to let
+ * go, because it does not matter what the answer is: below the gate the correct
+ * inline style for every one of these elements is none, whatever put one there.
+ * Stripping them is both the fix and the invariant.
+ *
+ * Plain DOM writes rather than gsap.set(clearProps), so that this is not itself
+ * recorded and re-applied on the way back up through the gate.
+ */
+const unwind = () => {
+  for (const el of document.querySelectorAll<HTMLElement>(WRITTEN))
+    for (const prop of [
+      "transform",
+      "transform-origin",
+      "opacity",
+      "clip-path",
+      "will-change",
+    ])
+      el.style.removeProperty(prop);
+};
+
 export default function ScrollSequence({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   /*
@@ -66,12 +131,31 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
       const mm = gsap.matchMedia();
 
       /*
-       * Below the gate, and for anyone who asked for reduced motion, nothing
-       * plays at all. The CSS start state is behind the same query, so the
-       * server-rendered markup is already the finished page and there is
-       * nothing to undo.
+       * Below the gate, and for anyone who asked for reduced motion, no
+       * SEQUENCE plays at all. The CSS start state is behind the same query, so
+       * the server-rendered markup is already the finished page and there is
+       * nothing to play.
+       *
+       * There is something to undo, though, if the reader ARRIVED here rather
+       * than started here — see unwind. This handler is the right place for it
+       * because gsap.matchMedia reverts the contexts that stopped matching
+       * before it runs the ones that started, so by the time this is called the
+       * sequence has already let go of the page.
        */
-      mm.add(`not all and ${MOTION.enabled}`, () => {});
+      mm.add(`not all and ${MOTION.enabled}`, unwind);
+
+      /*
+       * What a phone does get is depth, and only depth.
+       *
+       * Nothing is hidden here and nothing waits to arrive — the page is
+       * delivered finished — so this adds no start state to undo and cannot
+       * strand anything blank if it fails to run. It is the ambient light
+       * moving at its own speed behind text that moves at the page's, which is
+       * the one part of the whole system that still means something when a
+       * section is a column of its own height rather than a screen. Reduced
+       * motion is excluded by the query itself. See PARALLAX.calm.
+       */
+      mm.add(PARALLAX.calm, () => parallaxScene({ calm: true }));
 
       mm.add(MOTION.enabled, () => {
         const find = (id: string) =>
@@ -179,105 +263,65 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
           }
         }
 
-        /* --- the Squad card's journey ------------------------------------ */
-
-        /*
-         * The one piece of motion here that spans two sections, and the one the
-         * reader performs rather than watches: the Squad card leaves the hero's
-         * fan, dims, travels down the page behind everything, and arrives in the
-         * approve diagram's slot. See squadTrail for the geometry.
+        /* --- depth --------------------------------------------------------
          *
-         * A proxy object rather than the card itself, so that `scrub` has
-         * something to lag and one function still owns every property the card
-         * has. Scrubbed with a lag rather than locked to the scrollbar: rigid,
-         * it reads as a scrollbar; a fraction of a second behind, it reads as an
-         * object with weight being carried down the page.
+         * Everything above decides WHEN a section animates; this decides how
+         * far away each part of it is while the reader scrolls past. The two
+         * never touch the same property — arrivals own x/y and opacity on
+         * [data-reveal], depth owns xPercent/yPercent and the wrappers — so
+         * they run over the top of each other with no arbitration. See
+         * depth.ts, which is the whole of what it does and why.
+         */
+        parallaxScene({ calm: false });
+
+        /* --- the hero's fan closing --------------------------------------
+         *
+         * The one beat on the page the reader performs rather than watches. As
+         * they scroll off the hero the four passport cards fold back in behind
+         * the Squad card and are gone, leaving the product alone on the screen
+         * — see heroFold for the geometry, MOTION.hero.fold for the numbers.
+         *
+         * The only ARRIVAL on the page driven this way. Everything the loop
+         * above sets up is an event with a duration that plays once when its
+         * section comes into view; this has no duration at all, only a
+         * distance, and every frame of it belongs to the reader. (Depth is
+         * scrubbed too, but depth is not an arrival — it is where a layer sits
+         * while the reader goes past it.)
          */
         const heroEl = find("hero");
-        const approveEl = find("approve");
-
-        /*
-         * The fan closing, first — see heroFold. The four passport cards fold
-         * back in behind the Squad card as the reader scrolls off the hero, and
-         * only once they are gone does the Squad card set off down the page.
-         *
-         * Expressed as a fraction of the window rather than of the hero: it is
-         * an amount of scrolling, and what makes it feel right is how far the
-         * reader has had to move, not how tall the section they moved out of
-         * happened to be.
-         */
-        const foldOut = `${MOTION.hero.fold.out * 100}%`;
         const fold = heroEl && heroFold(heroEl);
 
-        const trail = squadTrail(document);
-        if (trail) {
-          const at = { p: 0 };
-          const run = gsap.to(at, {
-            p: 1,
-            ease: "none",
-            paused: true,
-            onUpdate: () => trail.apply(at.p),
-          });
+        if (heroEl && fold) {
+          const { out, lag, settle } = MOTION.hero.fold;
 
-          if (heroEl && approveEl)
+          /*
+           * Built late, and it has to be.
+           *
+           * A scrubbed timeline renders as soon as its ScrollTrigger exists,
+           * and at the top of the page it renders at progress 0 — which here is
+           * the four cards at x: 0, opacity: 1, their resting state. That is
+           * precisely where heroCards is still carrying them, so a fold created
+           * any earlier writes the end of the hero's entrance over the top of
+           * it every frame and the fan never visibly opens. See
+           * MOTION.hero.fold.settle.
+           *
+           * The refresh afterwards is because every other trigger on the page
+           * was positioned before this one existed.
+           */
+          gsap.delayedCall(settle, () => {
             ScrollTrigger.create({
               trigger: heroEl,
-              /* Where the fold leaves off. The card does not start down the
-                 page until the fan around it has closed. */
-              start: `top top-=${foldOut}`,
               /*
-               * Ending on the approve section's centre rather than its top: the
-               * card has to be in its slot by the time the diagram is being
-               * read, not by the time the heading appears above it.
+               * A fraction of the WINDOW rather than of the hero. It is an
+               * amount of scrolling, and what makes it feel right is how far
+               * the reader has had to move — not how tall the section they
+               * moved out of happened to be.
                */
-              endTrigger: approveEl,
-              end: "center center",
-              scrub: MOTION.trail.lag,
-              animation: run,
-              /* Re-measure and re-place: a resize moves both slots, and the
-                 card has to be put back on the line between where they are now
-                 rather than left on the one between where they were. This is
-                 also what places it for the first time, at progress 0. */
-              onRefresh: () => {
-                trail.measure();
-                trail.apply(at.p);
-              },
+              start: "top top",
+              end: `+=${out * 100}%`,
+              scrub: lag,
+              animation: fold,
             });
-
-          /*
-           * Measured again once the hero has settled.
-           *
-           * The first refresh happens on load, while the hero's card is still
-           * lying flat and turned on its side — its bounding box at that moment
-           * is a card mid-quarter-turn, and the journey would set off from the
-           * wrong place. This is the one thing on the page that has to wait for
-           * an animation to finish before it can be measured.
-           */
-          /*
-           * Both of these wait for the hero to finish arriving, and for the
-           * same reason: they are about the four cards and the one card the
-           * hero's entrance is still moving.
-           *
-           * The fold cannot be created any earlier — a scrubbed timeline
-           * renders as soon as its trigger exists, and rendering this one at
-           * progress 0 puts the cards in their resting state, which is the
-           * entrance skipping to its own end.
-           *
-           * And the traveller has nothing to measure until then: the Squad card
-           * spends the entrance mid-quarter-turn, and placing it against that
-           * rect is what used to put a second Squad card on the hero for the
-           * first two and a half seconds.
-           */
-          gsap.delayedCall(MOTION.trail.settle, () => {
-            if (heroEl && fold)
-              ScrollTrigger.create({
-                trigger: heroEl,
-                start: "top top",
-                end: `+=${foldOut}`,
-                scrub: MOTION.trail.lag,
-                animation: fold,
-              });
-            trail.arm();
             ScrollTrigger.refresh();
           });
         }

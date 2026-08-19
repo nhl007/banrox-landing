@@ -313,6 +313,26 @@ body {
   display: flex;
   flex-direction: column;
   /*
+   * Nothing a section contains may reach past its left or right edge.
+   *
+   * Three of the seven already said this for themselves, as a utility on the
+   * element, because their arrivals travel sideways. Depth gave the other four
+   * the same problem: an ambient layer that swells or sways is a transformed
+   * box wider than the section it sits in, and a transform that overhangs to
+   * the right is *scrollable* overflow — which on this page does more than
+   * raise a scrollbar. A horizontal scrollbar resizes the container queries
+   * every stage derives its scale from, so every diagram below it changes size
+   * and every section below it moves. Stated once here, it cannot be forgotten
+   * on the next section anybody adds.
+   *
+   * `clip` rather than `hidden`: it does not make the element a scroll
+   * container, and it is the one value that may be paired with a `visible`
+   * other axis — which the ambient layers depend on, since their whole job
+   * across a section boundary is to bleed vertically into the gap. See
+   * .screen-glow.
+   */
+  overflow-x: clip;
+  /*
    * On a phone this padding is the space *between* sections, and it is the only
    * thing that says one has ended: they are a column of full-width cards and
    * diagrams on the same dark ground, with no rule or band between them, so a
@@ -412,6 +432,29 @@ body {
 }
 
 /*
+ * The break above the footer, in both tiers, from one rule.
+ *
+ * A between on this page is never just the margin: it is the section above's
+ * own bottom padding, then the margin, then the section below's top padding.
+ * The footer has none of its own — it is a band with its own ground rather than
+ * a .screen — so matching the rhythm means the last section has to supply the
+ * far side as well as the near one. Hence the sum, and hence one rule for both
+ * tiers rather than two.
+ *
+ * Below the gate --screen-between is not declared at all and the fallback makes
+ * this the section's own padding, which is exactly the missing half: 56 + 56,
+ * the same 112px of nothing that separates every other pair down there. Above
+ * the gate it is the margin plus the padding, 144 + 36 at 1440x900, which with
+ * the last section's own 36 comes to the 216px that separates every other pair
+ * up here. Measured both ways rather than asserted — the version of this rule
+ * that used the margin alone came out 36px short above the gate and read as the
+ * page trailing off rather than ending.
+ */
+.scene>.screen:last-child {
+  margin-bottom: calc(var(--screen-between, 0px) + var(--screen-pad));
+}
+
+/*
  * Sections are one window tall wherever the window can hold one.
  *
  * This is the layout the design is drawn for — a heading and a diagram fitted
@@ -454,71 +497,31 @@ body {
    *
    * ONE rule for every pair, with no section special-cased: `+` puts the same
    * margin above all six of them, so the rhythm never changes as you scroll.
-   * Between, not around — the page still opens flush under the navbar and ends
-   * flush against the footer, which are edges rather than neighbours.
+   * The page still opens flush under the navbar, which is an edge rather than a
+   * neighbour — it is the top of the hero's own screen, not a thing above it.
+   *
+   * The footer used to be treated as the same kind of edge and it is not. It is
+   * a neighbour: a separate band with its own ground, arriving after the last
+   * section the way every section arrives after the one above it — and butted
+   * straight up against Early Access, the last thing the reader is asked to do
+   * sat directly on top of it. So it gets the same between as everything else,
+   * which is what --screen-between is for: the gap is stated once here and read
+   * by the last-child rule above, so the rhythm at the foot of the page cannot
+   * drift away from the rhythm through it.
    *
    * Not below the gate. There a section is as tall as its contents rather than
    * as tall as the window, so svh would be measuring the gap against something
    * it has no relationship to — and the phones already have their between, in
    * the 56px of --screen-pad each section carries top and bottom.
    */
+  .scene {
+    --screen-between: clamp(4rem, 16svh, 11.2rem);
+  }
+
   .scene>.screen+.screen {
-    margin-top: clamp(4rem, 16svh, 11.2rem);
-  }
-}
-
-/* ---------------------------------------------------------------------------
- * The travelling Squad card.
- *
- * See SquadCardTrail for what it is and why it is a third card rather than one
- * of the two real ones. This is only its place on the page.
- *
- * Absolute against the initial containing block — nothing above it in the tree
- * is positioned — so its origin is the top left of the DOCUMENT and the
- * controller can drive it in page coordinates: the hero's slot and the approve
- * slot are two fixed points on the page and the card is somewhere on the line
- * between them.
- *
- * Zero-sized on purpose. It is an origin, not a box; the card inside it is what
- * has any extent, and keeping the wrapper at nothing means it can never widen
- * the document and raise a scrollbar however far the card is driven.
- *
- * Off below the gate and under reduced motion, where there is no controller to
- * drive it — and there the approve diagram's own Squad card is visible in the
- * ordinary way, because the rule that hides it is behind the same query.
- */
-.squad-trail {
-  display: none;
-}
-
-@media (min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
-  .squad-trail {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0;
-    height: 0;
-    pointer-events: none;
+    margin-top: var(--screen-between);
   }
 
-  /*
-   * Starts invisible and stays that way until the controller has measured where
-   * the hero's card is: the page is server-rendered and paints before any of
-   * this exists, and an unplaced card would flash at the document's top left
-   * corner for a frame.
-   *
-   * top left origin, so the scale the controller gives it is measured from the
-   * same corner its x/y are — the two compose into one placement instead of
-   * fighting over where the middle is.
-   */
-  .squad-trail-card {
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    transform-origin: top left;
-  }
 }
 
 /*
@@ -634,9 +637,51 @@ body {
    * overflow-y: hidden would otherwise crop outward strokes drawn on the top
    * and bottom rows of the stage (the comparison cards ring their outer edge).
    * The padding gives them room; the negative margin keeps layout unchanged.
+   *
+   * How that works, since the same trick now carries a good deal more weight:
+   * the viewport is a stretched flex item, so it is its MARGIN box that is
+   * sized to the line. A negative margin of P therefore grows the border box by
+   * 2P and leaves the content box exactly where it was — which matters because
+   * above the gate this element is a `size` container and the content box is
+   * what 100cqh resolves against. Bleed as much as you like and no stage
+   * changes scale. Verified by measurement, not by reading: --stage-scale is
+   * identical either side of this change at every window tested.
    */
-  padding-block: 4px;
-  margin-block: -4px;
+  padding-block: var(--stage-bleed);
+  margin-block: calc(-1 * var(--stage-bleed));
+  --stage-bleed: 4px;
+}
+
+/*
+ * And a great deal more of it once the diagrams have depth.
+ *
+ * The parts of a diagram move relative to each other as the reader scrolls past
+ * it (see depth.ts), and the artboards are packed: the comparison panels are
+ * their stage's full height, the funnel's first row sits at its stage's top
+ * edge and its last row at the bottom. Measured at 1440x900 with 4px of bleed,
+ * the two panels were sliced by 42px and the funnel's verdict by 30 — a hard
+ * horizontal edge across a card, which is very much worse than no parallax.
+ *
+ * 64px clears the furthest any PART of a diagram travels: the deepest is the
+ * approve section's request card and vote list, at 56 stage units before their
+ * section's taper and 53 after it, and a stage is never scaled up. That leaves
+ * room over for the entrances, which also start their payloads below where they
+ * sit.
+ *
+ * One layer goes much further and is meant to: the intelligence funnel's aura
+ * (140 units) is a 1189px bloom on a 948px stage, so it overhangs its artboard
+ * on every side and its top and bottom have always been cropped. It has no edge
+ * to show a crop with, which is the whole reason it is allowed to.
+ *
+ * Vertical only, and deliberately: the horizontal clip is doing real work. The
+ * request card and the vote list start off the sides of the approve stage, and
+ * a rightward overhang is scrollable overflow rather than something quietly
+ * cropped. See .stage-viewport-clip.
+ */
+@media (min-width: 641px) and (min-height: 480px) {
+  .stage-viewport {
+    --stage-bleed: 64px;
+  }
 }
 
 .stage-sizer {
