@@ -41,14 +41,24 @@ function RingedAvatar({
   left,
   top,
   verified = true,
+  label,
 }: {
   personKey: keyof typeof VOTE_FRAMING;
   left: number;
   top: number;
   verified?: boolean;
+  /**
+   * A name tag riding just under the avatar. Only "You" uses it, and it has to
+   * belong to the avatar rather than to the panel: the four of them go round
+   * (see the orbit note below), and a tag left at the bottom of the panel would
+   * spend three quarters of every lap labelling somebody else.
+   */
+  label?: string;
 }) {
   return (
-    <div className="absolute" style={{ left, top }}>
+    /* data-orbit-rider: turned back by exactly what the ring turns, so this
+       travels the circle upright. See worksOrbit. */
+    <div className="absolute" style={{ left, top }} data-orbit-rider>
       <AvatarRing
         size={40}
         person={PEOPLE[personKey]}
@@ -57,6 +67,16 @@ function RingedAvatar({
       {verified ? (
         <span className="absolute right-0 bottom-0.5">
           <VerifiedCheck size={12} />
+        </span>
+      ) : null}
+      {label ? (
+        /* Figma centres this half a pixel right of the avatar's own centre, at
+           the panel's 179.5 against its 179 — kept rather than rounded away, so
+           the tag sits where the artboard puts it. */
+        <span className="absolute top-[33px] left-[calc(50%+0.5px)] flex h-3.5 -translate-x-1/2 items-center justify-center rounded-[10px] bg-white px-1 drop-shadow-[0px_6px_4px_rgba(38,75,255,0.6)]">
+          <span className="font-heading text-brand-deep text-[10px] leading-none whitespace-nowrap">
+            {label}
+          </span>
         </span>
       ) : null}
     </div>
@@ -93,16 +113,39 @@ function Step1Figure() {
         data-glow=""
       />
 
-      <RingedAvatar personKey="lilit" left={160} top={14} />
-      <RingedAvatar personKey="mika" left={256} top={110} />
-      <RingedAvatar personKey="aram" left={64} top={110} />
-      <RingedAvatar personKey="david" left={159} top={206} verified={false} />
+      {/*
+        The squad, on a circle around the hub — and the box that turns them
+        along it. See worksOrbit.
 
-      <span className="absolute top-[239px] left-[calc(50%-0.5px)] flex h-3.5 -translate-x-1/2 items-center justify-center rounded-[10px] bg-white px-1 drop-shadow-[0px_6px_4px_rgba(38,75,255,0.6)]">
-        <span className="font-heading text-brand-deep text-[10px] leading-none whitespace-nowrap">
-          You
-        </span>
-      </span>
+        The four keep the coordinates Figma gives them, and those coordinates
+        are already a circle: a 40px avatar at (160,14) has its centre at
+        (180,34), which is 96px straight up from the panel's own centre at
+        (180,130), and the other three are 96px right, left and down from the
+        same point. David is a pixel to the left of it rather than on it, which
+        is how the artboard places him and what he is left at — it puts him
+        0.6deg out of phase with the other three and nothing else.
+
+        So the wrapper is the panel box, inset-0, and rotating it about its own
+        centre rotates the circle about its centre. Nothing computes an angle,
+        nothing is authored in polar coordinates, and with no rotation on it —
+        below the motion gate, or under reduced motion — this is the artboard
+        exactly as it was drawn.
+
+        pointer-events-none because it now covers the whole panel and everything
+        in it is decorative; the avatars keep their alt text either way.
+      */}
+      <div className="pointer-events-none absolute inset-0" data-orbit>
+        <RingedAvatar personKey="lilit" left={160} top={14} />
+        <RingedAvatar personKey="mika" left={256} top={110} />
+        <RingedAvatar personKey="aram" left={64} top={110} />
+        <RingedAvatar
+          personKey="david"
+          left={159}
+          top={206}
+          verified={false}
+          label="You"
+        />
+      </div>
 
       <Image
         src="/works/step1-hub-logo.svg"

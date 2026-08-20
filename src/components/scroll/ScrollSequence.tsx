@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PARALLAX } from "./depth";
 import { MOTION } from "./motion";
+import { authoredTop } from "./measure";
 import { parallaxScene } from "./parallax";
 import { SECTIONS } from "./sections";
 import { heroFold, navbarDrop } from "./timelines";
@@ -50,8 +51,9 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
  * The arrivals reach [data-reveal] and the wiring inside it ([data-spark] for a
  * connector's light, [data-glow] for the rings and hub layers that breathe,
  * [data-meter] for the score bars, [data-fan-anchor] for the hero's Squad
- * card); depth reaches the same [data-reveal] elements and the four wrapper
- * layers. Nothing else on the page is touched by either.
+ * card, [data-orbit] and its riders for step 1's members going round the hub);
+ * depth reaches the same [data-reveal] elements and the four wrapper layers.
+ * Nothing else on the page is touched by either.
  *
  * Deliberately none of these carries a transform in the markup — the three that
  * do (.stage's perspective, SquadCard's mirrored face, ConnectorTrace's mirror)
@@ -64,6 +66,8 @@ const WRITTEN = [
   "[data-glow]",
   "[data-meter]",
   "[data-fan-anchor]",
+  "[data-orbit]",
+  "[data-orbit-rider]",
   ".screen-copy",
   ".screen-payload",
   ".screen-glow",
@@ -105,6 +109,29 @@ const unwind = () => {
       "will-change",
     ])
       el.style.removeProperty(prop);
+
+  /*
+   * And the two things the sequence overwrites that are not styles at all, and
+   * so cannot be put back by removing one.
+   *
+   * A figure counts by having its text replaced, and a score meter fills by
+   * having the width the server rendered replaced. Cross the gate while either
+   * is running and GSAP's revert winds the tween back to its start and writes
+   * THAT — measured: crossing out mid-count left all six strength figures
+   * reading "0 | 0% | $0.0k", permanently, on the tier whose whole premise is
+   * that the markup is already the finished page.
+   *
+   * Both are restored from the attribute rather than remembered here, because
+   * both already carry their own printed value for exactly this reason — see
+   * the notes on data-count in StrengthBar and data-meter in MemberScoreCard.
+   * A figure that has never counted has nothing in the attribute yet and is
+   * left alone; its text is still the one the server wrote.
+   */
+  for (const cell of document.querySelectorAll<HTMLElement>("[data-count]"))
+    if (cell.dataset.count) cell.textContent = cell.dataset.count;
+
+  for (const bar of document.querySelectorAll<HTMLElement>("[data-meter]"))
+    if (bar.dataset.meter) bar.style.width = `${bar.dataset.meter}%`;
 };
 
 export default function ScrollSequence({ children }: { children: ReactNode }) {
@@ -159,7 +186,9 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
 
       mm.add(MOTION.enabled, () => {
         const find = (id: string) =>
-          document.querySelector<HTMLElement>(`[data-sequence-section='${id}']`);
+          document.querySelector<HTMLElement>(
+            `[data-sequence-section='${id}']`,
+          );
 
         /* The navbar is not one of the sections. It is above them and it drops
            in on load, which is what the page opens on. */
@@ -169,7 +198,9 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         for (const spec of SECTIONS) {
           const el = find(spec.id);
           if (!el) {
-            console.warn(`[ScrollSequence] no element for section "${spec.id}"`);
+            console.warn(
+              `[ScrollSequence] no element for section "${spec.id}"`,
+            );
             continue;
           }
 
@@ -179,9 +210,32 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
            * overlapping the beat above it.
            */
           const beats = gsap.timeline({ paused: true });
+          const owned: { child: gsap.core.Timeline; subject: HTMLElement }[] =
+            [];
           let cursor = 0;
           for (const b of spec.beats) {
             const child = b.play(el);
+
+            /*
+             * A beat about something this section's own moment cannot see — the
+             * strength rails at the foot of the comparison panels, the ledger
+             * under the approve diagram. It is not queued behind anything; it
+             * waits for its own subject to reach the fold. See Beat.own.
+             */
+            const subject = b.own ? el.querySelector<HTMLElement>(b.own) : null;
+            if (b.own && !subject)
+              console.warn(
+                `[ScrollSequence] ${spec.id}: nothing matches own "${b.own}"`,
+              );
+
+            if (subject) {
+              /* Armed below, once the section's own flags exist — it has to
+                 know whether the section has arrived before it may run. */
+              child.timeScale(MOTION.pace);
+              owned.push({ child, subject });
+              continue;
+            }
+
             /* A child has to be running for its parent to render it; these come
                back paused because a factory has no idea when it will be used. */
             child.paused(false);
@@ -221,10 +275,14 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
            * screen entirely.
            */
           let played = false;
+          /* Beats with a trigger of their own that were told to run before this
+             section had arrived, and are waiting for it — see below. */
+          const waiting: (() => void)[] = [];
           const start = () => {
             if (played) return;
             played = true;
             beats.restart();
+            for (const retry of waiting.splice(0)) retry();
           };
 
           /* The one section that does not wait to be scrolled to: it is the
@@ -260,6 +318,78 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
           if (trigger.isActive) {
             onScreen = true;
             start();
+          }
+
+          /* --- beats with a trigger of their own ------------------------- */
+
+          for (const { child, subject } of owned) {
+            /*
+             * The scroll position at which the subject's top edge reaches
+             * MOTION.own.line down the window, worked out from where it RESTS
+             * rather than from where it is being held — see the note on
+             * MOTION.own and authoredTop. Re-derived every time, because both
+             * terms are functions of the window.
+             */
+            const line = () =>
+              authoredTop(subject) - window.innerHeight * MOTION.own.line;
+
+            let ran = false;
+            const run = () => {
+              if (ran) return;
+
+              /*
+               * Three things have to be true, and each of them was a bug that
+               * this beat shipped without.
+               *
+               * The SECTION has to have arrived first. ScrollTrigger fires
+               * onEnter even when a single frame carries the scroll clean past
+               * a whole range, but it does not fire onToggle — which is what
+               * the section's entrance hangs on — so one flick of a trackpad
+               * past this section ran the rails while the panels they belong to
+               * were still at opacity 0.2, permanently. Reproduced with a
+               * 1800px wheel jump. Anything refused for this reason is not
+               * dropped: it waits, and `start` retries it.
+               *
+               * The reader has to actually be PAST the line. The check below is
+               * also what arms a subject that is already in view on a reload,
+               * and without it that path fired at whatever scroll the page was
+               * restored to.
+               *
+               * And the subject has to still be on screen. Reloading part way
+               * down the page put the scroll far beyond the line with the rail
+               * 1529px and the ledger 508px ABOVE the window, and played both
+               * of them there — which is the exact thing this whole mechanism
+               * exists to prevent, and it spent them, so scrolling back up
+               * showed a rail that never opened. Reproduced against a
+               * pre-change baseline, which did none of it.
+               */
+              if (!played) {
+                if (!waiting.includes(run)) waiting.push(run);
+                return;
+              }
+              if (window.scrollY < line()) return;
+              const r = subject.getBoundingClientRect();
+              if (r.bottom <= 0 || r.top >= window.innerHeight) return;
+
+              ran = true;
+              child.restart();
+            };
+
+            /*
+             * Both directions, because either can be the first time the reader
+             * meets it: down the page in the ordinary way, or back UP to it
+             * from below after a jump carried them past.
+             */
+            ScrollTrigger.create({
+              trigger: subject,
+              start: line,
+              end: () => line() + 1,
+              onEnter: run,
+              onEnterBack: run,
+            });
+            /* And already past it on arrival, which crossing nothing would
+               never catch — a reload part way down the page. */
+            run();
           }
         }
 

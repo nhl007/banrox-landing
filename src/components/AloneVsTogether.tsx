@@ -264,7 +264,38 @@ export default function AloneVsTogether() {
               }
             >
               <div className="stage w-full sm:w-auto">
-                <div className="flex w-full flex-col items-stretch gap-4 sm:h-full sm:flex-row sm:items-start sm:gap-28">
+                {/*
+                  sm:scale-[0.92] — the row, a shade smaller than the artboard
+                  draws it.
+
+                  On the row rather than on either card, and that is the whole
+                  point of putting it here: the two panels, the 112px between
+                  them and the VS in the middle are one composition, and
+                  shrinking a card on its own would widen the gap around it and
+                  leave the VS at full size. Scaled together from the centre,
+                  nothing about the arrangement changes except how much of the
+                  screen it takes.
+
+                  Nothing here has to be reconciled with the sequence: it
+                  writes to the panels, the VS and the copy, and never to this
+                  row — verified by watching every inline style written across
+                  the section's whole crossing. An ancestor's scale composes
+                  with a descendant's transform in any case, which is what .stage
+                  has always done to these same panels.
+
+                  What the property DOES do that matters is establish a
+                  containing block, which re-parents the absolutely-placed VS
+                  from .stage to this row — the two boxes are identical, so it
+                  stays on the same centre, and it is now scaled along with the
+                  cards instead of standing at full size between two smaller
+                  ones.
+
+                  Behind sm: because below the gate the stage chain is
+                  display:contents and this row is a plain column of full-width
+                  cards; there is nothing to scale down there and doing it would
+                  just make a phone's cards smaller than its own margins.
+                */}
+                <div className="flex w-full flex-col items-stretch gap-4 sm:h-full sm:scale-[0.92] sm:flex-row sm:items-start sm:gap-28">
                   <AloneCard />
                   {/* Between the two panels on a phone, dead centre of the row
                       from sm: up — the same word doing the same job either way. */}

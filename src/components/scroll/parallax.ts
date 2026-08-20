@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PARALLAX, SCENE, type DepthLayer } from "./depth";
+import { asAuthored } from "./measure";
 
 /*
  * The engine behind depth.ts, and nothing else.
@@ -103,66 +104,6 @@ const room = (node: HTMLElement, section: HTMLElement, want: number) => {
   const slack = Math.min(r.left - cur - c.left, c.right - (r.right - cur));
 
   return Math.sign(want) * Math.min(Math.abs(want), Math.max(0, slack) / k);
-};
-
-/*
- * ---------------------------------------------------------------------------
- * MEASURING A SECTION AS THE STYLESHEET DESCRIBES IT
- *
- * Everything below this line needs to know where things REST — where a heading
- * sits, how tall a panel is, how many screen pixels one of a stage's units is
- * worth. None of that can be read off the live page, because at the moment
- * these measurements are taken the page is mid-animation and lying about all
- * three:
- *
- *   - An arrival parks its payload `lift` px low until its section is reached,
- *     so every gap in a section that has not arrived yet reads 56px short.
- *   - The Early Access card spends its entrance rotated a quarter turn, so its
- *     bounding box is 420px wide where the card is 260 — measured, that made a
- *     stage unit look 1.62 screen pixels instead of 1.
- *   - The Alone Vs Together panels are SHORTER than they end up: their rails
- *     are brought out by growing the panel (see alonePanels, which explains why
- *     it has to be a height and not a clip), so at the moment depth converts
- *     its px into a percentage of the panel's height, that height is 496px on
- *     its way to 628. The percentage was right and the box it applied to grew
- *     by a quarter underneath it, so the panels travelled 26.6% further than
- *     depth.ts asks for. Reported by three independent readings of the page.
- *
- * So the measurements are taken with every inline transform and height this
- * page has written temporarily removed — from the elements and from their
- * ancestors, since a nested layer inherits its parent's offset. What is left is
- * the layout the CSS describes, which is the only stable thing to convert
- * against. Restored in a `finally`, synchronously, so nothing can paint in
- * between, and GSAP is untouched by it: its own transform cache is separate
- * from the inline styles, so it neither notices nor has to be told.
- */
-const asAuthored = <T>(nodes: HTMLElement[], read: () => T): T => {
-  const saved: [HTMLElement, string, string][] = [];
-  const seen = new Set<HTMLElement>();
-  for (const n of nodes)
-    for (
-      let el: HTMLElement | null = n;
-      el && el !== document.body;
-      el = el.parentElement
-    ) {
-      /* An ancestor already cleared for an earlier node has cleared the rest of
-         the chain above it too. */
-      if (seen.has(el)) break;
-      seen.add(el);
-      if (el.style.transform || el.style.height) {
-        saved.push([el, el.style.transform, el.style.height]);
-        el.style.transform = "";
-        el.style.height = "";
-      }
-    }
-  try {
-    return read();
-  } finally {
-    for (const [el, t, h] of saved) {
-      el.style.transform = t;
-      el.style.height = h;
-    }
-  }
 };
 
 /**

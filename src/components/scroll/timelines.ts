@@ -785,6 +785,26 @@ const meters = (
  * than the scaled stage, so it had to be re-measured on every build and could
  * not be stated anywhere. A rise is the same number at every size.
  */
+/**
+ * Each comparison panel's full height, captured the first time it is asked for
+ * and kept for the life of the page.
+ *
+ * Two beats need it and only one of them may measure it: alonePanels parks the
+ * panels short by writing a height onto them, so anything reading offsetHeight
+ * afterwards reads back the value that beat set rather than the one the
+ * stylesheet gives. Keyed on the element, so the rebuild gsap.matchMedia does
+ * on a breakpoint crossing — and the second render React does in development —
+ * find the height captured before any of it started.
+ */
+const fullHeights = new WeakMap<HTMLElement, number>();
+const grown = (panel: HTMLElement) => {
+  const known = fullHeights.get(panel);
+  if (known !== undefined) return known;
+  const h = panel.offsetHeight;
+  fullHeights.set(panel, h);
+  return h;
+};
+
 export function alonePanels(el: HTMLElement) {
   const left = q(el, "card-left");
   const right = q(el, "card-right");
@@ -807,12 +827,7 @@ export function alonePanels(el: HTMLElement) {
    * card cut in half rather than a shorter card.
    */
   const panels = [...left, ...right];
-  const fullHeight = new WeakMap<HTMLElement, number>();
-  for (const panel of panels) fullHeight.set(panel, panel.offsetHeight);
-  /* Captured before anything overwrites it, so re-measuring cannot read back a
-     height this timeline itself set. */
-  const grown = (panel: HTMLElement) =>
-    fullHeight.get(panel) ?? panel.offsetHeight;
+  for (const panel of panels) grown(panel);
   const shortHeight = (panel: HTMLElement) =>
     panel.querySelector<HTMLElement>("[data-reveal='bar']")?.offsetTop ??
     grown(panel);
@@ -840,13 +855,40 @@ export function alonePanels(el: HTMLElement) {
      * queues each beat with.
      */
     .to(panels, { opacity: 1, y: 0, ...MOTION.alone.cards })
-    .to(vs, { opacity: 0.7, ...MOTION.alone.vs }, "-=0.5")
-    /* Last, and only once both panels have landed. */
-    .to(
-      panels,
-      { height: (_i, panel: HTMLElement) => grown(panel), ...MOTION.alone.bar },
-      "-=0.15",
-    );
+    .to(vs, { opacity: 0.7, ...MOTION.alone.vs }, "-=0.5");
+
+  /* The rails that finish these panels are not here — see aloneRails. They are
+     at the foot of the section and this beat fires at the head of it. */
+  return tl;
+}
+
+/**
+ * The strength rails at the bottom of the two comparison panels, and the six
+ * figures on them counting up.
+ *
+ * Its own beat, and its own trigger — see Beat.own in sections.ts. The panels
+ * arrive when the section does, which is when its heading is a quarter of the
+ * way up the window; the rails are 500px below the fold at that moment, so run
+ * with the panels they were a wipe and a count that happened where nobody could
+ * see them, and every reader met a still picture of a rail that had already
+ * opened. Measured at 1440x900: parked at the section's own trigger, the rail
+ * sat at viewport y 1491 and was fully open five seconds later without ever
+ * having been on screen.
+ *
+ * The panel is what grows, not the rail. A rail is never hidden — the panel is
+ * simply too short to contain it yet, and clips it — so extending the panel is
+ * what brings its rail out. See alonePanels, which parks them short, and the
+ * note there on why this is a height and not a clip.
+ */
+export function aloneRails(el: HTMLElement) {
+  const panels = [...q(el, "card-left"), ...q(el, "card-right")];
+  const tl = beat();
+  if (!panels.length) return tl;
+
+  tl.to(panels, {
+    height: (_i, panel: HTMLElement) => grown(panel),
+    ...MOTION.alone.bar,
+  });
 
   /* `<` is the start of the growth above rather than its end: the figures count
      while the rails are coming out, not after they have arrived. */
@@ -861,23 +903,25 @@ export function alonePanels(el: HTMLElement) {
  * Squad Approves: the diagram gathers into place, and only then do the
  * connectors between the pieces light up.
  *
- * The four pieces — the request card nudged in from the left, the vote list
- * from the right, the ledger and the Squad card lifting — share one duration
- * and land on the same frame. Nothing takes a turn: the section is about a
- * group acting as one, so the diagram has to arrive as one object.
+ * The three pieces — the request card nudged in from the left, the vote list
+ * from the right, the Squad card between them lifting — share one duration and
+ * land on the same frame. Nothing takes a turn: the section is about a group
+ * acting as one, so the diagram has to arrive as one object.
  *
  * Once it has, a light runs left to right along the connectors, drawing them as
  * it goes — out from the request, through the card, back along all three
- * branches to the votes. The ledger's member chips then count in one at a time,
- * carrying that same left-to-right motion down into the total.
+ * branches to the votes.
+ *
+ * The ledger under all of it is not part of this. It is what the diagram
+ * produces rather than part of what produces it, it sits at the foot of the
+ * section where this beat's trigger cannot see it, and it now arrives on its
+ * own — see approveLedger.
  */
 export function approveDiagram(el: HTMLElement) {
   const request = q(el, "request");
   const votes = q(el, "votes");
   const squad = q(el, "squad");
   const halo = q(el, "squad-glow");
-  const ledger = q(el, "ledger");
-  const chips = q(el, "chip");
 
   const { from, shift, lift } = MOTION.enter;
 
@@ -896,24 +940,50 @@ export function approveDiagram(el: HTMLElement) {
   gsap.set(request, { opacity: from, x: -shift });
   gsap.set(votes, { opacity: from, x: shift });
   gsap.set(squad, { opacity: from, y: lift });
-  gsap.set(ledger, { opacity: from, y: lift });
   glowStart(halo);
-  gsap.set(chips, { opacity: from, y: lift / 4 });
 
-  /* One position for all five, so they are one object arriving rather than
-     five elements taking turns — and on the heading's clock, so the diagram and
+  /* One position for all four, so they are one object arriving rather than
+     four elements taking turns — and on the heading's clock, so the diagram and
      the words above it are one movement. */
   const tl = beat();
   tl.to(request, { opacity: 1, x: 0, ...inStep() }, 0)
     .to(votes, { opacity: 1, x: 0, ...inStep() }, "<")
     .to(squad, { opacity: 1, y: 0, ...inStep() }, "<")
-    .to(ledger, { opacity: 1, y: 0, ...inStep() }, "<")
     .to(halo, { opacity: 1, x: 0, y: 0, ...MOTION.approve.glow }, "<");
 
   trace(tl, el, "-=0.25");
 
-  /* Picked up as the light reaches the far end, so the two read as one move. */
-  tl.to(chips, { opacity: 1, y: 0, ...MOTION.approve.chips }, "<+=0.8");
+  return tl;
+}
+
+/**
+ * The ledger bar under the approve diagram, and the five member chips on it
+ * counting themselves in.
+ *
+ * Its own beat, and its own trigger — see Beat.own in sections.ts. It sits at
+ * the bottom of a full-height section, and the section's own trigger fires when
+ * its heading is a quarter of the way up the window: measured at 1440x900, the
+ * ledger was 471px below the fold at that moment and had gone from its start
+ * state to fully arrived, chips and all, five seconds later without ever having
+ * been on screen.
+ *
+ * The bar and the chips are one movement rather than two. The bar lifts in, and
+ * the chips are picked up while it is still settling so that what the reader
+ * sees is a total assembling itself out of the parts, not a container that
+ * arrives and is then filled.
+ */
+export function approveLedger(el: HTMLElement) {
+  const ledger = q(el, "ledger");
+  const chips = q(el, "chip");
+  const { from, lift } = MOTION.enter;
+
+  gsap.set(ledger, { opacity: from, y: lift });
+  gsap.set(chips, { opacity: from, y: lift / 4 });
+
+  const tl = beat().to(ledger, { opacity: 1, y: 0, ...inStep() });
+  /* Well before the bar has settled: it is one gesture, and chips that waited
+     for it would read as a second arrival inside the first. */
+  tl.to(chips, { opacity: 1, y: 0, ...MOTION.approve.chips }, "-=0.9");
 
   return tl;
 }
@@ -972,6 +1042,62 @@ export function worksAmbient(el: HTMLElement) {
     ease: MOTION.works.glow.ease,
     stagger: { each: MOTION.works.glow.stagger, from: "center" },
   });
+
+  return tl;
+}
+
+/**
+ * Step 1's four squad members, going round the hub they are joined to.
+ *
+ * The step is "form your squad", and the four are drawn on a circle around the
+ * Banrox mark with "4 / 4" under it. A ring of people that never moves is a
+ * diagram of a squad; a ring that turns is a squad. Same argument as the
+ * breathing rings above, which is why this is ambient rather than a beat — it
+ * has no state to arrive at and no finish to hold.
+ *
+ * ONE rotation, on a wrapper that shares its centre with the circle they are
+ * drawn on. Nothing here computes an angle or a radius: the avatars keep the
+ * artboard coordinates Figma gives them, [data-orbit] is the panel box, and
+ * turning that box about its own centre IS the orbit — see the note in
+ * HowSquadWorks. It is also why there is nothing to undo: the markup with no
+ * rotation on it is the artboard.
+ *
+ * The riders turn back by the same amount, which is not optional. A photograph
+ * of a face rotating is the one thing an eye reads instantly, and the verified
+ * check would swing round to the top left of each one. The two rotations
+ * compose to a pure translation — the parent about the panel centre, the child
+ * about its own — so an avatar travels the circle sitting perfectly upright.
+ *
+ * That composition is also why the riders are promoted and the wrapper is not.
+ * A rider painted into the wrapper's raster is painted rotated, and has to be
+ * re-rastered every frame it turns; given a layer of its own it is rasterized
+ * once and handed a matrix which, after the two rotations cancel, has no
+ * rotation left in it. The wrapper paints nothing of its own to promote.
+ *
+ * Returned paused, like the rings: the controller runs it only while the
+ * section is on screen.
+ */
+export function worksOrbit(el: HTMLElement) {
+  const tl = gsap.timeline({ paused: true, repeat: -1 });
+
+  const ring = el.querySelector<HTMLElement>("[data-orbit]");
+  if (!ring) return tl;
+
+  const riders = gsap.utils.toArray<HTMLElement>(
+    ring.querySelectorAll("[data-orbit-rider]"),
+  );
+  gsap.set(riders, { willChange: "transform", force3D: true });
+
+  /* Both at position 0 on one duration: this is one motion described twice, and
+     any frame where the two disagree is a frame with four tilted faces in it.
+     A full turn each way, so the repeat seam lands on 360 -> 0 — the same angle
+     for both, and nothing to see. */
+  const { turn } = MOTION.works.orbit;
+  tl.to(ring, { rotation: 360, duration: turn, ease: "none" }, 0).to(
+    riders,
+    { rotation: -360, duration: turn, ease: "none" },
+    0,
+  );
 
   return tl;
 }

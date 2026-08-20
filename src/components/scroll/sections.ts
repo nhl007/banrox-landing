@@ -1,7 +1,9 @@
 import type gsap from "gsap";
 import {
+  aloneRails,
   alonePanels,
   approveDiagram,
+  approveLedger,
   copyIn,
   earlyCard,
   earlyForm,
@@ -18,6 +20,7 @@ import {
   traceLoop,
   worksAmbient,
   worksCards,
+  worksOrbit,
 } from "./timelines";
 import { MOTION } from "./motion";
 
@@ -48,8 +51,31 @@ export type Beat = {
    * which is usually what a section wants — a diagram that starts assembling
    * while the last word of the heading is still settling reads as one arrival
    * rather than as two animations taking turns.
+   *
+   * Ignored on a beat that carries `own`: that one is not queued behind
+   * anything, it waits for its own subject.
    */
   delay?: number;
+  /**
+   * A selector for the thing this beat is ABOUT, when that thing is not where
+   * the section's own trigger fires.
+   *
+   * Every other beat is queued behind the one above it and the whole run starts
+   * when the SECTION arrives — which is when its top edge is a quarter of the
+   * way up the window, and on a full-height screen that means the heading is
+   * showing and nothing else is. Anything at the foot of the section is most of
+   * a windowful below the fold at that moment, so it played where nobody could
+   * see it and the reader met a still picture of something that had already
+   * happened. Measured at 1440x900: the strength rails 591px below the fold,
+   * the approve ledger 471px, both finished before either was reachable.
+   *
+   * Naming an element here gives the beat a ScrollTrigger of its own on that
+   * element instead, at MOTION.own.line. It is for the exception, not the
+   * rule: a section that arrives as one thing should keep arriving as one
+   * thing, and this is only for the parts that the section's own moment cannot
+   * honestly cover.
+   */
+  own?: string;
 };
 
 /**
@@ -163,20 +189,37 @@ export const SECTIONS: SectionSpec[] = [
   {
     id: "alone",
     label: "Alone Vs Together",
-    beats: [{ play: copyIn }, { play: alonePanels, delay: WITH_HEADING }],
+    beats: [
+      { play: copyIn },
+      { play: alonePanels, delay: WITH_HEADING },
+      /* The rails at the bottom of the panels, which the section's own moment
+         is nowhere near — see Beat.own and aloneRails. */
+      { play: aloneRails, own: "[data-reveal='bar']" },
+    ],
     ambient: glowDrift,
   },
   {
     id: "approve",
     label: "Squad Approves",
-    beats: [{ play: copyIn }, { play: approveDiagram, delay: WITH_HEADING }],
+    beats: [
+      { play: copyIn },
+      { play: approveDiagram, delay: WITH_HEADING },
+      /* The ledger the diagram produces, at the foot of the section — see
+         Beat.own and approveLedger. */
+      { play: approveLedger, own: "[data-reveal='ledger']" },
+    ],
     ambient: [traceLoop, glowDrift],
   },
   {
     id: "works",
     label: "How Squad Works",
     beats: [{ play: copyIn }, { play: worksCards, delay: WITH_HEADING }],
-    ambient: [worksAmbient, traceLoop, glowDrift],
+    /* Two loops inside step 1 alone, and they are about different things: the
+       rings breathe because the group is being assessed continuously, the four
+       members go round because a squad is an arrangement rather than a picture
+       of one. Kept apart because they are also shaped differently — one yoyos,
+       the other must never turn back. */
+    ambient: [worksAmbient, worksOrbit, traceLoop, glowDrift],
   },
   {
     /*

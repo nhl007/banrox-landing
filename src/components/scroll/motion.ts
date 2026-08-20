@@ -150,6 +150,34 @@ export const MOTION = {
   enter: { from: 0.2, shift: 80, lift: 56 },
 
   /**
+   * Where a beat that carries its own trigger fires — see Beat.own in
+   * sections.ts.
+   *
+   * A section's trigger is about the SECTION: it fires when the top edge is a
+   * quarter of the way up the window, which is the right moment for a heading
+   * and the wrong one for anything at the foot of a full-height screen. The
+   * strength rails at the bottom of the comparison panels were 591px below the
+   * fold when their section fired, and the approve ledger 471px; both had run
+   * to completion before the reader had scrolled far enough to see either.
+   * Measured at 1440x900.
+   *
+   * This is about the ELEMENT instead: where down the window its top edge has
+   * to reach, as a fraction of the window's height. Deliberately late — a
+   * sixth of the way up from the bottom, so the thing is just clearing the fold
+   * as it starts. Earlier and it is back to animating below the fold; later and
+   * the reader has been looking at it, settled, for a moment before it moves.
+   *
+   * A fraction rather than one of ScrollTrigger's "top 85%" strings, because
+   * those are resolved against wherever the element IS at refresh, and at
+   * refresh every one of these is parked at its arrival's start state — 100px
+   * low on the comparison panels, 56 on the ledger. Measured: the rails' own
+   * trigger came out 118px late and fired with the rail already two thirds of
+   * the way up the window. The controller resolves this against where the
+   * element rests instead. See authoredTop.
+   */
+  own: { line: 0.85 },
+
+  /**
    * A section's ambient glow: the soft bloom behind whatever that section is
    * about.
    *
@@ -474,6 +502,23 @@ export const MOTION = {
      * off screen — see the controller.
      */
     glow: { duration: 1.6, stagger: 0.22, ease: "sine.inOut", dim: 0.4 },
+    /**
+     * Step 1's four members, going round the hub they are joined to.
+     *
+     * `turn` is seconds for one full revolution, and it is the only number the
+     * orbit has — everything else about it is geometry already in the markup
+     * (see worksOrbit). Linear, because a circle has no start and no end and an
+     * ease would invent one: any ease that is not "none" makes the ring speed
+     * up and slow down once per lap, which reads as a stutter rather than as
+     * an orbit.
+     *
+     * 30 seconds is 20px a second at the 96px radius they sit on: an avatar
+     * clears its own width in two, which is enough to be moving when you look
+     * at it and not enough to pull your eye off the copy beside it. The step is
+     * "form your squad" and this is the only thing on the card that says the
+     * squad is a live arrangement rather than a diagram of one.
+     */
+    orbit: { turn: 30 },
   },
 
   /* --- intelligence layer ----------------------------------------------- */
@@ -516,15 +561,15 @@ export const MOTION = {
      * They agree; they are not the same value.
      */
     figures: {
-      count: { duration: 1, ease: "power1.out" },
-      meter: { duration: 1, ease: "power1.out" },
+      count: { duration: 0.5, ease: "power1.out" },
+      meter: { duration: 0.5, ease: "power1.out" },
       stagger: 0.1,
       /**
        * When the first card's readout starts, in seconds into the beat — held
        * just long enough that the card is legibly on its way in before the
        * number inside it starts moving.
        */
-      after: 0.5,
+      after: 0.2,
     },
 
     /**
