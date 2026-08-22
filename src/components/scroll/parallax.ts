@@ -324,18 +324,41 @@ const moves = (l: DepthLayer, i: number, gain: number) =>
   (pick(l.depth, i) !== 0 || pick(l.sway, i) !== 0 || !!l.swell || !!l.fade);
 
 /**
+ * Which of the three tiers this build is for.
+ *
+ * "full" is the wide layout, and the only one that gets the whole vocabulary:
+ * distance, sway, swell and fade. The other two get distance and nothing else —
+ * a translate is the one transform the compositor applies for free, and both of
+ * these tiers are the ones where there is least to spend.
+ *
+ * "phone" is the column, at the distances DepthLayer.phone declares for it.
+ * "calm" is the wide layout in a window too short to lay it out in, where the
+ * ambient light is all that moves. See PARALLAX.calm.
+ */
+export type Tier = "full" | "phone" | "calm";
+
+/**
+ * Whether this element is part of the layout the window is currently getting.
+ *
+ * The same test the timelines use, and here for the same reason: two tiers of
+ * markup share one DOM tree and exactly one of each pair is rendered. Without
+ * it the hero's phone bloom would be given depth at 1440 — where it is
+ * `display: none`, has no box to turn px into a percentage of, and is being
+ * measured for nothing. See the note on `shown` in timelines.ts.
+ */
+const shown = (el: Element) => el.getClientRects().length > 0;
+
+/**
  * Builds every section's depth layers and their triggers.
  *
  * Call from inside a gsap.matchMedia handler: everything created here is
  * registered against the enclosing gsap context, so the whole system is torn
  * down by the same revert that tears the sequence down — on a route change, on
  * a resize across the gate, or when someone turns reduced motion on.
- *
- * `calm` selects the restrained tier. There it runs on the ambient light and
- * nothing else, at a fraction of the distance, with no sideways movement, no
- * scaling and no fading — see DepthLayer.calm.
  */
-export function parallaxScene({ calm }: { calm: boolean }) {
+export function parallaxScene({ tier }: { tier: Tier }) {
+  const full = tier === "full";
+
   for (const spec of SCENE) {
     const el = document.querySelector<HTMLElement>(
       `[data-sequence-section='${spec.id}']`,
@@ -377,22 +400,35 @@ export function parallaxScene({ calm }: { calm: boolean }) {
 
     for (const layer of spec.layers) {
       /*
-       * The restrained tier's amplitude, folded into the section's own taper.
-       * Zero — the default for every layer that is not ambient light — drops
-       * the layer entirely rather than animating it by nothing.
+       * The layer as this tier states it, and what it is worth here.
+       *
+       * Outside the wide tier only the distance survives — a different one on
+       * the phone, a fraction of the wide one on a short window — and sway,
+       * swell and fade are dropped with the rest of the declaration. A layer
+       * that says nothing on this tier is dropped before it is even looked for,
+       * which is also what keeps the warning below honest: it means "this
+       * section should have one of these and does not", not "the other tier's
+       * markup is not rendered", which is true of half the page at any width.
        */
-      const gain = (spec.gain ?? 1) * (calm ? (layer.calm ?? 0) : 1);
-      if (gain === 0) continue;
+      const l: DepthLayer = full
+        ? layer
+        : {
+            find: layer.find,
+            light: layer.light,
+            depth: tier === "phone" ? layer.phone : layer.depth,
+          };
+      const gain = (spec.gain ?? 1) * (tier === "calm" ? (layer.calm ?? 0) : 1);
+      if (gain === 0 || l.depth === undefined) continue;
 
-      const nodes = gsap.utils.toArray<HTMLElement>(
-        el.querySelectorAll(layer.find),
-      );
+      const nodes = gsap.utils
+        .toArray<HTMLElement>(el.querySelectorAll(layer.find))
+        .filter(shown);
       if (!nodes.length) {
         console.warn(`[parallax] ${spec.id}: nothing matches "${layer.find}"`);
         continue;
       }
 
-      nodes.forEach((node, i) => resolved.push({ layer, node, i, gain }));
+      nodes.forEach((node, i) => resolved.push({ layer: l, node, i, gain }));
     }
 
     /*
@@ -422,12 +458,7 @@ export function parallaxScene({ calm }: { calm: boolean }) {
         .map(asContent),
     );
 
-    resolved.forEach(({ layer, node, i, gain }) => {
-      /* Sideways movement, scaling and fading are the full tier's only. A
-         phone gets distance and nothing else. */
-      const l: DepthLayer = calm
-        ? { find: layer.find, depth: layer.depth }
-        : layer;
+    resolved.forEach(({ layer: l, node, i, gain }) => {
       if (!moves(l, i, gain)) return;
 
       const key = lagOf(pick(l.depth, i) * gain);
@@ -439,7 +470,7 @@ export function parallaxScene({ calm }: { calm: boolean }) {
       group.nodes.push(node);
 
       /* Light is exempt from the guard — see DepthLayer.light. */
-      const allowed = layer.light ? () => 1 : fit;
+      const allowed = l.light ? () => 1 : fit;
 
       const rest = state(node, el, l, i, gain, 0, allowed, survey);
 

@@ -65,10 +65,24 @@ const SIGNAL_AT = [
  * wide fan spreads four cards into one box across 853px, which is not a shape
  * a 370px column has anywhere to put.
  */
-function DashDown({ left, top }: { left: number; top: number }) {
+function DashDown({
+  left,
+  top,
+  run,
+}: {
+  left: number;
+  top: number;
+  /* Which connection this drop is half of — the phone draws two of them where
+     the wide layout draws one fan, so the beat that wants "the wire into the
+     signal row" has to ask for it by name. See ConnectorTraceProps.run. */
+  run: string;
+}) {
   return (
     <span
       aria-hidden
+      data-reveal="lines"
+      data-trace-axis="y"
+      data-run={run}
       className="absolute block h-16 w-px sm:hidden"
       style={{
         left,
@@ -233,6 +247,12 @@ export default function IntelligenceLayer() {
           height={1189}
           className="absolute max-w-none"
           style={{ left: -616, top: 51.6 }}
+          /* The role the wide layout gives its aura, so copyIn brings this in
+             underneath the heading (see glowIn) and glowDrift keeps it moving
+             afterwards. It arrives from the left and below, which is the corner
+             it sits in. */
+          data-reveal="glow"
+          data-glow-from="-0.6 0.8"
         />
       </div>
       <div className="screen-body relative z-10">
@@ -331,6 +351,7 @@ export default function IntelligenceLayer() {
                           the column; see DashDown. */}
                       <ConnectorTrace
                         className="hidden sm:block"
+                        run="signals"
                         src="/intel/connector-top.svg"
                         width={853}
                         height={120.5}
@@ -340,8 +361,8 @@ export default function IntelligenceLayer() {
                         spark={70}
                         pad={20}
                       />
-                      <DashDown left={89} top={250} />
-                      <DashDown left={282} top={250} />
+                      <DashDown left={89} top={250} run="signals" />
+                      <DashDown left={282} top={250} run="signals" />
 
                       {/*
                         Figma nests this arc inside the signal container, where
@@ -409,6 +430,7 @@ export default function IntelligenceLayer() {
                           wire. */}
                       <ConnectorTrace
                         className="hidden sm:block"
+                        run="hub"
                         src="/intel/hub-connector.svg"
                         width={46}
                         height={64}
@@ -420,7 +442,7 @@ export default function IntelligenceLayer() {
                         pad={24}
                         flipY
                       />
-                      <DashDown left={185} top={630} />
+                      <DashDown left={185} top={630} run="hub" />
 
                       <div
                         className="absolute top-[694.5px] left-[56.75px] origin-top-left scale-[var(--s)] sm:top-[532px] sm:left-[385px] sm:scale-100"
@@ -435,6 +457,7 @@ export default function IntelligenceLayer() {
                           spread. */}
                       <ConnectorTrace
                         className="hidden sm:block"
+                        run="verdict"
                         src="/intel/pill-connector.svg"
                         width={1}
                         height={40}
@@ -444,7 +467,7 @@ export default function IntelligenceLayer() {
                         spark={26}
                         pad={24}
                       />
-                      <DashDown left={185} top={946} />
+                      <DashDown left={185} top={946} run="verdict" />
 
                       {/* Not scaled on the phone, only narrowed: 306 wide with
                           its 16px type intact. It is the one line of reading in

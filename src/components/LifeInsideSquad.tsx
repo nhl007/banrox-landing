@@ -575,6 +575,12 @@ export default function LifeInsideSquad() {
           height={1189}
           className="absolute max-w-none"
           style={{ left: -616, top: 51.6 }}
+          /* The role the wide layout gives its aura, so copyIn brings this in
+             underneath the heading (see glowIn) and glowDrift keeps it moving
+             afterwards. It arrives from the left and below, which is the corner
+             it sits in. */
+          data-reveal="glow"
+          data-glow-from="-0.6 0.8"
         />
       </div>
 

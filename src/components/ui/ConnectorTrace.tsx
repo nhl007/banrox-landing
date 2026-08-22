@@ -116,6 +116,19 @@ export type ConnectorTraceProps = {
    */
   flipX?: boolean;
   flipY?: boolean;
+  /**
+   * What this run is a connection BETWEEN, for the beats that want one
+   * particular run rather than all of them.
+   *
+   * The funnel is the only diagram that does — each of its rows draws the wire
+   * that arrives at it — and it used to take them by position in the section.
+   * That was true of one layout: the phone replaces the wide fan with two
+   * dashed drops rather than one run, which slides every index along by one and
+   * wires three rows to the wrong things. A name survives a layout that draws
+   * the same connection with a different number of lines. See `runs` in
+   * timelines.ts, and DashDown, which carries the same attribute.
+   */
+  run?: string;
   children?: React.ReactNode;
 };
 
@@ -132,6 +145,7 @@ export default function ConnectorTrace({
   flipX = false,
   flipY = false,
   className = "",
+  run,
   children,
 }: ConnectorTraceProps) {
   /* Its own inverse, which is what lets the same string undo it below. */
@@ -178,6 +192,7 @@ export default function ConnectorTrace({
       }}
       data-reveal="lines"
       data-trace-axis={axis}
+      {...(run ? { "data-run": run } : null)}
       {...(mirror ? { "data-trace-flip": "" } : null)}
     >
       <Image

@@ -114,6 +114,10 @@ export default function EarlyAccess() {
         260 with the blur left at 130. Compare the hero's bloom, which has the
         same problem for the same reason.
       */}
+      {/* The same two roles the wide layout's pair carries, so earlyCard brings
+          them in with the card and glowDrift keeps them shearing across each
+          other afterwards. `shown` is what stops either tier being handed the
+          other's — see timelines.ts. */}
       <div className="screen-glow sm:hidden" aria-hidden="true">
         <Image
           src="/early/glow-back-phone.svg"
@@ -122,6 +126,8 @@ export default function EarlyAccess() {
           height={780}
           className="absolute max-w-none"
           style={{ left: "calc(50% - 483px)", top: 80.1 }}
+          data-reveal="glow"
+          data-glow-from="0.7 -0.7"
         />
         <Image
           src="/early/glow-front-phone.svg"
@@ -130,6 +136,8 @@ export default function EarlyAccess() {
           height={780}
           className="absolute max-w-none"
           style={{ left: "calc(50% - 262px)", top: 99.1 }}
+          data-reveal="glow"
+          data-glow-from="0.7 -0.7"
         />
       </div>
       <div className="screen-body relative z-10">

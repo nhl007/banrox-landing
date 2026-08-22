@@ -49,10 +49,13 @@ const PHONE_H = 1675;
  * at 0.4, dashed 3 on 3 off — as a gradient rather than an asset, because at
  * this length an SVG would be more markup than the line it draws.
  */
-function DashDown({ top }: { top: number }) {
+function DashDown({ top, run }: { top: number; run: string }) {
   return (
     <span
       aria-hidden
+      data-reveal="lines"
+      data-trace-axis="y"
+      data-run={run}
       className="absolute left-[151px] block h-16 w-px sm:hidden"
       style={{
         top,
@@ -477,8 +480,8 @@ export default function SquadApproves() {
                         top={66}
                         pad={20}
                       />
-                      <DashDown top={334} />
-                      <DashDown top={748} />
+                      <DashDown top={334} run="squad" />
+                      <DashDown top={748} run="votes" />
 
                       <RequestCard />
 

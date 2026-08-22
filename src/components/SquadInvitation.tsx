@@ -64,8 +64,21 @@ export default function SquadInvitation() {
             {`isn't a squad.`}
           </h2>
 
+          {/*
+            text-white/70 rather than text-white + opacity-70, which is what it
+            was. The two paint the same pixels on a plain paragraph — but one of
+            them is the property the sequence tweens: [data-reveal] arrives by
+            being taken from 0.2 to 1, so an element whose resting state was an
+            opacity of its own had that opacity overwritten, and this paragraph
+            rendered at full white on every tier that animates and at 70% on
+            the ones that do not. Measured, before and after. Alpha on the
+            colour is out of the sequence's way; the VS badge between the
+            comparison panels keeps its opacity and is tweened back to 0.7 by
+            name instead (see alonePanels), because there the fade IS the
+            arrival.
+          */}
           <p
-            className="font-sans type-lede type-measure w-full tracking-[-0.32px] text-white opacity-70"
+            className="font-sans type-lede type-measure w-full tracking-[-0.32px] text-white/70"
             data-node-id="9304:25739"
             data-reveal="copy"
           >

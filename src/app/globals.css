@@ -1128,11 +1128,21 @@ body {
  * to start in CSS or the finished page flashes for a frame. ScrollSequence
  * ships a <noscript> override for anyone running without JS.
  *
- * The guard has to match MOTION.enabled exactly — anywhere the two disagree the
- * page either flashes or never appears. Phones and reduced-motion get the
- * finished page straight from the server, unhidden, with no controller at all.
+ * The guard has to cover EXACTLY the windows that get a sequence — anywhere it
+ * and the controller disagree the page either flashes or never appears. There
+ * are two of those tiers now and this is their union: MOTION.enabled is the
+ * wide half and MOTION.phone the narrow one, they differ only in which side of
+ * 641px they take, and both require a window at least 480px tall and a reader
+ * who has not asked for less motion. So the union is simply the two conditions
+ * they share, and it must stay that way — widening either query without
+ * widening this one strands a section blank.
+ *
+ * What is left below it: a window under 480px tall (a phone held sideways,
+ * where a section is most of a window of heading and there is no room to
+ * animate anything into) and anyone on reduced motion. Both get the finished
+ * page straight from the server, unhidden, with no controller at all.
  */
-@media (min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+@media (min-height: 480px) and (prefers-reduced-motion: no-preference) {
   [data-reveal] {
     opacity: 0;
   }

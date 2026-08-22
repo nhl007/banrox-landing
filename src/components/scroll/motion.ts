@@ -13,16 +13,17 @@
 
 export const MOTION = {
   /*
-   * The gate for the entire system. Below this the page renders static and no
-   * trigger is created at all. It MUST stay identical to the @media guard on
-   * [data-reveal] in globals.css — that rule holds the pre-hydration state, so
-   * any disagreement either flashes the finished page or strands it blank — and
-   * to the queries that make a section one screen, since a section that is not
-   * a screen cannot honestly be animated on one trigger.
+   * The wide tier: one section, one window, one trigger.
    *
-   * 641px is the top of the phone range — below it the page is rebuilt as a
-   * column that was designed for a phone rather than a desktop folded into one,
-   * and none of this runs. Above it a tablet gets the same page, scaled.
+   * It MUST stay in step with the @media guard on [data-reveal] in globals.css
+   * — that rule holds the pre-hydration state, so any disagreement either
+   * flashes the finished page or strands it blank — and with the queries that
+   * make a section one screen, since a section that is not a screen cannot
+   * honestly be animated on one trigger.
+   *
+   * 641px is the top of the phone range. Above it a tablet gets the same page,
+   * scaled; below it the page is rebuilt as a column that was designed for a
+   * phone rather than a desktop folded into one, and it gets `phone` instead.
    *
    * The height half is what a phone held sideways fails: 932x430 passes the
    * width test, and at that height the heading is most of the window, so the
@@ -31,6 +32,32 @@ export const MOTION = {
    */
   enabled:
     "(min-width: 641px) and (min-height: 480px) and (prefers-reduced-motion: no-preference)",
+
+  /*
+   * The phone tier: the same beats, one trigger each.
+   *
+   * Everything the sequence does still happens down here — the cards still
+   * arrive, the figures still count, the wires still draw, the light still
+   * drifts — but WHEN it happens is decided a beat at a time rather than a
+   * section at a time, because on a phone a section is not a screen.
+   *
+   * That is the whole difference, and it is forced. A wide section is exactly
+   * one window tall, so one trigger on its top edge is a moment that covers all
+   * of it; the same section on a phone is a column of its own height — 1271px
+   * of Life Inside Squad in an 844px window — and a single trigger at its top
+   * edge would spend the whole of it while two thirds was still below the fold.
+   * The page already had the answer for the parts of a WIDE section that fall
+   * past the fold (see Beat.own), and on a phone every beat is in that
+   * position, so every beat gets what `own` gives: a trigger of its own, on the
+   * first thing it moves, at `own.line`.
+   *
+   * Complementary to `enabled` on the width and identical on everything else,
+   * so between them the two tiers cover every window that animates exactly
+   * once — which is what lets the stylesheet's guard be their union. Below 480
+   * tall is not either of them: see the note there.
+   */
+  phone:
+    "(max-width: 640px) and (min-height: 480px) and (prefers-reduced-motion: no-preference)",
 
   /**
    * Every beat's timeScale. The numbers below are written as the proportions
@@ -174,6 +201,11 @@ export const MOTION = {
    * trigger came out 118px late and fired with the rail already two thirds of
    * the way up the window. The controller resolves this against where the
    * element rests instead. See authoredTop.
+   *
+   * The phone tier fires EVERY beat this way, on the same line — see
+   * MOTION.phone. Deliberately the same number rather than one of its own: a
+   * beat wants to start as its subject clears the fold, and that is a fact
+   * about the beat and the reader rather than about how wide the window is.
    */
   own: { line: 0.85 },
 
@@ -561,15 +593,15 @@ export const MOTION = {
      * They agree; they are not the same value.
      */
     figures: {
-      count: { duration: 0.5, ease: "power1.out" },
-      meter: { duration: 0.5, ease: "power1.out" },
+      count: { duration: 1, ease: "power1.out" },
+      meter: { duration: 1, ease: "power1.out" },
       stagger: 0.1,
       /**
        * When the first card's readout starts, in seconds into the beat — held
        * just long enough that the card is legibly on its way in before the
        * number inside it starts moving.
        */
-      after: 0.2,
+      after: 0.5,
     },
 
     /**

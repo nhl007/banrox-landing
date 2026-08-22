@@ -78,21 +78,41 @@ const HERO_FAN_PHONE = [
   { name: "Lilit Sargsyan", dx: 150, y: 60, z: 20 },
 ] as const;
 
-/** Anything centred on the fan's own middle line, at a given offset from it. */
-function onCentre(dx: number, top: number, zIndex?: number) {
-  return {
-    left: `calc(50% + ${dx}px)`,
-    top,
-    zIndex,
-    transform: "translateX(-50%)",
-  } as const;
+/**
+ * Anything centred on the fan's own middle line, at a given offset from it.
+ *
+ * Stated as a left edge — the centre line, less half the thing's own width —
+ * rather than as `left: 50%` and a translate back. Every element placed by this
+ * is one the sequence takes the transform of: the four cards travel on `x` as
+ * they come out from behind the Squad card and fold back into it (see
+ * heroCards and heroFold), the Squad card turns on `rotationZ`, and the bloom
+ * behind them drifts on x, y and scale for as long as the hero is on screen.
+ * GSAP folds an existing CSS translate into the same matrix it writes, so a
+ * -50% here is one property with two owners: the first tween to touch it snaps
+ * the element half its own width to the right and leaves it there. The same
+ * lesson the comparison panels' orbit rings learned; there the fix was a
+ * wrapper, here the width is known and stating the edge is simpler.
+ */
+function onCentre(dx: number, width: number, top: number, zIndex?: number) {
+  return { left: `calc(50% + ${dx - width / 2}px)`, top, zIndex } as const;
 }
+
+/** The passport card's own width, and the Squad card's on its end. */
+const PHONE_CARD_W = 260;
 
 function HeroFanPhone() {
   return (
     /* 739 to 1278 on the artboard: the top of the first passport to the foot of
-       the Squad card. */
-    <div className="relative h-[539px] w-full shrink-0 sm:hidden" aria-hidden>
+       the Squad card.
+
+       The perspective is the same 900px the wide fan's stage carries, and for
+       the same reason: the deck opens from lying flat on the display plane, and
+       at MOTION.flat.angle a plane with no camera distance to project against
+       is a horizontal line. See CardFan. */
+    <div
+      className="relative h-[539px] w-full shrink-0 [perspective:900px] sm:hidden"
+      aria-hidden
+    >
       {/*
         Ellipse 6145 — the hero's bloom, at the size the phone's frame draws it:
         a 634px circle centred 10px right of the middle and 366px down from the
@@ -111,34 +131,65 @@ function HeroFanPhone() {
         The 1434 box is the circle plus 2 sigma either side, which is how the
         wide one is exported too (1028 + 800 = 1828).
       */}
+      {/*
+        Outside the fan, not in it: the fan hinges up off the display plane on
+        the way in and the light behind it does not tilt with it. It is the
+        hero's [data-reveal='glow'] down here — the same role the bloom and band
+        carry above the gate, so heroCards brings it in from below with the rest
+        of the scene and glowDrift keeps it moving afterwards, with no second
+        arrangement to write for either.
+      */}
       <Image
         src="/hero/glow-bloom-phone.svg"
         alt=""
         width={1434}
         height={1434}
         className="pointer-events-none absolute max-w-none"
-        style={onCentre(10, 366 - 717)}
+        style={onCentre(10, 1434, 366 - 717)}
+        data-reveal="glow"
+        data-glow-from="0 1"
       />
 
-      {HERO_FAN_PHONE.map(({ name, dx, y, z }) => {
-        const card = cards.find((c) => c.name === name);
-        if (!card) return null;
-        return (
-          <div key={name} className="absolute" style={onCentre(dx, y, z)}>
-            <PassportCard
-              name={card.name}
-              subtitle={card.subtitle}
-              avatar={card.avatar}
-              bureaus={card.bureaus}
-              metrics={card.metrics}
-            />
-          </div>
-        );
-      })}
+      {/*
+        The fan itself, as one object: this is what lies flat and stands up, and
+        the four cards inside it are what come out from behind the Squad card
+        once it has. Exactly the roles the wide fan carries, so both tiers open
+        on one timeline — see heroCards, and `shown` in timelines.ts for what
+        keeps each of them looking at its own layout.
+      */}
+      <div className="absolute inset-0" data-reveal="fan">
+        {HERO_FAN_PHONE.map(({ name, dx, y, z }) => {
+          const card = cards.find((c) => c.name === name);
+          if (!card) return null;
+          return (
+            <div
+              key={name}
+              className="absolute"
+              style={onCentre(dx, PHONE_CARD_W, y, z)}
+              data-reveal="card"
+            >
+              <PassportCard
+                name={card.name}
+                subtitle={card.subtitle}
+                avatar={card.avatar}
+                bureaus={card.bureaus}
+                metrics={card.metrics}
+              />
+            </div>
+          );
+        })}
 
-      {/* 260x420 standing up, centred, 119px down — and in front of all four. */}
-      <div className="absolute" style={onCentre(0, 119, 30)}>
-        <SquadCard orientation="portrait" size={260} />
+        {/* 260x420 standing up, centred, 119px down — and in front of all four.
+            [data-fan-anchor], like the wide fan's: it is the product and it is
+            held still, so the float that keeps the other four alive skips it
+            and the fold that puts them away leaves it on the screen alone. */}
+        <div
+          className="absolute"
+          style={onCentre(0, PHONE_CARD_W, 119, 30)}
+          data-fan-anchor=""
+        >
+          <SquadCard orientation="portrait" size={260} />
+        </div>
       </div>
     </div>
   );

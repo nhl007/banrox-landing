@@ -7,10 +7,10 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { PARALLAX } from "./depth";
 import { MOTION } from "./motion";
-import { authoredTop } from "./measure";
+import { authoredRect, authoredTop, leadOf } from "./measure";
 import { parallaxScene } from "./parallax";
 import { SECTIONS } from "./sections";
-import { heroFold, navbarDrop } from "./timelines";
+import { heroFold, navbarDrop, one } from "./timelines";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -157,11 +157,97 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
     () => {
       const mm = gsap.matchMedia();
 
+      const section = (id: string) =>
+        document.querySelector<HTMLElement>(`[data-sequence-section='${id}']`);
+
+      /* --- the hero's fan closing ------------------------------------------
+       *
+       * The one beat on the page the reader performs rather than watches. As
+       * they scroll off the hero the four passport cards fold back in behind
+       * the Squad card and are gone, leaving the product alone on the screen —
+       * see heroFold for the geometry, MOTION.hero.fold for the numbers.
+       *
+       * The only ARRIVAL on the page driven this way. Everything the two
+       * branches below set up is an event with a duration that plays once when
+       * its section comes into view; this has no duration at all, only a
+       * distance, and every frame of it belongs to the reader. (Depth is
+       * scrubbed too, but depth is not an arrival — it is where a layer sits
+       * while the reader goes past it.)
+       *
+       * Both tiers get it. The phone's fan is a different arrangement of the
+       * same five cards carrying the same roles, so the geometry is measured
+       * off whichever of the two is rendered and the four still fold into the
+       * Squad card they came out of.
+       *
+       * What each tier does NOT share is where the fold starts, and it cannot.
+       * Above the gate the hero is exactly one window with the fan in it, so
+       * the hero's top edge reaching the top of the window IS the reader
+       * starting to leave the fan. On a phone the hero is 1204px tall and the
+       * fan is the bottom 539 of it — the same trigger there had the four cards
+       * folded away by scroll 562, which is the moment the fan first arrives in
+       * the middle of the window. The section deleted its own subject just as
+       * the reader got to it. Measured, and unmistakable in a screenshot.
+       *
+       * So down there it hangs on the FAN, and on the edge that means the same
+       * thing: its bottom leaving the bottom of the window, which is the point
+       * at which the whole of it has been seen and the reader is going past.
+       * The fold then runs from there to the fan's own exit — every frame of it
+       * on screen, which is what it is for.
+       */
+      const foldHero = ({
+        trigger,
+        start,
+      }: {
+        trigger: HTMLElement | null;
+        start: string;
+      }) => {
+        const heroEl = section("hero");
+        const fold = heroEl && heroFold(heroEl);
+        if (!heroEl || !fold || !trigger) return;
+
+        const { out, lag, settle } = MOTION.hero.fold;
+
+        /*
+         * Built late, and it has to be.
+         *
+         * A scrubbed timeline renders as soon as its ScrollTrigger exists, and
+         * at the top of the page it renders at progress 0 — which here is the
+         * four cards at x: 0, opacity: 1, their resting state. That is
+         * precisely where heroCards is still carrying them, so a fold created
+         * any earlier writes the end of the hero's entrance over the top of it
+         * every frame and the fan never visibly opens. See
+         * MOTION.hero.fold.settle.
+         *
+         * The refresh afterwards is because every other trigger on the page was
+         * positioned before this one existed.
+         */
+        gsap.delayedCall(settle, () => {
+          ScrollTrigger.create({
+            trigger,
+            start,
+            /*
+             * A fraction of the WINDOW rather than of the hero. It is an amount
+             * of scrolling, and what makes it feel right is how far the reader
+             * has had to move — not how tall the section they moved out of
+             * happened to be.
+             */
+            end: `+=${out * 100}%`,
+            scrub: lag,
+            animation: fold,
+          });
+          ScrollTrigger.refresh();
+        });
+      };
+
       /*
-       * Below the gate, and for anyone who asked for reduced motion, no
-       * SEQUENCE plays at all. The CSS start state is behind the same query, so
-       * the server-rendered markup is already the finished page and there is
-       * nothing to play.
+       * Below every gate — a window with no height to animate in, or a reader
+       * who asked for less motion — no SEQUENCE plays at all. The CSS start
+       * state is behind the same condition, so the server-rendered markup is
+       * already the finished page and there is nothing to play.
+       *
+       * The query is the complement of the stylesheet's guard rather than of
+       * either tier on its own, so that crossing between the two tiers that DO
+       * animate is not mistaken for leaving them.
        *
        * There is something to undo, though, if the reader ARRIVED here rather
        * than started here — see unwind. This handler is the right place for it
@@ -169,26 +255,228 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
        * before it runs the ones that started, so by the time this is called the
        * sequence has already let go of the page.
        */
-      mm.add(`not all and ${MOTION.enabled}`, unwind);
+      mm.add(
+        "not all and (min-height: 480px) and (prefers-reduced-motion: no-preference)",
+        unwind,
+      );
 
       /*
-       * What a phone does get is depth, and only depth.
+       * A window too short to lay the wide page out in gets depth, and only
+       * depth.
        *
        * Nothing is hidden here and nothing waits to arrive — the page is
        * delivered finished — so this adds no start state to undo and cannot
        * strand anything blank if it fails to run. It is the ambient light
        * moving at its own speed behind text that moves at the page's, which is
        * the one part of the whole system that still means something when a
-       * section is a column of its own height rather than a screen. Reduced
-       * motion is excluded by the query itself. See PARALLAX.calm.
+       * section is a strip of heading. Reduced motion is excluded by the query
+       * itself. See PARALLAX.calm.
        */
-      mm.add(PARALLAX.calm, () => parallaxScene({ calm: true }));
+      mm.add(PARALLAX.calm, () => parallaxScene({ tier: "calm" }));
+
+      /*
+       * ---------------------------------------------------------------------
+       * THE PHONE
+       *
+       * The same beats, the same ambients and the same depth system, cut a
+       * different way: every beat carries its own trigger rather than queueing
+       * behind the one above it off the section's.
+       *
+       * That is forced by what a section IS down here. Above the gate it is
+       * exactly one window, so one trigger on its top edge is a moment that
+       * covers all of it; on a phone it is a column of its own height — 2110px
+       * of Squad Approves in an 844px window — and a single trigger would spend
+       * the whole section while three quarters of it was still below the fold.
+       * The page already had the answer for the parts of a WIDE section that
+       * fall past the fold (Beat.own), and here every beat is in that position.
+       *
+       * So each one waits for the first thing it moves to clear the fold (see
+       * leadOf and MOTION.own.line), and a beat whose parts are spread further
+       * than a window can hold is cut into narrower ones — see SectionSpec.
+       * column, which is the only thing in the whole tier that is authored
+       * twice.
+       */
+      mm.add(MOTION.phone, () => {
+        const navEl = section("navbar");
+        if (navEl) navbarDrop(navEl).timeScale(MOTION.pace).play();
+
+        for (const spec of SECTIONS) {
+          const el = section(spec.id);
+          if (!el) {
+            console.warn(
+              `[ScrollSequence] no element for section "${spec.id}"`,
+            );
+            continue;
+          }
+
+          const beats = spec.column ?? spec.beats;
+          const loops = [spec.ambient ?? []].flat().map((make) => make(el));
+
+          /*
+           * The loops start with the section's FIRST beat rather than its last,
+           * which is the one thing about them the column changes.
+           *
+           * Above the gate a section arrives as one run off one trigger, so
+           * "the entrance has finished" is a moment that exists and the loops
+           * wait for it — a light running down a wire that has not been drawn
+           * yet would reveal itself already half way along. Down here the beats
+           * are spread over the whole scroll of the section, and waiting for
+           * the last of them means How Squad Works does not begin breathing
+           * until step 3 lands, by which time step 1 — the card the orbit and
+           * the rings belong to — is a thousand pixels above the window.
+           *
+           * Safe because of how the wiring is held: every run is clipped shut
+           * at build (see traceRuns) and stays clipped until its own beat wipes
+           * it open, and a light travelling inside a closed clip is a light
+           * nobody can see. So the loop may run from the first beat and the
+           * thing it was guarding against still cannot happen.
+           *
+           * Held whenever the section is off screen, exactly as before, so
+           * nothing animates in a part of the page nobody is looking at.
+           */
+          let onScreen = false;
+          let arrived = false;
+          const runLoops = () => {
+            if (onScreen && arrived) loops.forEach((l) => l.play());
+          };
+          const landed = () => {
+            arrived = true;
+            runLoops();
+          };
+
+          /*
+           * The hero does not wait to be scrolled to — it is the page opening,
+           * and the reader is already looking at it. So it keeps the queued
+           * model: the navbar drops, the copy follows it, the fan follows the
+           * copy, on one clock, in the order the page reads.
+           */
+          const queued =
+            spec.plays === "load" ? gsap.timeline({ paused: true }) : null;
+          let cursor = 0;
+
+          for (const b of beats) {
+            const child = b.play(el);
+
+            if (queued) {
+              /* A child has to be running for its parent to render it; these
+                 come back paused because a factory has no idea when it will be
+                 used. */
+              child.paused(false);
+              const at = Math.max(0, cursor + (b.delay ?? 0));
+              queued.add(child, at);
+              cursor = at + child.duration();
+              continue;
+            }
+
+            /* Left paused, unlike the queued ones: this is a timeline of its
+               own and nothing but its own trigger may start it. `restart` is
+               what unpauses it, below. */
+            child.timeScale(MOTION.pace);
+            child.eventCallback("onComplete", landed);
+
+            /*
+             * What this beat is about: whatever it names, or else the first
+             * thing it moves. `own` is preferred where a beat has one because
+             * it is more precise than the derivation can be — the strength
+             * rails are brought out by growing the PANEL, so the first thing
+             * that beat moves is a card 379px above the rail it is for.
+             */
+            const subject = (b.own && one(el, b.own)) || leadOf(child);
+            if (!subject) {
+              /* Nothing this tier renders — the hero's other fan, a diagram's
+                 other wiring. Let it settle whatever it holds and move on. */
+              child.progress(1);
+              continue;
+            }
+
+            const line = () =>
+              authoredTop(subject) - window.innerHeight * MOTION.own.line;
+
+            let ran = false;
+            const run = () => {
+              if (ran) return;
+              /* Past the line, and still somewhere a reader could be looking —
+                 the same two conditions the wide tier's own beats carry, and
+                 for the same reasons. A reload part way down the page puts the
+                 scroll far beyond the line for everything above it. */
+              if (window.scrollY < line()) return;
+              /*
+               * Where the subject RESTS, not where this beat is holding it.
+               * Early Access parks its card 300px down and its copy 200, which
+               * on a phone is enough to put both past the bottom edge at the
+               * moment their own line is crossed — so measured as-is the check
+               * refused the beat it exists to protect, and the section arrived
+               * at nothing for the whole page. Same reason the line above is
+               * derived from authoredTop.
+               */
+              const r = authoredRect(subject);
+              if (r.bottom <= 0 || r.top >= window.innerHeight) return;
+
+              ran = true;
+              child.restart();
+            };
+
+            /* Both directions: down the page in the ordinary way, or back UP
+               to it from below after a jump carried the reader past. */
+            ScrollTrigger.create({
+              trigger: subject,
+              start: line,
+              end: () => line() + 1,
+              onEnter: run,
+              onEnterBack: run,
+            });
+            /* And already past it on arrival, which crossing nothing would
+               never catch. */
+            run();
+          }
+
+          if (queued) {
+            /* The hero is one run again down here, so its loops keep the
+               wide tier's bargain: the cards start breathing when the fan has
+               finished opening, not while it is still opening. */
+            queued.timeScale(MOTION.pace);
+            queued.eventCallback("onComplete", landed);
+            queued.play();
+          }
+
+          ScrollTrigger.create({
+            trigger: el,
+            start: "top 75%",
+            end: "bottom 25%",
+            onToggle: (self) => {
+              onScreen = self.isActive;
+              if (self.isActive) runLoops();
+              else loops.forEach((l) => l.pause());
+            },
+          });
+        }
+
+        parallaxScene({ tier: "phone" });
+        foldHero({
+          trigger: one(section("hero") ?? document.body, "[data-reveal='fan']"),
+          start: "bottom bottom",
+        });
+
+        /*
+         * And the belt to the braces.
+         *
+         * The stylesheet hides every [data-reveal] on this tier now, which
+         * makes an element no beat reaches a permanently invisible one — a
+         * failure the wide tier cannot have, because it has been walked
+         * end to end at every size for months. Anything the loop above touched
+         * carries an inline opacity, whether it has arrived yet or not; a hook
+         * added to the markup and never wired to a beat carries none, and this
+         * is what stops that being a hole in the page instead of a missing
+         * animation.
+         */
+        for (const node of document.querySelectorAll<HTMLElement>(
+          "[data-reveal]",
+        ))
+          if (!node.style.opacity) node.style.opacity = "1";
+      });
 
       mm.add(MOTION.enabled, () => {
-        const find = (id: string) =>
-          document.querySelector<HTMLElement>(
-            `[data-sequence-section='${id}']`,
-          );
+        const find = section;
 
         /* The navbar is not one of the sections. It is above them and it drops
            in on load, which is what the page opens on. */
@@ -368,7 +656,9 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
                 return;
               }
               if (window.scrollY < line()) return;
-              const r = subject.getBoundingClientRect();
+              /* As it rests, not as this beat is holding it — see the note on
+                 the same check in the phone branch. */
+              const r = authoredRect(subject);
               if (r.bottom <= 0 || r.top >= window.innerHeight) return;
 
               ran = true;
@@ -402,59 +692,9 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
          * they run over the top of each other with no arbitration. See
          * depth.ts, which is the whole of what it does and why.
          */
-        parallaxScene({ calm: false });
+        parallaxScene({ tier: "full" });
 
-        /* --- the hero's fan closing --------------------------------------
-         *
-         * The one beat on the page the reader performs rather than watches. As
-         * they scroll off the hero the four passport cards fold back in behind
-         * the Squad card and are gone, leaving the product alone on the screen
-         * — see heroFold for the geometry, MOTION.hero.fold for the numbers.
-         *
-         * The only ARRIVAL on the page driven this way. Everything the loop
-         * above sets up is an event with a duration that plays once when its
-         * section comes into view; this has no duration at all, only a
-         * distance, and every frame of it belongs to the reader. (Depth is
-         * scrubbed too, but depth is not an arrival — it is where a layer sits
-         * while the reader goes past it.)
-         */
-        const heroEl = find("hero");
-        const fold = heroEl && heroFold(heroEl);
-
-        if (heroEl && fold) {
-          const { out, lag, settle } = MOTION.hero.fold;
-
-          /*
-           * Built late, and it has to be.
-           *
-           * A scrubbed timeline renders as soon as its ScrollTrigger exists,
-           * and at the top of the page it renders at progress 0 — which here is
-           * the four cards at x: 0, opacity: 1, their resting state. That is
-           * precisely where heroCards is still carrying them, so a fold created
-           * any earlier writes the end of the hero's entrance over the top of
-           * it every frame and the fan never visibly opens. See
-           * MOTION.hero.fold.settle.
-           *
-           * The refresh afterwards is because every other trigger on the page
-           * was positioned before this one existed.
-           */
-          gsap.delayedCall(settle, () => {
-            ScrollTrigger.create({
-              trigger: heroEl,
-              /*
-               * A fraction of the WINDOW rather than of the hero. It is an
-               * amount of scrolling, and what makes it feel right is how far
-               * the reader has had to move — not how tall the section they
-               * moved out of happened to be.
-               */
-              start: "top top",
-              end: `+=${out * 100}%`,
-              scrub: lag,
-              animation: fold,
-            });
-            ScrollTrigger.refresh();
-          });
-        }
+        foldHero({ trigger: section("hero"), start: "top top" });
       });
     },
     { scope: root, dependencies: [pathname], revertOnUpdate: true },

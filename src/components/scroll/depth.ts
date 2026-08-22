@@ -122,19 +122,50 @@ export type DepthLayer = {
    */
   light?: true;
   /**
-   * How much of this layer survives into the restrained tier — phones, and
-   * windows too short to be given the full page. 0, the default, means it does
-   * not run there at all.
+   * How much of this layer survives into the restrained tier — a window too
+   * short to be given the full page. 0, the default, means it does not run
+   * there at all.
    *
-   * Almost everything is 0. What is left on a phone is the ambient light and
-   * nothing else: a phone section is as tall as its contents rather than one
-   * window, so its parts are not laid out with the slack that per-element
-   * depth needs, and a diagram whose pieces drift relative to each other on a
-   * 390px screen stops being a diagram. The light has no edges and no
-   * relationships to break, so it can move — and it is the layer that carries
-   * most of the effect anyway.
+   * Almost everything is 0. What is left is the ambient light and nothing
+   * else: this is the wide LAYOUT in a window with no height to lay it out in,
+   * so the sections are stacked with none of the slack per-element depth needs.
+   * The light has no edges and no relationships to break, so it can move — and
+   * it is the layer that carries most of the effect anyway.
    */
   calm?: number;
+
+  /**
+   * What this layer is worth on the phone, in px at each end of the crossing.
+   * Absent means it does not move there.
+   *
+   * Its own number rather than a fraction of `depth`, because the phone is not
+   * this section at a smaller size — it is a different arrangement of the same
+   * parts, and a proportion of a distance authored for the other one would not
+   * mean anything in it. The comparison panels sit side by side up here and one
+   * above the other down there; the funnel is a 948px chain across a stage and
+   * a 1017px column; the hero's fan is one row of four and two rows of two.
+   *
+   * ---------------------------------------------------------------------------
+   * WHY THESE ARE COARSER THAN THE WIDE ONES, AND MOSTLY THREE PLANES
+   *
+   * A wide section is one window with a diagram laid out inside it, and the
+   * parts of that diagram have room to move relative to each other: the approve
+   * card is 161px clear of its neighbours at 1440. The same diagram on a phone
+   * is a column with 24px between one card and the next, and — this is the part
+   * that decides it — the gaps between its blocks are where the connectors are
+   * drawn. Both this section and the funnel replace a wide run of wiring with
+   * dashed drops that are EXACTLY as long as the gap they cross (see DashDown),
+   * so two blocks given different depths do not merely close on each other,
+   * they slide over the line joining them.
+   *
+   * So on the phone the diagram is rigid, and what moves is the three planes a
+   * column actually has: the light behind it, the heading over it, and the
+   * payload between them. `.screen-payload` is the whole diagram at one
+   * distance, and a piece that IS free to move — one that no wire joins to its
+   * neighbour — states its own on top of that, since a transform on the payload
+   * and a transform on something inside it compose.
+   */
+  phone?: number | number[];
 };
 
 export type SectionDepth = {
@@ -162,19 +193,22 @@ export type SectionDepth = {
 
 export const PARALLAX = {
   /**
-   * The restrained tier: everything MOTION.enabled excludes, less anyone who
-   * asked for reduced motion. Narrow OR short — the two halves of the full
-   * gate — so between them the two queries cover every window exactly once.
+   * The restrained tier: a window too short to be given the full page, less
+   * anyone who asked for reduced motion.
    *
-   * Nothing about the sequence runs here: no arrivals, no ambient loops, no
-   * scrubbed fold. The page is delivered finished by the server and this adds
-   * the one thing that still works when a section is a column of its own height
-   * rather than a screen — light that does not move at the speed of the text
-   * over it.
+   * It used to be narrow OR short. The narrow half has its own tier now — a
+   * phone runs the whole sequence, on the beat-at-a-time clock a column needs
+   * (see MOTION.phone) — so what is left here is the one window this page
+   * cannot honestly animate: the wide LAYOUT with no height to lay it out in,
+   * where a section is most of a window of heading. Nothing about the sequence
+   * runs: no arrivals, no ambient loops, no scrubbed fold. The page is
+   * delivered finished by the server and this adds the one thing that still
+   * works — light that does not move at the speed of the text over it.
+   *
+   * Between this, MOTION.enabled and MOTION.phone every window that animates at
+   * all is covered exactly once.
    */
-  calm:
-    "(prefers-reduced-motion: no-preference) and (max-width: 640px)," +
-    "(prefers-reduced-motion: no-preference) and (max-height: 479px)",
+  calm: "(prefers-reduced-motion: no-preference) and (max-height: 479px)",
 
   /**
    * The scrub's catch-up, in seconds, as a function of how far away a layer is.
@@ -271,12 +305,23 @@ export const SCENE: SectionDepth[] = [
         light: true,
       },
       /*
+       * The phone's own bloom, which is a different circle in a different
+       * place: 634px centred on the fan against the 1028 the wide layout
+       * carries, because Figma's blur does not scale with the shape it is on
+       * (see HeroFanPhone). It is inside the fan rather than in a backdrop of
+       * its own down here, so it is reached by the role the hero already gives
+       * its light — and above the gate that same selector resolves to the two
+       * layers in the backdrop above, which is why this entry only ever runs on
+       * the phone.
+       */
+      { find: "[data-reveal='glow']", phone: 120, light: true },
+      /*
        * Nearest, and the only layer on the page that fades out almost
        * completely. The headline and the two CTAs are the one piece of content
        * the reader is done with the moment they scroll — everything else on the
        * page is something they may scroll back up to.
        */
-      { find: ".screen-copy", depth: -95, fade: [1, 0.1] },
+      { find: ".screen-copy", depth: -95, fade: [1, 0.1], phone: -54 },
       /*
        * .screen-payload is deliberately absent.
        *
@@ -320,9 +365,16 @@ export const SCENE: SectionDepth[] = [
       /* Slightly behind, not ahead: the heading here belongs to the light — it
          is lit from directly behind — so it travels with it rather than with
          the panels below. */
-      { find: ".screen-copy", depth: 30 },
-      { find: "[data-reveal='card-left']", depth: -46 },
-      { find: "[data-reveal='card-right']", depth: 34 },
+      { find: ".screen-copy", depth: 30, phone: -18 },
+      /*
+       * The one section whose argument survives being stacked. Alone above,
+       * Together below, 93px apart with the VS badge sitting between them and
+       * nothing drawn across it — so the two may still be at two distances, and
+       * the near one is still the one that leaves first. A quarter of what they
+       * are worth side by side, which is what that 93px will take.
+       */
+      { find: "[data-reveal='card-left']", depth: -46, phone: -12 },
+      { find: "[data-reveal='card-right']", depth: 34, phone: 12 },
     ],
   },
 
@@ -355,10 +407,18 @@ export const SCENE: SectionDepth[] = [
         calm: 0.4,
         light: true,
       },
-      { find: ".screen-copy", depth: -40 },
+      { find: ".screen-copy", depth: -40, phone: -18 },
+      /*
+       * The three parts of the diagram are wired to each other by two dashed
+       * drops exactly as long as the gaps they cross, so on the phone they move
+       * as one plane and the payload carries all of them. The ledger is the one
+       * piece with nothing drawn into it, so it keeps the depth the wide
+       * layout gives it — stated on top of the payload's, which it is inside.
+       */
+      { find: ".screen-payload", phone: 12 },
       { find: "[data-reveal='request']", depth: -56, sway: -26 },
       { find: "[data-reveal='votes']", depth: -56, sway: 26 },
-      { find: "[data-reveal='ledger']", depth: 40 },
+      { find: "[data-reveal='ledger']", depth: 40, phone: 16 },
       /*
        * And the card itself is the deepest thing in the diagram — the only
        * payload on the page set further back than the record underneath it.
@@ -399,7 +459,15 @@ export const SCENE: SectionDepth[] = [
         calm: 0.35,
         light: true,
       },
-      { find: ".screen-copy", depth: -35 },
+      { find: ".screen-copy", depth: -35, phone: -18 },
+      /*
+       * The receding row is a wide idea and does not survive the column: three
+       * cards stacked 24px apart at three distances do not read as 1, 2, 3
+       * going back — they read as three gaps that will not hold still. The
+       * order is already told by the stagger they arrive on, which is what says
+       * it down here.
+       */
+      { find: ".screen-payload", phone: 12 },
       { find: "[data-reveal='step']", depth: [-38, 0, 38] },
     ],
   },
@@ -424,7 +492,12 @@ export const SCENE: SectionDepth[] = [
     gain: 0.8,
     layers: [
       { find: "[data-reveal='aura']", depth: 140, light: true },
-      { find: ".screen-copy", depth: -30 },
+      /* The phone's light, which is a section-sized ellipse behind the column
+         rather than the aura that belongs to the wide funnel. */
+      { find: ".screen-glow", phone: 90, light: true },
+      { find: ".screen-copy", depth: -30, phone: -18 },
+      /* Four rows joined by three dashed drops: one plane. See DepthLayer.phone. */
+      { find: ".screen-payload", phone: 12 },
       { find: "[data-reveal='member']", depth: -40 },
       { find: "[data-reveal='signals']", depth: -12 },
       { find: "[data-reveal='hub']", depth: 30 },
@@ -452,7 +525,15 @@ export const SCENE: SectionDepth[] = [
     gain: 0.74,
     layers: [
       { find: "[data-reveal='aura']", depth: 120, light: true },
-      { find: ".screen-copy", depth: -30 },
+      { find: ".screen-glow", phone: 90, light: true },
+      { find: ".screen-copy", depth: -30, phone: -18 },
+      /*
+       * Nothing is wired between the three cards down here, but they are 16px
+       * and 15px apart — closer than any other stack on the page — so the
+       * payload is still one plane and the separation this section is layered
+       * for stays a wide-layout idea.
+       */
+      { find: ".screen-payload", phone: 12 },
       { find: "[data-reveal='lane']", depth: -36, sway: -14 },
       { find: "[data-reveal='cover']", depth: -36, sway: 14 },
       { find: "[data-reveal='health']", depth: 46 },
@@ -483,9 +564,15 @@ export const SCENE: SectionDepth[] = [
         calm: 0.3,
         light: true,
       },
-      { find: ".screen-copy", depth: -28 },
-      { find: "[data-reveal='card']", depth: 30 },
-      { find: "[data-reveal='item']", depth: -14 },
+      { find: ".screen-copy", depth: -28, phone: -16 },
+      { find: "[data-reveal='card']", depth: 30, phone: 10 },
+      /*
+       * The four things on the card drift against the card down here too, and
+       * they can: they are inside it, 16px apart, and all four are given the
+       * same distance — so they move relative to the card that holds them and
+       * not one bit relative to each other.
+       */
+      { find: "[data-reveal='item']", depth: -14, phone: -7 },
     ],
   },
 
@@ -513,8 +600,12 @@ export const SCENE: SectionDepth[] = [
         calm: 0.3,
         light: true,
       },
-      { find: "[data-reveal='card']", depth: -28 },
-      { find: ".screen-copy", depth: -12 },
+      /* Two 260px circles rather than the 412s above the gate, and placed
+         against the section instead of the card's slot — so the phone's light
+         is reached through the layer that holds it. */
+      { find: ".screen-glow", phone: 80, light: true },
+      { find: "[data-reveal='card']", depth: -28, phone: -16 },
+      { find: ".screen-copy", depth: -12, phone: -6 },
     ],
   },
 ];

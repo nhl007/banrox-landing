@@ -1,4 +1,5 @@
 import gsap from "gsap";
+import { asAuthored } from "./measure";
 import { MOTION } from "./motion";
 
 /*
@@ -22,14 +23,87 @@ import { MOTION } from "./motion";
  * re-measure rather than captured once.
  */
 
+/**
+ * Whether this element is part of the layout the window is currently getting.
+ *
+ * Two tiers of markup share one DOM tree. The hero holds a fan of five cards
+ * laid out across a 1262px stage AND the same five re-stacked two-and-two for a
+ * 370px column; the funnel holds three drawn connectors AND the four dashed
+ * drops that replace them; three sections hold a bloom for the wide layout and
+ * a differently-sized one for the phone. Exactly one of each pair is rendered
+ * at any width, and the other is `display: none`.
+ *
+ * So every query below is filtered through this, and every factory becomes
+ * tier-aware for nothing: `q(el, "card")` is the four wide passports above the
+ * gate and the four phone ones below it, and a beat written once animates
+ * whichever of them the reader can actually see. Without it each factory would
+ * be handed both sets — nine cards, three of the offsets meaningless — and the
+ * hero would fan out from an anchor belonging to the other layout.
+ *
+ * A box is what is tested for, because that is what `display: none` takes away
+ * and nothing else on this page does: opacity 0 keeps its box (which is the
+ * state every one of these elements starts in), and so does visibility:hidden.
+ * The one thing that would be read wrongly is `display: contents`, which
+ * generates no box of its own — nothing carrying [data-reveal] may have it, and
+ * nothing does.
+ */
+const shown = (el: Element) => el.getClientRects().length > 0;
+
 const q = (root: HTMLElement, role: string) =>
-  gsap.utils.toArray<HTMLElement>(
-    root.querySelectorAll(`[data-reveal='${role}']`),
-  );
+  gsap.utils
+    .toArray<HTMLElement>(root.querySelectorAll(`[data-reveal='${role}']`))
+    .filter(shown);
+
+/** The first element matching `sel` that this tier actually renders. */
+export const one = (root: HTMLElement, sel: string) =>
+  gsap.utils.toArray<HTMLElement>(root.querySelectorAll(sel)).find(shown) ??
+  null;
+
+/**
+ * Every run of connector wiring under `root` with a given name.
+ *
+ * The funnel is the one diagram whose beats each want a PARTICULAR run rather
+ * than all of them — the fan into the signal row, the drop into the engine, the
+ * drop into the verdict — and it used to take them by position: slice(0,1),
+ * slice(1,2), slice(2). That was true of one layout and one only. The phone
+ * replaces the wide fan with two dashed drops rather than one run (see
+ * DashDown), so on a phone the same three slices take the first drop, the
+ * second drop, and everything after them — three rows wired to the wrong
+ * things. Naming the run is what survives a layout that draws the same
+ * connection with a different number of lines.
+ */
+const runs = (root: HTMLElement, name: string) =>
+  q(root, "lines").filter((run) => run.dataset.run === name);
+
+/**
+ * gsap.set and timeline.to, for a set of elements this tier may not render.
+ *
+ * Every query above is filtered to the layout the window is actually getting,
+ * so coming back with nothing is an ordinary outcome rather than a mistake: a
+ * beat cut for the column moves one comparison panel and not the other, and the
+ * funnel's aura, its endpoint dot and Life Inside Squad's aura are wide-layout
+ * artwork with no phone equivalent at all. GSAP warns on a tween with no
+ * targets, which is the right default everywhere else and thirteen lines of
+ * console on every phone load here.
+ *
+ * `move` returns the timeline either way, so it still chains — and where a
+ * skipped tween would have shifted a later relative position, the shift is the
+ * correct one: what follows lines up behind what actually happened.
+ */
+const park = (targets: HTMLElement[], vars: gsap.TweenVars) => {
+  if (targets.length) gsap.set(targets, vars);
+};
+
+const move = (
+  tl: gsap.core.Timeline,
+  targets: HTMLElement[],
+  vars: gsap.TweenVars,
+  at?: number | string,
+) => (targets.length ? tl.to(targets, vars, at) : tl);
 
 /** A paused timeline with the shared ease, which every beat below starts from. */
 const beat = () =>
-  gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+  gsap.timeline({ paused: true, defaults: { ease: "power1.out" } });
 
 /**
  * The heading's own duration and ease, which a section's payload arrives on so
@@ -262,7 +336,7 @@ const trace = (
 export function traceLoop(el: HTMLElement) {
   /* Paced like the beats, which the controller does for those but not for
      ambients — and this one has to match the arrival pass it continues. */
-  const tl = gsap.timeline({ paused: true, repeat: -1 }).timeScale(MOTION.pace);
+  const tl = gsap.timeline({ paused: true }).timeScale(MOTION.pace);
 
   q(el, "lines").forEach((run, i) => {
     const pass = passOf(run);
@@ -274,6 +348,16 @@ export function traceLoop(el: HTMLElement) {
       MOTION.trace.gap + i * MOTION.trace.stagger,
     );
   });
+
+  /*
+   * The repeat goes on last, and only if there is anything to repeat.
+   *
+   * Two of the three diagrams that carry this replace their wide runs with
+   * plain dashed drops on the phone — a line to draw, but no light to send down
+   * it — so down there this can come out with nothing in it, and a repeat on a
+   * timeline of zero duration is a loop with no period.
+   */
+  if (tl.duration()) tl.repeat(-1);
 
   return tl;
 }
@@ -288,7 +372,8 @@ export function traceLoop(el: HTMLElement) {
  * so nothing below it moves and the document height never changes.
  */
 export function navbarDrop(el: HTMLElement) {
-  const pill = el.querySelector("[data-reveal='nav-pill']") as HTMLElement;
+  const pill = one(el, "[data-reveal='nav-pill']");
+  if (!pill) return beat();
 
   gsap.set(el, { opacity: 1 });
   /*
@@ -377,7 +462,8 @@ export function heroCards(el: HTMLElement) {
   const glow = q(el, "glow");
   const fan = q(el, "fan");
   const cards = q(el, "card");
-  const anchor = el.querySelector("[data-fan-anchor]") as HTMLElement;
+  const anchor = one(el, "[data-fan-anchor]");
+  if (!anchor) return beat();
 
   /*
    * Every passport card is pulled onto the Squad card's exact centre, so the
@@ -458,7 +544,7 @@ export function heroCards(el: HTMLElement) {
  */
 export function heroFold(el: HTMLElement) {
   const cards = q(el, "card");
-  const anchor = el.querySelector<HTMLElement>("[data-fan-anchor]");
+  const anchor = one(el, "[data-fan-anchor]");
   if (!cards.length || !anchor) return null;
 
   /* Where each card sits when it is stacked behind the Squad card — the same
@@ -531,7 +617,7 @@ export function heroFloat(el: HTMLElement) {
   /* Promoted once, up front, and left promoted: these animate for as long as
      the hero is on screen, so a compositor layer each means the float is a
      matrix applied to an existing raster rather than a repaint every frame. */
-  gsap.set(cards, { willChange: "transform", force3D: true });
+  park(cards, { willChange: "transform", force3D: true });
 
   cards.forEach((card, i) => {
     tl.to(card, { y: -rise, duration, ease, repeat: -1, yoyo: true }, i * each);
@@ -580,15 +666,18 @@ export function glowDrift(el: HTMLElement) {
   const { scale, shift, duration, step, stagger, ease } = MOTION.glow.drift;
   const tl = gsap.timeline({ paused: true });
 
-  const layers = gsap.utils.toArray<HTMLElement>(
-    el.querySelectorAll("[data-glow-from]"),
-  );
+  /* Whatever light this tier actually draws. Three sections are lit above the
+     gate and not below it (see SectionBloom), so down there this legitimately
+     comes back empty and the loop is one with nothing in it. */
+  const layers = gsap.utils
+    .toArray<HTMLElement>(el.querySelectorAll("[data-glow-from]"))
+    .filter(shown);
 
   /* Promoted once and left promoted, like the passport cards: these animate for
      as long as their section is on screen, so a compositor layer each is the
      difference between stretching a raster and repainting a window's worth of
      soft light on every frame. */
-  gsap.set(layers, { willChange: "transform", force3D: true });
+  park(layers, { willChange: "transform", force3D: true });
 
   layers.forEach((layer, i) => {
     const away = i % 2 ? -1 : 1;
@@ -796,24 +885,54 @@ const meters = (
  * on a breakpoint crossing — and the second render React does in development —
  * find the height captured before any of it started.
  */
+/*
+ * How tall each comparison panel is when it is whole.
+ *
+ * Cached because the beat that reads it is also the beat that overwrites the
+ * thing it is read from — alonePanels parks the panels short, so by the time
+ * aloneRails wants the full height there is no longer a panel that has one.
+ *
+ * Measured as AUTHORED rather than as-is, and cleared whenever alonePanels
+ * runs. Both are about the two tiers: a panel is 628px tall above the gate and
+ * 514 below it, and the window can cross that boundary while a cached number
+ * from the other side is still sitting here — which is a phone panel growing to
+ * a desktop panel's height and 114px of empty card under the rail. Clearing it
+ * at the top of the beat that captures it means the cache never outlives the
+ * layout it was taken from.
+ */
 const fullHeights = new WeakMap<HTMLElement, number>();
 const grown = (panel: HTMLElement) => {
   const known = fullHeights.get(panel);
   if (known !== undefined) return known;
-  const h = panel.offsetHeight;
+  const h = asAuthored([panel], () => panel.offsetHeight);
   fullHeights.set(panel, h);
   return h;
 };
 
-export function alonePanels(el: HTMLElement) {
-  const left = q(el, "card-left");
-  const right = q(el, "card-right");
-  const vs = q(el, "vs");
-  const bars = q(el, "bar");
+/**
+ * `only` is the phone's cut of a beat the wide layout plays as one.
+ *
+ * Above the gate the two comparison panels are side by side and arrive
+ * together, which is the section's whole argument put on the screen at once. In
+ * the column they are 590px apart — one of them is a windowful below the fold
+ * when the other clears it — so the phone plays this twice, a panel at a time,
+ * each on its own trigger. See SectionSpec.column.
+ *
+ * Undefined means all of them, which is what the wide tier passes and what the
+ * factory did before there was a phone to cut it for.
+ */
+export function alonePanels(el: HTMLElement, only?: number) {
+  const both = [...q(el, "card-left"), ...q(el, "card-right")];
+  const panels = only === undefined ? both : both.slice(only, only + 1);
+  /* The badge sits in the gap BETWEEN the panels, so it belongs to whichever
+     beat brings the second of them: the pair, up here; the lower panel, down
+     there. */
+  const vs = only === 0 ? [] : q(el, "vs");
+  const bars = panels.flatMap((panel) => q(panel, "bar"));
 
   /* No scale. It was the last grow in this section and, at 48px of display
      italic, the one where it showed most. */
-  gsap.set(vs, { opacity: 0 });
+  park(vs, { opacity: 0 });
 
   /*
    * The rails are never hidden — the panels are simply too short to contain
@@ -826,7 +945,9 @@ export function alonePanels(el: HTMLElement) {
    * box — clipping shears that stroke off the bottom edge, which reads as a
    * card cut in half rather than a shorter card.
    */
-  const panels = [...left, ...right];
+  /* Re-measured on every build, so a height cached on the other side of the
+     gate cannot be applied to this one — see grown. */
+  for (const panel of panels) fullHeights.delete(panel);
   for (const panel of panels) grown(panel);
   const shortHeight = (panel: HTMLElement) =>
     panel.querySelector<HTMLElement>("[data-reveal='bar']")?.offsetTop ??
@@ -854,8 +975,8 @@ export function alonePanels(el: HTMLElement) {
      * WITH_HEADING on the beat in sections.ts, which is what the controller
      * queues each beat with.
      */
-    .to(panels, { opacity: 1, y: 0, ...MOTION.alone.cards })
-    .to(vs, { opacity: 0.7, ...MOTION.alone.vs }, "-=0.5");
+    .to(panels, { opacity: 1, y: 0, ...MOTION.alone.cards });
+  move(tl, vs, { opacity: 0.7, ...MOTION.alone.vs }, "-=0.5");
 
   /* The rails that finish these panels are not here — see aloneRails. They are
      at the foot of the section and this beat fires at the head of it. */
@@ -880,19 +1001,34 @@ export function alonePanels(el: HTMLElement) {
  * what brings its rail out. See alonePanels, which parks them short, and the
  * note there on why this is a height and not a clip.
  */
-export function aloneRails(el: HTMLElement) {
-  const panels = [...q(el, "card-left"), ...q(el, "card-right")];
+export function aloneRails(el: HTMLElement, only?: number) {
+  const both = [...q(el, "card-left"), ...q(el, "card-right")];
+  const panels = only === undefined ? both : both.slice(only, only + 1);
   const tl = beat();
-  if (!panels.length) return tl;
+  const panel = panels[0];
+  if (!panel) return tl;
 
   tl.to(panels, {
-    height: (_i, panel: HTMLElement) => grown(panel),
+    height: (_i, p: HTMLElement) => grown(p),
     ...MOTION.alone.bar,
   });
 
-  /* `<` is the start of the growth above rather than its end: the figures count
-     while the rails are coming out, not after they have arrived. */
-  countUp(tl, el, `<+=${MOTION.alone.figures.after}`, MOTION.alone.figures);
+  /*
+   * `<` is the start of the growth above rather than its end: the figures count
+   * while the rails are coming out, not after they have arrived.
+   *
+   * Rooted at the section when both rails open together, so the six figures run
+   * as ONE sweep left to right across the pair — which is what makes it read as
+   * a comparison being totted up rather than each card totalling itself. In the
+   * column the two rails are 590px apart and there is no sweep to be had, so
+   * each is rooted at its own panel and counts its own three.
+   */
+  countUp(
+    tl,
+    only === undefined ? el : panel,
+    `<+=${MOTION.alone.figures.after}`,
+    MOTION.alone.figures,
+  );
 
   return tl;
 }
@@ -917,11 +1053,20 @@ export function aloneRails(el: HTMLElement) {
  * section where this beat's trigger cannot see it, and it now arrives on its
  * own — see approveLedger.
  */
-export function approveDiagram(el: HTMLElement) {
-  const request = q(el, "request");
-  const votes = q(el, "votes");
-  const squad = q(el, "squad");
-  const halo = q(el, "squad-glow");
+export function approveDiagram(el: HTMLElement, only?: number) {
+  /*
+   * `only` is the phone's cut, in the order the column reads: the request, the
+   * card it goes to, the votes that come back. Up here they are three parts of
+   * one object arriving at once, which is the section's whole point; down there
+   * they are 398px and 414px apart in a 302x1675 panel, so one trigger would
+   * spend all three while two of them were below the fold. See
+   * SectionSpec.column.
+   */
+  const part = (i: number) => only === undefined || only === i;
+  const request = part(0) ? q(el, "request") : [];
+  const squad = part(1) ? q(el, "squad") : [];
+  const votes = part(2) ? q(el, "votes") : [];
+  const halo = part(1) ? q(el, "squad-glow") : [];
 
   const { from, shift, lift } = MOTION.enter;
 
@@ -937,21 +1082,36 @@ export function approveDiagram(el: HTMLElement) {
    * window is wider than the stage by a different amount at every size. They
    * never leave the stage now, so there is nothing to measure.
    */
-  gsap.set(request, { opacity: from, x: -shift });
-  gsap.set(votes, { opacity: from, x: shift });
-  gsap.set(squad, { opacity: from, y: lift });
+  park(request, { opacity: from, x: -shift });
+  park(votes, { opacity: from, x: shift });
+  park(squad, { opacity: from, y: lift });
   glowStart(halo);
 
   /* One position for all four, so they are one object arriving rather than
      four elements taking turns — and on the heading's clock, so the diagram and
      the words above it are one movement. */
   const tl = beat();
-  tl.to(request, { opacity: 1, x: 0, ...inStep() }, 0)
-    .to(votes, { opacity: 1, x: 0, ...inStep() }, "<")
-    .to(squad, { opacity: 1, y: 0, ...inStep() }, "<")
-    .to(halo, { opacity: 1, x: 0, y: 0, ...MOTION.approve.glow }, "<");
+  const add = (targets: HTMLElement[], vars: gsap.TweenVars) => {
+    if (targets.length) tl.to(targets, vars, 0);
+  };
+  add(request, { opacity: 1, x: 0, ...inStep() });
+  add(votes, { opacity: 1, x: 0, ...inStep() });
+  add(squad, { opacity: 1, y: 0, ...inStep() });
+  add(halo, { opacity: 1, x: 0, y: 0, ...MOTION.approve.glow });
 
-  trace(tl, el, "-=0.25");
+  /*
+   * The wiring, after the parts it joins.
+   *
+   * One fan across the stage up here, drawn once the diagram has gathered. In
+   * the column it is two dashed drops, each crossing one of the gaps, so each
+   * belongs to the part it arrives AT — the drop into the Squad card is drawn
+   * as the card lands, the drop into the votes as they do. Named rather than
+   * counted, because the two layouts do not draw the same number of lines: see
+   * `runs`.
+   */
+  if (only === undefined) trace(tl, el, "-=0.25");
+  else if (only === 1) traceRuns(tl, runs(el, "squad"), "-=0.25");
+  else if (only === 2) traceRuns(tl, runs(el, "votes"), "-=0.25");
 
   return tl;
 }
@@ -1001,8 +1161,9 @@ export function approveLedger(el: HTMLElement) {
  * The rings in steps 1 and 2 are handled separately and never stop; see
  * worksAmbient.
  */
-export function worksCards(el: HTMLElement) {
-  const steps = q(el, "step");
+export function worksCards(el: HTMLElement, only?: number) {
+  const all = q(el, "step");
+  const steps = only === undefined ? all : all.slice(only, only + 1);
   gsap.set(steps, { opacity: MOTION.enter.from, y: MOTION.enter.lift });
 
   const tl = beat().to(
@@ -1010,8 +1171,14 @@ export function worksCards(el: HTMLElement) {
     { opacity: 1, y: 0, ...inStep(), stagger: MOTION.works.stagger },
     0,
   );
-  /* Then the wiring inside the last two, as the cards settle. */
-  trace(tl, el, "-=0.2");
+  /*
+   * Then the wiring inside the last two, as the cards settle. Scoped to the
+   * card when the phone plays these one at a time — the runs live INSIDE the
+   * step cards here, unlike every other diagram on the page, so a card's own
+   * box is the right root and the stagger between the three disappears with
+   * the beat that had them all.
+   */
+  trace(tl, only === undefined ? el : (steps[0] ?? el), "-=0.2");
   return tl;
 }
 
@@ -1124,13 +1291,12 @@ export function intelMembers(el: HTMLElement) {
      ran 1s against the heading's 1.5 and the aura 1.2 against both, so the
      three things that make up the top of the funnel each finished at a
      different moment. */
-  const tl = beat()
-    .to(
-      members,
-      { opacity: 1, y: 0, ...inStep(), stagger: MOTION.intel.memberStagger },
-      0,
-    )
-    .to(aura, { opacity: 1, x: 0, y: 0, ...inStep() }, 0);
+  const tl = beat().to(
+    members,
+    { opacity: 1, y: 0, ...inStep(), stagger: MOTION.intel.memberStagger },
+    0,
+  );
+  move(tl, aura, { opacity: 1, x: 0, y: 0, ...inStep() }, 0);
 
   /*
    * Absolute positions, and the same one for both: the score and the meter under
@@ -1153,14 +1319,14 @@ export function intelSignals(el: HTMLElement) {
   const signals = q(el, "signals");
   const categories = q(el, "category");
   const nodes = q(el, "node");
-  const fan = q(el, "lines").slice(0, 1);
+  const fan = runs(el, "signals");
 
   gsap.set(signals, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
   gsap.set(categories, {
     opacity: MOTION.enter.from,
     y: MOTION.intel.cardRise,
   });
-  gsap.set(nodes, { opacity: 0 });
+  park(nodes, { opacity: 0 });
 
   const tl = beat().to(signals, { opacity: 1, y: 0, ...inStep() }, 0);
 
@@ -1183,7 +1349,8 @@ export function intelSignals(el: HTMLElement) {
 
   /* The dot and the run that lands on it belong to the connector rather than to
      the row, so they stay chained off the row's own end. */
-  tl.to(
+  move(
+    tl,
     nodes,
     { opacity: 1, ...MOTION.trace.node },
     MOTION.copy.duration - 0.3,
@@ -1198,7 +1365,7 @@ export function intelHub(el: HTMLElement) {
   gsap.set(hub, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
 
   const tl = beat().to(hub, { opacity: 1, y: 0, ...inStep() }, 0);
-  traceRuns(tl, q(el, "lines").slice(1, 2), "-=0.5");
+  traceRuns(tl, runs(el, "hub"), "-=0.5");
   return tl;
 }
 
@@ -1245,7 +1412,7 @@ export function intelVerdict(el: HTMLElement) {
   gsap.set(verdict, { opacity: MOTION.enter.from, y: MOTION.intel.rise });
 
   const tl = beat().to(verdict, { opacity: 1, y: 0, ...inStep() }, 0);
-  traceRuns(tl, q(el, "lines").slice(2), 0);
+  traceRuns(tl, runs(el, "verdict"), 0);
   return tl;
 }
 
@@ -1275,10 +1442,23 @@ export function intelVerdict(el: HTMLElement) {
  */
 
 /** The top row: the lane being spent down, and the member covering it. */
-export function lifeLanes(el: HTMLElement) {
-  const cards = [...q(el, "lane"), ...q(el, "cover")];
-  const items = q(el, "item");
-  const aura = q(el, "aura");
+export function lifeLanes(el: HTMLElement, only?: number) {
+  /*
+   * `only` is the phone's cut: the lane, then the one covering it. Side by side
+   * they are a pair and arrive as a pair; stacked they are 227px apart, which
+   * is far enough that the second is below the fold when the first sets off and
+   * near enough that the two triggers are barely a flick apart — so the pair
+   * survives as a pair, with a beat between them. See SectionSpec.column.
+   */
+  const both = [...q(el, "lane"), ...q(el, "cover")];
+  const cards = only === undefined ? both : both.slice(only, only + 1);
+  /* Rooted at the cards rather than the section, so a cut beat takes the items
+     that belong to it and no others. Identical to the section-wide set when
+     nothing is cut: every [data-reveal='item'] here is inside one of these two. */
+  const items = cards.flatMap((card) => q(card, "item"));
+  /* The light belongs to the row rather than to either card, so it comes in
+     with the first thing that arrives. */
+  const aura = only === 1 ? [] : q(el, "aura");
 
   gsap.set(cards, { opacity: MOTION.enter.from, y: MOTION.enter.lift });
   gsap.set(items, { opacity: MOTION.enter.from, y: MOTION.life.itemRise });
@@ -1301,8 +1481,8 @@ export function lifeLanes(el: HTMLElement) {
       items,
       { opacity: 1, y: 0, ...inStep(), stagger: MOTION.life.itemStagger },
       0,
-    )
-    .to(aura, { opacity: 1, x: 0, y: 0, ...inStep() }, 0);
+    );
+  move(tl, aura, { opacity: 1, x: 0, y: 0, ...inStep() }, 0);
 
   /*
    * The lane's own readout: $3,860 counting up while the bar under it fills to
@@ -1316,7 +1496,7 @@ export function lifeLanes(el: HTMLElement) {
    * fires.
    */
   const { figures } = MOTION.life;
-  const lane = q(el, "lane")[0];
+  const lane = cards.find((card) => card.dataset.reveal === "lane");
   if (lane) {
     countUp(tl, lane, figures.after, figures);
     meters(tl, lane, figures.after, figures.meter, figures.stagger);
@@ -1324,8 +1504,9 @@ export function lifeLanes(el: HTMLElement) {
 
   /* And the hairline between the two faces, drawn last — a payment travelling
      from one of them to the other is the one thing on this row that is an
-     event rather than a state. */
-  trace(tl, el, "-=0.4");
+     event rather than a state. It lives inside the cover card, so a cut beat
+     rooted there finds it and the lane's beat correctly finds nothing. */
+  trace(tl, only === undefined ? el : (cards[0] ?? el), "-=0.4");
   return tl;
 }
 

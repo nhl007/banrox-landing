@@ -1,3 +1,5 @@
+import type gsap from "gsap";
+
 /*
  * Measuring the page as the stylesheet describes it.
  *
@@ -36,6 +38,14 @@
 export const asAuthored = <T>(nodes: HTMLElement[], read: () => T): T => {
   const saved: [HTMLElement, string, string][] = [];
   const seen = new Set<HTMLElement>();
+  const strip = (el: HTMLElement) => {
+    seen.add(el);
+    if (!el.style.transform && !el.style.height) return;
+    saved.push([el, el.style.transform, el.style.height]);
+    el.style.transform = "";
+    el.style.height = "";
+  };
+
   for (const n of nodes)
     for (
       let el: HTMLElement | null = n;
@@ -45,13 +55,27 @@ export const asAuthored = <T>(nodes: HTMLElement[], read: () => T): T => {
       /* An ancestor already cleared for an earlier node has cleared the rest of
          the chain above it too. */
       if (seen.has(el)) break;
-      seen.add(el);
-      if (el.style.transform || el.style.height) {
-        saved.push([el, el.style.transform, el.style.height]);
-        el.style.transform = "";
-        el.style.height = "";
-      }
+      strip(el);
     }
+
+  /*
+   * And anything the sequence is holding SHORT, wherever on the page it is.
+   *
+   * The chain above only reaches ancestors, and a height is the one thing here
+   * that moves elements that are not descendants of it: the comparison panels
+   * are parked 118px short until their strength rail is brought out (see
+   * alonePanels), and on a phone — where a section is as tall as its contents
+   * rather than one window — everything BELOW a parked panel is 118px too high
+   * for as long as it is parked. Measured: the lower panel's own beat fired
+   * 118px early and its rail's 118px after that, both derived from a page that
+   * was not the page.
+   *
+   * Nothing above the gate is affected either way, because up there a section
+   * is min-height one window and a panel parked short does not shorten it.
+   */
+  for (const el of document.querySelectorAll<HTMLElement>("[data-reveal]"))
+    if (el.style.height && !seen.has(el)) strip(el);
+
   try {
     return read();
   } finally {
@@ -62,6 +86,63 @@ export const asAuthored = <T>(nodes: HTMLElement[], read: () => T): T => {
   }
 };
 
+/** Where an element rests, in viewport coordinates. */
+export const authoredRect = (node: HTMLElement) =>
+  asAuthored([node], () => node.getBoundingClientRect());
+
 /** Where an element's top edge rests, in page coordinates. */
 export const authoredTop = (node: HTMLElement) =>
-  asAuthored([node], () => node.getBoundingClientRect().top + window.scrollY);
+  authoredRect(node).top + window.scrollY;
+
+/**
+ * The first thing a beat moves, in the order the page reads.
+ *
+ * The phone tier hangs every beat on its own trigger and this is what it hangs
+ * it on: a beat should set off as the thing it is about clears the fold, and
+ * the thing it is about is whatever it moves that comes first down the page.
+ * Derived from the timeline rather than declared beside it, because it is
+ * already stated once — in the targets — and a selector repeating it in
+ * sections.ts would be one edit away from naming an element the beat no longer
+ * touches.
+ *
+ * Two kinds of target are left out.
+ *
+ * Anything with no box, because half the markup on this page belongs to the
+ * other tier and is `display: none` — a beat's real first element is the first
+ * one the reader could see.
+ *
+ * And the section's ambient light, which is always the earliest thing in the
+ * box and never the thing a beat is about: these are blooms placed far outside
+ * the content they sit behind (the hero's starts 351px above the fan, Life
+ * Inside Squad's aura 152px above its first card), they have no edge to arrive
+ * at, and hanging a trigger on one would fire the beat while the card it
+ * belongs to was still most of a screen away.
+ *
+ * Null when a beat moves nothing this tier renders, which is not a fault: the
+ * hero holds two arrangements of the same five cards and only one of them is
+ * ever the fan.
+ */
+export const leadOf = (tl: gsap.core.Timeline): HTMLElement | null => {
+  const seen = new Set<HTMLElement>();
+  for (const child of tl.getChildren(true, true, false))
+    for (const target of (child as gsap.core.Tween).targets())
+      if (
+        target instanceof HTMLElement &&
+        !target.hasAttribute("data-glow-from") &&
+        target.getClientRects().length
+      )
+        seen.add(target);
+
+  const nodes = [...seen];
+  if (!nodes.length) return null;
+
+  /* One survey for the whole set — where each of them RESTS, not where the beat
+     has just parked it. Same reason authoredTop exists. */
+  return asAuthored(nodes, () =>
+    nodes.reduce((first, n) =>
+      n.getBoundingClientRect().top < first.getBoundingClientRect().top
+        ? n
+        : first,
+    ),
+  );
+};
