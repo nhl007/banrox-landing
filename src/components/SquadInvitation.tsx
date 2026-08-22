@@ -42,7 +42,7 @@ export default function SquadInvitation() {
       <SectionBloom id="invitation" />
       <div className="screen-body relative z-10">
         <div
-          className="screen-copy mx-auto flex max-w-[604px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6"
+          className="screen-copy mx-auto flex max-w-[604px] flex-col items-center gap-4 px-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6"
           data-node-id="9304:25729"
         >
           <div className="flex" data-reveal="copy">
@@ -56,9 +56,11 @@ export default function SquadInvitation() {
             data-node-id="9304:25738"
             data-reveal="copy"
           >
+            {/* The wide layout's break. The phone's two lines fall after
+                "your" instead, which is where the frame wraps it on its own. */}
             <span>{`A squad without `}</span>
-            <span className="font-display italic">{`your people`}</span>
-            <br />
+            <span className="font-display italic">{`your people`}</span>{" "}
+            <br className="hidden sm:inline" />
             {`isn't a squad.`}
           </h2>
 
@@ -79,7 +81,7 @@ export default function SquadInvitation() {
             fits the container exactly — so with no gutter it would touch both
             sides of the screen. Above 604px the scale is capped at 1 and the
             padding costs nothing. */}
-        <div className="screen-payload px-5 sm:px-6" data-node-id="9304:25740">
+        <div className="screen-payload px-4 sm:px-6" data-node-id="9304:25740">
           <div className="stage-viewport stage-fluid">
             <div
               className="stage-sizer"
@@ -115,7 +117,13 @@ export default function SquadInvitation() {
 
                   {/* QR Code Container */}
                   <div
-                    className="relative h-[260px] w-full shrink-0 overflow-hidden rounded-[16px] bg-white/[0.04]"
+                    /* The panel bleeds past the card's 16px padding on the
+                       phone and stops at it from the gate up — both the
+                       artboard's. Down there Figma leaves the 572px container
+                       at its full width inside a 370px card and lets the card's
+                       own clip cut it, so the QR sits on a band that runs edge
+                       to edge with its corners taken off. */
+                    className="relative -mx-4 h-[260px] w-[calc(100%+32px)] shrink-0 overflow-hidden rounded-[16px] bg-white/[0.04] sm:mx-0 sm:w-full"
                     data-node-id="9304:25744"
                     data-reveal="item"
                   >
@@ -151,12 +159,12 @@ export default function SquadInvitation() {
 
                   {/* Invite Link Bar */}
                   <div
-                    className="content-stretch relative flex w-full shrink-0 flex-col items-stretch gap-3 overflow-hidden rounded-lg border-[1.5px] border-solid border-[rgba(255,255,255,0.1)] bg-white/[0.04] p-3 backdrop-blur-sm sm:h-[48px] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:py-[16px] sm:pr-[4px] sm:pl-[20px]"
+                    className="content-stretch relative flex h-[48px] w-full shrink-0 items-center justify-between overflow-hidden rounded-lg border-[1.5px] border-solid border-[rgba(255,255,255,0.3)] bg-white/[0.04] py-[16px] pr-[4px] pl-[20px] backdrop-blur-sm sm:border-[rgba(255,255,255,0.1)]"
                     data-node-id="9304:25749"
                     data-reveal="item"
                   >
                     <p
-                      className="font-sans relative shrink-0 overflow-hidden text-base leading-none font-normal text-ellipsis whitespace-nowrap text-white opacity-70 select-all sm:text-[14px]"
+                      className="font-sans relative shrink-0 overflow-hidden text-[14px] leading-none font-normal text-ellipsis whitespace-nowrap text-white opacity-70 select-all"
                       data-node-id="9304:25750"
                     >
                       {inviteUrl}
@@ -166,7 +174,7 @@ export default function SquadInvitation() {
                     <Button
                       type="button"
                       onClick={handleCopy}
-                      className="content-stretch relative flex h-11 shrink-0 items-center justify-center gap-[8px] py-[16px] pr-[16px] pl-[12px] !rounded-[4px] sm:h-[40px]"
+                      className="content-stretch relative flex h-[40px] shrink-0 items-center justify-center gap-[8px] py-[16px] pr-[16px] pl-[12px] !rounded-[4px]"
                       variant="primary"
                       data-node-id="9304:25751"
                       data-name="CTA - Primary"
@@ -179,7 +187,7 @@ export default function SquadInvitation() {
                         <CopyIcon className="size-[16px]" />
                       </div>
                       <span
-                        className="font-sans relative shrink-0 text-base leading-none font-medium tracking-[-0.24px] whitespace-nowrap text-white sm:text-[12px]"
+                        className="font-sans relative shrink-0 text-[12px] leading-none font-medium tracking-[-0.24px] whitespace-nowrap text-white"
                         data-node-id="9304:25755"
                       >
                         {copied ? "Copied!" : "Copy Link"}
@@ -194,14 +202,14 @@ export default function SquadInvitation() {
                     data-reveal="item"
                   >
                     <div
-                      className="font-heading relative shrink-0 text-2xl leading-[0] font-normal tracking-[-0.28px] whitespace-nowrap sm:text-[28px]"
+                      className="font-heading relative shrink-0 text-[28px] leading-[0] font-normal tracking-[-0.28px] whitespace-nowrap"
                       data-node-id="9304:25757"
                     >
                       <p className="mb-0 leading-[1.2]">Your squad.</p>
                       <p className="leading-[1.2]">Your line.</p>
                     </div>
                     <p
-                      className="font-sans relative w-full shrink-0 text-base leading-[1.55] font-normal tracking-[-0.32px] opacity-70"
+                      className="font-sans relative w-full shrink-0 text-base leading-[1.5] font-normal tracking-[-0.32px] opacity-70"
                       data-node-id="9304:25758"
                     >
                       Apply together. Qualify for more. Spend in your lane.

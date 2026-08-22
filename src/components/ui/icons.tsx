@@ -60,7 +60,9 @@ export function CheckmarkBadge({ className = "" }: { className?: string }) {
 
 export function Reserve({ className = "" }: { className?: string }) {
   return (
-    <span className={`flex size-4 shrink-0 items-center justify-center ${className}`.trim()}>
+    <span
+      className={`flex size-4 shrink-0 items-center justify-center ${className}`.trim()}
+    >
       <Image
         src="/icons/reserve.svg"
         alt=""
@@ -87,8 +89,15 @@ export function Brain({ className = "" }: { className?: string }) {
 /** Sits inset 9.38% inside a 40x40 box, which nets out to the asset's own 32.5px size. */
 export function Fingerprint({ className = "" }: { className?: string }) {
   return (
-    <span className={`flex size-10 shrink-0 items-center justify-center ${className}`.trim()}>
-      <Image src="/icons/fingerprint-small.svg" alt="" width={32.5} height={32.5} />
+    <span
+      className={`flex size-10 shrink-0 items-center justify-center ${className}`.trim()}
+    >
+      <Image
+        src="/icons/fingerprint-small.svg"
+        alt=""
+        width={32.5}
+        height={32.5}
+      />
     </span>
   );
 }
@@ -104,7 +113,13 @@ export type SignalIconKey = keyof typeof SIGNAL_ICONS;
 
 export function SignalIcon({ icon }: { icon: SignalIconKey }) {
   return (
-    <Image src={SIGNAL_ICONS[icon]} alt="" width={16} height={16} className="size-4" />
+    <Image
+      src={SIGNAL_ICONS[icon]}
+      alt=""
+      width={16}
+      height={16}
+      className="size-4"
+    />
   );
 }
 
@@ -263,5 +278,35 @@ export function CopyIcon({ className = "" }: { className?: string }) {
   );
 }
 
+/*
+ * The phone's nav control. Three rules of unequal length in brand blue, which
+ * is what the mobile artboard puts on the right of the pill in place of the
+ * Login and Sign Up buttons the wider layouts carry there.
+ */
+export function MenuIcon({ className = "" }: { className?: string }) {
+  return (
+    <Image
+      src="/icons/menu-03.svg"
+      alt=""
+      width={24}
+      height={24}
+      className={`size-6 ${className}`.trim()}
+    />
+  );
+}
 
-
+/**
+ * The badge glyph for Life Inside Squad. Drawn at half opacity in the export,
+ * which is kept: it is a leaf beside a label, not a symbol being read.
+ */
+export function LeafIcon({ className = "" }: { className?: string }) {
+  return (
+    <Image
+      src="/icons/leaf-01.svg"
+      alt=""
+      width={16}
+      height={16}
+      className={`size-4 ${className}`.trim()}
+    />
+  );
+}

@@ -7,11 +7,15 @@ import SquadCard from "@/components/ui/SquadCard";
  * Five cards fanned across a 1262x516 stage. Positions are the Figma offsets
  * relative to the group origin; z-order follows Figma's layer order, which is
  * why Mika sits over Aram and Lilit sits over David.
+ *
+ * The four files are exported as well as placed, because the phone fans the
+ * same four people in a different arrangement — see HERO_FAN_PHONE in Hero.tsx.
+ * The data belongs to the people; only left/top/z belong to a layout.
  */
 
 type Placed = PassportCardProps & { left: number; top: number; z: string };
 
-const cards: Placed[] = [
+export const cards: Placed[] = [
   {
     left: 0,
     top: 0,

@@ -140,7 +140,12 @@ export default function Twinkle({ className }: { className?: string }) {
       ctx.globalCompositeOperation = "source-over";
       for (let i = 0; i < stars.length; i++) {
         const d = size(i);
-        ctx.clearRect(stars[i].x * scale + ox - d / 2, stars[i].y * scale + oy - d / 2, d, d);
+        ctx.clearRect(
+          stars[i].x * scale + ox - d / 2,
+          stars[i].y * scale + oy - d / 2,
+          d,
+          d,
+        );
       }
 
       ctx.globalCompositeOperation = "lighter";

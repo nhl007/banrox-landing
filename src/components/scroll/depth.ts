@@ -203,8 +203,8 @@ export const PARALLAX = {
    * How much of the space between a section's heading and its payload the depth
    * system may spend, as a fraction of it.
    *
-   * The two move independently and they can move towards each other: in three
-   * of the seven the heading is a near layer, so it drifts DOWN as the section
+   * The two move independently and they can move towards each other: in most
+   * of them the heading is a near layer, so it drifts DOWN as the section
    * rises into the window, while something at the top of the payload is a far
    * layer drifting UP to meet it. The space they have to do that in is
    * --screen-gap, which is 3.2svh — 34px on a 1080-tall window and 23px on a
@@ -429,6 +429,33 @@ export const SCENE: SectionDepth[] = [
       { find: "[data-reveal='signals']", depth: -12 },
       { find: "[data-reveal='hub']", depth: 30 },
       { find: "[data-reveal='verdict']", depth: 55 },
+    ],
+  },
+
+  {
+    /*
+     * LIFE INSIDE SQUAD → INVITE YOUR SQUAD — a week, laid out flat.
+     *
+     * The funnel above this was a tunnel; this is the opposite arrangement and
+     * is layered to say so. Nothing here is behind anything else: the two cards
+     * on the top row are both NEAR layers, drifting up out of the window a
+     * little faster than the page does, and the ledger under them is the one
+     * thing set back — it is the summary the two above it add up to, so it
+     * lingers while they leave.
+     *
+     * The two are swayed apart rather than given different depths, because they
+     * are a pair and a pair that separates in Z reads as one of them being
+     * wrong. Sideways they simply open and close, which is what a pair does.
+     * Safe here because the stage clips both axes — see .stage-viewport-clip.
+     */
+    id: "life",
+    gain: 0.74,
+    layers: [
+      { find: "[data-reveal='aura']", depth: 120, light: true },
+      { find: ".screen-copy", depth: -30 },
+      { find: "[data-reveal='lane']", depth: -36, sway: -14 },
+      { find: "[data-reveal='cover']", depth: -36, sway: 14 },
+      { find: "[data-reveal='health']", depth: 46 },
     ],
   },
 

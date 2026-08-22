@@ -186,7 +186,7 @@ function Step2Figure() {
         <ScoreBadge
           person={PEOPLE.aram}
           personKey="aram"
-          score={645}
+          score={588}
           rating="Fair"
         />
       </div>
@@ -194,8 +194,8 @@ function Step2Figure() {
         <ScoreBadge
           person={PEOPLE.mika}
           personKey="mika"
-          score={590}
-          rating="Poor"
+          score={502}
+          rating="Fair"
         />
       </div>
       <div className="absolute top-[164px] right-[17px]">
@@ -230,8 +230,8 @@ function Step2Figure() {
             Group Score
           </p>
           <div className="flex flex-col items-center gap-1 leading-none">
-            <p className="font-heading text-[24px] text-white">718</p>
-            <p className="font-heading text-success text-sm font-semibold sm:text-[12px]">
+            <p className="font-heading text-[24px] text-white">842</p>
+            <p className="font-heading text-success text-[12px] font-semibold">
               Good
             </p>
           </div>
@@ -348,7 +348,7 @@ function Step3Figure() {
               className="w-[3px] rounded-[2px]"
               style={{ height: bar.height, backgroundColor: bar.color }}
             />
-            <div className="flex flex-col items-center text-sm leading-normal tracking-[-0.24px] whitespace-nowrap sm:text-[12px]">
+            <div className="flex flex-col items-center text-[12px] leading-normal tracking-[-0.24px] whitespace-nowrap">
               <p className="font-semibold text-white">{bar.value}</p>
               <p className="font-medium text-white/70">{bar.name}</p>
             </div>
@@ -370,12 +370,12 @@ export default function HowSquadWorks() {
           escape to either side of that. See .screen-glow. */}
       <SectionBloom id="works" />
       <div className="screen-body relative z-10">
-        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<CreditCard />}>How Squad works</Badge>
           </div>
           <h2
-            className="font-heading type-title w-full text-center leading-none font-normal"
+            className="font-heading type-title type-title-lg w-full text-center leading-none font-normal"
             data-reveal="copy"
           >
             Three steps.
@@ -386,7 +386,7 @@ export default function HowSquadWorks() {
 
         {/* No data-reveal on the wrapper: each card grows in on its own, and a
             group fade over the top would flatten that back into one crossfade. */}
-        <div className="screen-payload px-5 sm:px-0">
+        <div className="screen-payload px-4 sm:px-0">
           <div className="stage-viewport stage-fluid">
             <div
               className="stage-sizer"

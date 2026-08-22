@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
-import { ChevronDown } from "@/components/ui/icons";
+import { ChevronDown, MenuIcon } from "@/components/ui/icons";
 
 type NavItem = { label: string; href: string; hasDropdown?: boolean };
 
@@ -58,22 +58,34 @@ export default function NavBar() {
     */
     <header
       /*
-        pb-4 on the phone only. --nav-h is the bar's slot in flow and is read by
-        the deck, which does not exist below the gate — so this is space the
-        phone can have and the deck cannot. It is what separates the pill from
-        the first thing under it, the hero's own top padding being the rest.
+        8px above the pill on a phone and nothing below it — both the artboard's.
+        The mobile frame opens the pill 8px under the status bar and then leaves
+        48px of nothing before the hero's badge, which is the hero's own
+        --screen-pad and not the bar's to supply. --nav-h stays 16 + 56 for the
+        tiers above the gate, where it is the bar's slot in flow and the deck
+        reads it.
       */
-      className="w-full px-4 pt-4 pb-4 sm:px-6 sm:pb-0 lg:px-[100px]"
+      className="w-full px-4 pt-2 sm:px-6 sm:pt-4 lg:px-[100px]"
       data-sequence-section="navbar"
     >
       <nav
-        className="bg-nav-pill relative mx-auto flex h-14 w-full max-w-[1280px] items-center justify-between rounded-xl border-[1.5px] border-white/20 py-1 pr-1 pl-4"
+        /*
+          48px tall on a phone with an even 12px inside it, which is what a pill
+          holding a 24px logo and a 24px control comes to. From the gate up it
+          is 56 with the asymmetric padding the buttons on the right need.
+        */
+        className="bg-nav-pill relative mx-auto flex h-12 w-full max-w-[1280px] items-center justify-between rounded-xl border-[1.5px] border-white/20 p-3 sm:h-14 sm:py-1 sm:pr-1 sm:pl-4"
         data-reveal="nav-pill"
       >
         <Link
           href="/"
           aria-label="Banrox home"
-          className="relative flex h-11 w-[110px] shrink-0 items-center sm:h-6"
+          /*
+            24px tall in both tiers, because that is the logo. The hit area is
+            put back by a pseudo-element rather than by a taller box: a 44px box
+            here would be 44px of a 48px pill and push the logo off its centre.
+          */
+          className="relative flex h-6 w-[110px] shrink-0 items-center after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-['']"
         >
           <Image
             src="/logo.png"
@@ -95,36 +107,34 @@ export default function NavBar() {
 
         <div className="flex shrink-0 items-center gap-1">
           {/* Visibility lives on a wrapper: a `hidden` passed through Button's
-              className would tie with its own `inline-flex` and lose. */}
+              className would tie with its own `inline-flex` and lose.
+
+              Both of them are gone on a phone. The artboard puts nothing on the
+              right of the pill but the menu control — a 48px pill has no room
+              for a 48px button, and the same two calls to action are the first
+              thing under the heading a screen later. */}
           <span className="hidden sm:block">
             <Button href="/login" variant="ghost">
               Login
             </Button>
           </span>
-          <Button href="/signup" variant="primary">
-            Sign Up
-          </Button>
-          {/* 44x44, which is the smallest a finger can be asked to hit. */}
+          <span className="hidden sm:block">
+            <Button href="/signup" variant="primary">
+              Sign Up
+            </Button>
+          </span>
+          {/* 24x24 drawn, 44x44 to a finger: the hit area is a pseudo-element,
+              so the control keeps the size the artboard gives it and the pill
+              keeps its 48px. */}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="nav-drawer"
             aria-label="Toggle navigation"
-            className="text-ink ml-1 flex size-11 items-center justify-center rounded-lg transition-colors active:bg-black/10 md:hidden"
+            className="text-ink relative flex size-6 items-center justify-center transition-opacity active:opacity-60 sm:ml-1 md:hidden after:absolute after:-inset-2.5 after:content-['']"
           >
-            <span className="relative block h-4 w-5">
-              <span
-                className={`absolute left-0 block h-0.5 w-full rounded bg-current transition-transform ${
-                  open ? "top-1/2 rotate-45" : "top-0.5"
-                }`}
-              />
-              <span
-                className={`absolute left-0 block h-0.5 w-full rounded bg-current transition-transform ${
-                  open ? "top-1/2 -rotate-45" : "bottom-0.5"
-                }`}
-              />
-            </span>
+            <MenuIcon />
           </button>
         </div>
       </nav>
@@ -219,6 +229,23 @@ export default function NavBar() {
           >
             Login
           </Link>
+
+          {/*
+            Sign Up moved in here below the gate, where the pill no longer
+            carries it. It is the one thing in the bar that does something
+            rather than going somewhere, and a nav with no way to act on it is
+            not a smaller nav, it is a broken one.
+          */}
+          <Button
+            href="/signup"
+            variant="primary"
+            size="lg"
+            onClick={() => setOpen(false)}
+            tabIndex={open ? 0 : -1}
+            className="mt-2 w-full sm:hidden"
+          >
+            Sign Up
+          </Button>
         </div>
       </div>
     </header>

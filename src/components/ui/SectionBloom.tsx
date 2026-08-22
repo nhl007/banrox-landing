@@ -3,17 +3,18 @@ import Image from "next/image";
 /*
  * The hero's bloom, for the three sections that never had one.
  *
- * Four of the seven screens already carry their own ambient light — the bloom
+ * Five of the eight screens already carry their own ambient light — the bloom
  * and band behind the card fan, the halo behind the approve diagram's Squad
- * card, the aura behind the intelligence funnel, the pair behind the Early
- * Access card. Those are animated where they stand (see glowDrift): they are
- * artwork belonging to a diagram, in that diagram's stage coordinates, and
- * moving them out of it would break the one thing they are for.
+ * card, the aura behind the intelligence funnel, the one over the three cards of
+ * Life Inside Squad, the pair behind the Early Access card. Those are animated
+ * where they stand (see glowDrift): they are artwork belonging to a diagram, in
+ * that diagram's stage coordinates, and moving them out of it would break the
+ * one thing they are for.
  *
  * Alone Vs Together, How Squad Works and Invite Your Squad had none. Rather
  * than draw something new for them, they get the same asset the hero uses,
  * placed in the section instead of in a stage — so the page is lit by one
- * thing throughout rather than by six of one kind and three of another.
+ * thing throughout rather than by five of one kind and three of another.
  *
  * ---------------------------------------------------------------------------
  * WHY EACH ONE ARRIVES FROM SOMEWHERE ELSE
@@ -54,7 +55,13 @@ const BLOOMS: Record<string, Placed> = {
   /* Behind the headings, arriving downwards onto them — see above. Wide and
      shallow rather than round: the heading here is two long lines and a
      sub-paragraph, and the light has to be under all of it. */
-  alone: { from: [0, -1], left: "2%", top: "-20%", width: "96%", height: "70%" },
+  alone: {
+    from: [0, -1],
+    left: "2%",
+    top: "-20%",
+    width: "96%",
+    height: "70%",
+  },
 
   /* Above the cards rather than behind them. The three step cards are the one
      payload on the page that is opaque and fills its screen edge to edge —
@@ -63,7 +70,13 @@ const BLOOMS: Record<string, Placed> = {
      sits in, lit right-heavy rather than centred so that it does not simply
      repeat the section before it: the light came in from the right and it stays
      where it landed. */
-  works: { from: [1, 0.25], left: "34%", top: "0%", width: "64%", height: "48%" },
+  works: {
+    from: [1, 0.25],
+    left: "34%",
+    top: "0%",
+    width: "64%",
+    height: "48%",
+  },
 
   /* Down from the top left, onto the largest single card on the page. Offset to
      one side of it rather than centred on it, so the card is read against the
@@ -94,7 +107,15 @@ export default function SectionBloom({ id }: { id: keyof typeof BLOOMS }) {
   const { from, ...box } = placed;
 
   return (
-    <div className="screen-glow" aria-hidden="true">
+    /*
+      Above the gate only. This is a light the wide layouts were given so that
+      every screen is lit by the same thing; the phone's frame lights
+      these three sections with nothing at all, and the hero's own bloom already
+      carries several hundred pixels down into the first of them. Left on, it
+      put a second, brighter core behind each heading — measured at the top of
+      Alone Vs Together, 151 blue against the artboard's 85.
+    */
+    <div className="screen-glow hidden sm:block" aria-hidden="true">
       <div
         className="absolute"
         style={box}

@@ -42,11 +42,13 @@
   --nav-h: 72px;
 
   /* Shared by .bg-brand-radial and .bg-brand-cta — see the note on each. */
-  --gradient-brand-radial: radial-gradient(ellipse 53% 176% at 50% 50%,
-      var(--color-brand-lighter) 0%,
-      var(--color-brand-mid) 50%,
-      var(--color-brand) 75%,
-      var(--color-brand-deep) 100%);
+  --gradient-brand-radial: radial-gradient(
+    ellipse 53% 176% at 50% 50%,
+    var(--color-brand-lighter) 0%,
+    var(--color-brand-mid) 50%,
+    var(--color-brand) 75%,
+    var(--color-brand-deep) 100%
+  );
 }
 
 @theme inline {
@@ -147,26 +149,31 @@ body {
      * solid #fff across a few percent of the gradient line to read as light
      * rather than as a slightly brighter stretch of ring.
      */
-    linear-gradient(100deg,
-      transparent calc(var(--cta-sheen) - 26%),
-      rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) - 12%),
-      rgba(255, 255, 255, 1) calc(var(--cta-sheen) - 3.5%),
-      rgba(255, 255, 255, 1) calc(var(--cta-sheen) + 3.5%),
-      rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) + 12%),
-      transparent calc(var(--cta-sheen) + 26%)),
-    radial-gradient(ellipse 23% 100% at 50% 0%,
+    linear-gradient(
+        100deg,
+        transparent calc(var(--cta-sheen) - 26%),
+        rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) - 12%),
+        rgba(255, 255, 255, 1) calc(var(--cta-sheen) - 3.5%),
+        rgba(255, 255, 255, 1) calc(var(--cta-sheen) + 3.5%),
+        rgba(255, 255, 255, 0.3) calc(var(--cta-sheen) + 12%),
+        transparent calc(var(--cta-sheen) + 26%)
+      ),
+    radial-gradient(
+      ellipse 23% 100% at 50% 0%,
       rgba(255, 255, 255, 1) 0%,
-      rgba(255, 255, 255, 0) 100%),
-    linear-gradient(180deg,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
       rgba(255, 255, 255, 0.4) 0%,
-      rgba(255, 255, 255, 0.09) 100%),
+      rgba(255, 255, 255, 0.09) 100%
+    ),
     var(--gradient-brand-radial);
   background-origin: border-box;
   background-clip: padding-box, border-box, border-box, border-box, border-box;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-
   /*
    * Registered above rather than left as a plain custom property because only a
    * registered one interpolates — unregistered, this would jump between
@@ -239,17 +246,21 @@ body {
  * and works at every box size these appear at.
  */
 .bg-vignette {
-  background-image: radial-gradient(ellipse at center,
-      rgba(33, 33, 33, 0.004) 0%,
-      rgba(33, 33, 33, 0.04) 100%);
+  background-image: radial-gradient(
+    ellipse at center,
+    rgba(33, 33, 33, 0.004) 0%,
+    rgba(33, 33, 33, 0.04) 100%
+  );
   backdrop-filter: blur(2px);
 }
 
 /* Section badges — a barely-there wash over the dark page. */
 .bg-badge {
-  background-image: linear-gradient(184.41deg,
-      rgba(226, 230, 255, 0.04) 9.68%,
-      rgba(133, 133, 233, 0.04) 79.28%);
+  background-image: linear-gradient(
+    184.41deg,
+    rgba(226, 230, 255, 0.04) 9.68%,
+    rgba(133, 133, 233, 0.04) 79.28%
+  );
 }
 
 /*
@@ -257,18 +268,22 @@ body {
  * white gradient rather than flat white.
  */
 .text-gradient-score {
-  background-image: linear-gradient(to left,
-      rgba(255, 255, 255, 0.5) 0%,
-      #ffffff 100%);
+  background-image: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.5) 0%,
+    #ffffff 100%
+  );
   background-clip: text;
   color: transparent;
 }
 
 /* Bureau wordmarks (Experian / TransUnion / Equifax). */
 .text-gradient-bureau {
-  background-image: linear-gradient(191.86deg,
-      #e2e6ff 3.7%,
-      var(--color-brand-lighter) 51.9%);
+  background-image: linear-gradient(
+    191.86deg,
+    #e2e6ff 3.7%,
+    var(--color-brand-lighter) 51.9%
+  );
   background-clip: text;
   color: transparent;
 }
@@ -315,8 +330,8 @@ body {
   /*
    * Nothing a section contains may reach past its left or right edge.
    *
-   * Three of the seven already said this for themselves, as a utility on the
-   * element, because their arrivals travel sideways. Depth gave the other four
+   * Three of the eight already said this for themselves, as a utility on the
+   * element, because their arrivals travel sideways. Depth gave the rest
    * the same problem: an ambient layer that swells or sways is a transformed
    * box wider than the section it sits in, and a transform that overhangs to
    * the right is *scrollable* overflow — which on this page does more than
@@ -336,15 +351,24 @@ body {
    * On a phone this padding is the space *between* sections, and it is the only
    * thing that says one has ended: they are a column of full-width cards and
    * diagrams on the same dark ground, with no rule or band between them, so a
-   * thin gap reads as one long section rather than seven. 56px each side gives
-   * 112px of nothing, which is a break.
+   * thin gap reads as one long section rather than seven.
+   *
+   * 48px, which is the artboard's. Every section on the mobile frame opens its
+   * badge 48px below its own top edge and closes 48px under the last thing in
+   * it, so the run between any two of them is 96px — measured off the frame,
+   * not chosen: the eight sections butt edge to edge there and all the air
+   * between them is this padding.
+   *
+   * --screen-gap is the other half of the same measurement: the distance from
+   * the foot of a heading block to the head of the diagram under it. 60px on
+   * every one of the six sections that has both.
    *
    * Not height-relative down here. A phone's section is as tall as its contents
    * — often two or three windows — so svh would be measuring the gap against
    * something the section has no relationship to.
    */
-  --screen-pad: 3.5rem;
-  --screen-gap: 2rem;
+  --screen-pad: 3rem;
+  --screen-gap: 3.75rem;
   padding-block: var(--screen-pad);
 }
 
@@ -360,6 +384,31 @@ body {
   .screen {
     --screen-pad: clamp(1.25rem, 4svh, 4rem);
     --screen-gap: clamp(0.75rem, 3.2svh, 3.75rem);
+  }
+}
+
+/*
+ * The hero is the one section that does not take the 60px, and it is drawn that
+ * way: 40px from the waitlist line to the top of the card fan. It is also the
+ * one whose copy block ends in a footnote rather than in a paragraph, and a
+ * footnote wants less air under it than a lede does.
+ *
+ * Stated here rather than as a utility on the section, because .screen is
+ * unlayered and unlayered rules beat every @layer utilities one whatever their
+ * specificity — a `max-sm:[--screen-gap:2.5rem]` on the element would simply
+ * lose to the declaration above.
+ */
+@media (max-width: 640px) {
+  .screen[data-sequence-section="hero"] {
+    --screen-gap: 2.5rem;
+    /*
+     * And 41 under the fan rather than 48, which is the one place the phone's
+     * frame breaks its own rhythm in the other direction. The hero closes on the
+     * foot of a card rather than on a line of type, and a card's edge is a
+     * harder stop than a baseline is — 7px less reads the same. Measured off the
+     * frame: 1319 with the Squad card's foot at 1278.
+     */
+    padding-bottom: 41px;
   }
 }
 
@@ -400,7 +449,9 @@ body {
   width: 100%;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  /* 24px, which is what the mobile frame puts between the three step cards —
+     the only payload on the page that is a column of more than one thing. */
+  gap: 1.5rem;
 }
 
 @media (min-width: 641px) {
@@ -441,17 +492,35 @@ body {
  * far side as well as the near one. Hence the sum, and hence one rule for both
  * tiers rather than two.
  *
- * Below the gate --screen-between is not declared at all and the fallback makes
- * this the section's own padding, which is exactly the missing half: 56 + 56,
- * the same 112px of nothing that separates every other pair down there. Above
- * the gate it is the margin plus the padding, 144 + 36 at 1440x900, which with
- * the last section's own 36 comes to the 216px that separates every other pair
- * up here. Measured both ways rather than asserted — the version of this rule
- * that used the margin alone came out 36px short above the gate and read as the
- * page trailing off rather than ending.
+ * Below the gate --screen-between is not declared at all and the fallback
+ * carries the phone's own answer: the artboard runs 80px from the foot of the
+ * Early Access button to the top of the footer, where every other pair of
+ * sections on it gets 96. Deliberately shorter, and the one place the mobile
+ * frame breaks its own rhythm — the last thing the reader is asked to do sits
+ * closer to what follows it than the sections do to each other. 32 + the
+ * section's own 48 is that 80.
+ *
+ * Above the gate it is the margin plus the padding, 144 + 36 at 1440x900, which
+ * with the last section's own 36 comes to the 216px that separates every other
+ * pair up here. Measured both ways rather than asserted — the version of this
+ * rule that used the margin alone came out 36px short above the gate and read
+ * as the page trailing off rather than ending.
  */
-.scene>.screen:last-child {
-  margin-bottom: calc(var(--screen-between, 0px) + var(--screen-pad));
+.scene > .screen:last-child {
+  /*
+   * 32 on a phone, which with the section's own 48 of padding is the 80 the
+   * frame runs from the foot of the Early Access button to the top of the
+   * footer. Stated flat rather than through the sum below, because down here
+   * the section's padding is already inside the 80 and adding it again counted
+   * it twice — measured, that put the footer 48px lower than the frame does.
+   */
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 641px) and (min-height: 480px) {
+  .scene > .screen:last-child {
+    margin-bottom: calc(var(--screen-between) + var(--screen-pad));
+  }
 }
 
 /*
@@ -473,7 +542,7 @@ body {
     height: 100svh;
   }
 
-  .scene>.screen:first-child {
+  .scene > .screen:first-child {
     height: calc(100svh - var(--nav-h));
   }
 
@@ -518,10 +587,9 @@ body {
     --screen-between: clamp(4rem, 16svh, 11.2rem);
   }
 
-  .scene>.screen+.screen {
+  .scene > .screen + .screen {
     margin-top: var(--screen-between);
   }
-
 }
 
 /*
@@ -535,23 +603,70 @@ body {
  *
  * Body text bottoms out at 1rem. Below 16px iOS zooms the page on focus and
  * everything else is a squint, so the floor is not a matter of taste.
+ *
+ * ---------------------------------------------------------------------------
+ * The three phone sizes are the mobile artboard's, and the vw term is how they
+ * stay the artboard's on a phone that is not 402px wide.
+ *
+ * The frame is drawn at 402. 48px of hero heading is 11.94% of that, 40px of
+ * section title is 9.95%, so the middle term of each clamp lands on the exact
+ * drawn size at 402 and holds the same proportion of the screen either side of
+ * it — a 430px phone gets a slightly larger heading and a 360px one a slightly
+ * smaller, which is what keeps a four-line heading four lines at both. Fixing
+ * the px instead would re-wrap the hero's heading to five lines at 360.
+ *
+ * The floors are not decoration: below about 340px the vw term would take the
+ * hero under 2rem, at which point the heading stops being a heading. It scrolls
+ * a hair wider there instead, which the section's own overflow-x: clip absorbs.
+ *
+ * Both headings are line-height 1 and letter-spacing 0 on the artboard — the
+ * same as they already are from the gate up, so the two tiers now differ in
+ * size alone.
  */
 .type-hero {
-  font-size: clamp(1.7rem, 7vw, 2.5rem);
-  line-height: 1.12;
-  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 11.94vw, 3rem);
+  line-height: 1;
+  letter-spacing: normal;
 }
 
 .type-title {
-  font-size: clamp(1.625rem, 6.6vw, 2.125rem);
-  line-height: 1.15;
-  letter-spacing: -0.015em;
+  font-size: clamp(1.75rem, 9.95vw, 2.5rem);
+  line-height: 1;
+  letter-spacing: normal;
 }
 
+/*
+ * -0.32px, stated here rather than left to the `tracking-[-0.32px]` every
+ * caller already passes.
+ *
+ * This file is unlayered and Tailwind's utilities are in @layer utilities, so an
+ * unlayered declaration here beats every one of them whatever their specificity
+ * — `letter-spacing: normal` on this class was quietly winning against all five
+ * ledes on the page. Measured on Squad Approves: 352px of ink for a line the
+ * artboard sets in 339, which is exactly the 41 characters times the 0.32 that
+ * never applied, and enough to push the paragraph from three lines to four.
+ */
 .type-lede {
   font-size: 1rem;
-  line-height: 1.55;
-  letter-spacing: normal;
+  line-height: 1.5;
+  letter-spacing: -0.32px;
+}
+
+/*
+ * How Squad Works, and only it: the mobile frame sets that heading at the
+ * hero's 48px where every other section title on it is 40. Kept because it is
+ * what the frame draws — two short lines carrying three cards under them, and
+ * the extra 8px is the difference between a label and a title there.
+ *
+ * A modifier rather than a utility on the element, and declared after
+ * .type-title so it wins on equal specificity: this file is unlayered, so a
+ * `text-[48px]` in @layer utilities would lose to .type-title whatever it said.
+ * Nothing above the gate — up there the heading is .type-title's, unchanged.
+ */
+@media (max-width: 640px) {
+  .type-title-lg {
+    font-size: clamp(2rem, 11.94vw, 3rem);
+  }
 }
 
 /*
@@ -612,8 +727,6 @@ body {
   margin-inline: auto;
   text-align: center;
 }
-
-
 
 /* ---------------------------------------------------------------------------
  * Fixed-geometry "stages". Sections whose overlap geometry must survive (the
@@ -748,7 +861,6 @@ body {
  * every stage keeps whatever display it was given.
  */
 @media (max-width: 640px) {
-
   .stage-fluid,
   .stage-fluid .stage-sizer,
   .stage-fluid .stage {
@@ -781,6 +893,61 @@ body {
  * wide, its content box is exactly 360, and the panel is already the size it
  * was drawn at.
  */
+/* ---------------------------------------------------------------------------
+ * The phone's own artboards.
+ *
+ * Three of the diagrams are not reflowed on a phone: the mobile frame redraws
+ * them at 370px wide with everything inside placed against those 370 pixels,
+ * exactly the way the wide layouts are drawn against 564 or 1240. A 370px
+ * artboard fits a 402px phone with the frame's 16px gutter either side and
+ * nothing else, so on anything narrower it has to be scaled rather than
+ * squeezed — the same argument .stage-sizer makes, at a different size.
+ *
+ * Callers set --panel-w and --panel-h (unitless px) on the sizer and nothing
+ * else. The split between fit / sizer / stage is the one .stage uses and for the
+ * same reason: cq units resolve against the nearest *ancestor* container, never
+ * the element's own.
+ *
+ * Above the gate all three step out of the way entirely. They sit INSIDE the
+ * wide layout's .stage (which is itself display:contents below the gate, via
+ * .stage-fluid), so exactly one of the two chains is ever doing anything and
+ * the diagram inside is a direct child of whichever it is. That is what lets
+ * one tree carry both arrangements instead of two trees carrying one each.
+ */
+.panel-fit {
+  width: 100%;
+  container-type: inline-size;
+}
+
+.panel-sizer {
+  /* tan(atan2(a, b)) is length-over-length division — see .stage-sizer. */
+  --panel-scale: min(tan(atan2(100cqw, var(--panel-w) * 1px)), 1);
+  position: relative;
+  /* The scaled box, reserved in layout — the stage inside it is transformed and
+     so takes up its unscaled size no matter what it looks like. */
+  width: calc(var(--panel-w) * 1px * var(--panel-scale));
+  height: calc(var(--panel-h) * 1px * var(--panel-scale));
+  margin-inline: auto;
+}
+
+.panel-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--panel-w) * 1px);
+  height: calc(var(--panel-h) * 1px);
+  transform-origin: top left;
+  transform: scale(var(--panel-scale));
+}
+
+@media (min-width: 641px) {
+  .panel-fit,
+  .panel-sizer,
+  .panel-stage {
+    display: contents;
+  }
+}
+
 .figure-fit {
   width: 100%;
 }
@@ -846,7 +1013,6 @@ body {
 }
 
 @media (min-width: 641px) and (min-height: 480px) {
-
   /*
    * Height is a constraint too, once the section is a fixed screen. `size`
    * rather than `inline-size` is what makes 100cqh mean anything — it is only
@@ -970,7 +1136,6 @@ body {
   [data-reveal] {
     opacity: 0;
   }
-
 }
 
 /*
@@ -999,26 +1164,32 @@ body {
  * line falls.
  */
 .ring-orbit {
-  background: conic-gradient(from 0deg,
-      rgba(150, 190, 255, 0) 0deg,
-      rgba(150, 190, 255, 0.12) 18deg,
-      rgba(198, 222, 255, 0.38) 31deg,
-      rgba(235, 244, 255, 0.8) 38deg,
-      rgba(150, 190, 255, 0) 43deg);
-  -webkit-mask-image: radial-gradient(closest-side,
-      transparent 0 88.2%,
-      rgba(0, 0, 0, 0.12) 88.9%,
-      #000 89.2%,
-      #000 89.45%,
-      rgba(0, 0, 0, 0.12) 89.9%,
-      transparent 90.6%);
-  mask-image: radial-gradient(closest-side,
-      transparent 0 88.2%,
-      rgba(0, 0, 0, 0.12) 88.9%,
-      #000 89.2%,
-      #000 89.45%,
-      rgba(0, 0, 0, 0.12) 89.9%,
-      transparent 90.6%);
+  background: conic-gradient(
+    from 0deg,
+    rgba(150, 190, 255, 0) 0deg,
+    rgba(150, 190, 255, 0.12) 18deg,
+    rgba(198, 222, 255, 0.38) 31deg,
+    rgba(235, 244, 255, 0.8) 38deg,
+    rgba(150, 190, 255, 0) 43deg
+  );
+  -webkit-mask-image: radial-gradient(
+    closest-side,
+    transparent 0 88.2%,
+    rgba(0, 0, 0, 0.12) 88.9%,
+    #000 89.2%,
+    #000 89.45%,
+    rgba(0, 0, 0, 0.12) 89.9%,
+    transparent 90.6%
+  );
+  mask-image: radial-gradient(
+    closest-side,
+    transparent 0 88.2%,
+    rgba(0, 0, 0, 0.12) 88.9%,
+    #000 89.2%,
+    #000 89.45%,
+    rgba(0, 0, 0, 0.12) 89.9%,
+    transparent 90.6%
+  );
   /*
    * Off unless the keyframes below run. A comet parked at a fixed angle is a
    * bright smear on one side of the ring, which is worse than the plain circle
@@ -1060,7 +1231,6 @@ body {
  * that writes `transform` clobbers whatever else was in it.
  */
 @media (prefers-reduced-motion: no-preference) {
-
   /*
    * Translate only, and in 3D. This layer is a 1823px starfield rasterized
    * across the full width of the window; a scale on it would re-raster the
@@ -1176,11 +1346,13 @@ body {
   left: 50%;
   width: 1px;
   transform: translateX(-50%);
-  background: linear-gradient(180deg,
-      transparent,
-      rgba(226, 230, 255, 0.18) 12%,
-      rgba(226, 230, 255, 0.18) 88%,
-      transparent);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(226, 230, 255, 0.18) 12%,
+    rgba(226, 230, 255, 0.18) 88%,
+    transparent
+  );
 }
 
 /*
@@ -1194,9 +1366,11 @@ body {
   width: 1px;
   transform-origin: top center;
   transform: translateX(-50%) scaleY(0);
-  background: linear-gradient(180deg,
-      rgba(133, 133, 233, 0.9),
-      rgba(62, 90, 255, 0.55));
+  background: linear-gradient(
+    180deg,
+    rgba(133, 133, 233, 0.9),
+    rgba(62, 90, 255, 0.55)
+  );
   box-shadow: 0 0 6px rgba(62, 90, 255, 0.55);
   pointer-events: none;
 }

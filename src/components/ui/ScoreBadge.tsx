@@ -27,10 +27,14 @@ export default function ScoreBadge({
 }: ScoreBadgeProps) {
   return (
     <div className="bg-vignette relative flex items-center gap-3 rounded-lg border border-white/10 p-2 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
-      <AvatarRing size={30} person={person} framing={SCORE_FRAMING[personKey]} />
+      <AvatarRing
+        size={30}
+        person={person}
+        framing={SCORE_FRAMING[personKey]}
+      />
       <div className="flex w-[38px] flex-col items-start gap-1 leading-none">
         <p className="font-heading text-[16px] text-white">{score}</p>
-        <p className={`font-heading text-sm sm:text-[12px] ${RATING_TONE[rating]}`}>
+        <p className={`font-heading text-[12px] ${RATING_TONE[rating]}`}>
           {rating}
         </p>
       </div>

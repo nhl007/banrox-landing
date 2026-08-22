@@ -106,7 +106,7 @@ function ContactCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="group relative flex w-full shrink-0 flex-col items-center justify-center gap-8 overflow-hidden rounded-3xl border-[1.5px] border-solid border-white/15 bg-white/[0.03] p-8 sm:w-[392px] sm:gap-[40px] sm:rounded-[32px] sm:p-[40px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[32px] transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-white/30 hover:bg-white/[0.06] hover:shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.14),0_20px_44px_-14px_rgba(38,75,255,0.5)]">
+    <div className="group relative flex min-h-[123px] w-full shrink-0 flex-col items-center justify-center gap-8 overflow-hidden rounded-3xl border-[1.5px] border-solid border-white/15 bg-white/[0.03] px-5 py-4 sm:min-h-0 sm:w-[392px] sm:gap-[40px] sm:rounded-[32px] sm:p-[40px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[32px] transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-white/30 hover:bg-white/[0.06] hover:shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.14),0_20px_44px_-14px_rgba(38,75,255,0.5)]">
       {/* Top Light Highlight Asset (Ellipse 5979). It comes up with the card, so
           the hover reads as a light switching on rather than a box moving. */}
       <div className="pointer-events-none absolute top-[-121.5px] left-[106.84px] h-[121px] w-[356px] opacity-80 transition-opacity duration-300 ease-out group-hover:opacity-100">
@@ -122,10 +122,10 @@ function ContactCard({
       </div>
 
       <div className="relative flex w-full shrink-0 flex-col items-center justify-center gap-[16px] text-center">
-        <h3 className="font-heading relative w-full shrink-0 text-[24px] leading-none font-normal text-white">
+        <h3 className="font-heading relative w-full shrink-0 text-[16px] leading-none font-normal text-white sm:text-[24px]">
           {title}
         </h3>
-        <div className="font-sans relative w-full shrink-0 text-[16px] leading-[1.5] font-normal tracking-[-0.32px] text-white/70">
+        <div className="font-sans relative w-full shrink-0 text-[14px] leading-[1.5] font-normal tracking-[-0.32px] text-white/70 sm:text-[16px]">
           {children}
         </div>
       </div>
@@ -139,7 +139,7 @@ export default function Footer() {
       {/* ========================================================================= */}
       {/* TOP BAND: Starfield, Horizon Glow Arc, BX Vector & Contact Cards           */}
       {/* ========================================================================= */}
-      <div className="relative w-full shrink-0 overflow-hidden bg-[#070712] py-16 sm:h-[738px] sm:py-0">
+      <div className="relative h-[663px] w-full shrink-0 overflow-hidden bg-[#070712] sm:h-[738px]">
         {/*
           The sky. Sized in percentages so it keeps the artboard's own ~13%
           overhang on either side at any width — the asset is 1823 wide against
@@ -149,7 +149,7 @@ export default function Footer() {
           The drift sits on this box so the sky and the stars twinkling in it
           move together — see Twinkle for why those are two layers.
         */}
-        <div className="footer-drift pointer-events-none absolute top-[-61px] left-[-13.3%] h-[772px] w-[126.6%]">
+        <div className="footer-drift pointer-events-none absolute top-[-17px] left-[-61.4%] h-[368px] w-[291.8%] sm:top-[-61px] sm:left-[-13.3%] sm:h-[772px] sm:w-[126.6%]">
           {/* The still field: all 11,290 stars as vectors, so they stay points
               at any width. Off, which leaves the canvas below as the whole sky —
               and leaves nothing at all for reduced motion, no-JS, and the frames
@@ -176,10 +176,7 @@ export default function Footer() {
           rather than a bare percentage so it cannot collapse into a narrow
           vertical ellipse on a phone.
         */}
-        <div
-          className="pointer-events-none absolute top-[205px] left-1/2 h-[1544px] -translate-x-1/2"
-          style={{ width: "max(1544px, 107.23%)" }}
-        >
+        <div className="pointer-events-none absolute top-[210px] left-1/2 h-[447px] w-[447px] -translate-x-1/2 sm:top-[205px] sm:h-[1544px] sm:w-[max(1544px,107.23%)]">
           <div className="footer-horizon absolute inset-[-13.41%]">
             <Image
               src="/footer/ellipse-22065.svg"
@@ -192,7 +189,7 @@ export default function Footer() {
         </div>
 
         {/* Large Stylized 'BX' Watermark Vector */}
-        <div className="pointer-events-none absolute top-[calc(50%+180px)] left-1/2 h-[378px] w-[332px] -translate-x-1/2 -translate-y-1/2">
+        <div className="pointer-events-none absolute top-[calc(50%+251.5px)] left-1/2 h-[212px] w-[186px] -translate-x-1/2 -translate-y-1/2 sm:top-[calc(50%+180px)] sm:h-[378px] sm:w-[332px]">
           <Image
             src="/footer/bx-vector.svg"
             alt=""
@@ -216,7 +213,7 @@ export default function Footer() {
         {/* Stacked on a phone and a row from the gate up. The absolute centring
             goes with it: with the band content-height there is nothing to centre
             against, and the cards are the band. */}
-        <div className="relative z-10 mx-auto grid w-full max-w-[1240px] grid-cols-1 justify-center gap-6 px-5 sm:absolute sm:top-1/2 sm:left-1/2 sm:grid-cols-3 sm:grid-rows-1 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-[32px] sm:px-4">
+        <div className="relative z-10 mx-auto grid w-[214px] max-w-[1240px] grid-cols-1 justify-center gap-4 pt-12 sm:absolute sm:top-1/2 sm:left-1/2 sm:w-full sm:grid-cols-3 sm:grid-rows-1 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-[32px] sm:px-4 sm:pt-0">
           <ContactCard title="Email Us">
             <a
               href="mailto:info@banrox.com"
@@ -263,9 +260,9 @@ export default function Footer() {
 
         {/* Everything below is placed against the artboard, so it lives in the
             centred 1440 column rather than in the full-bleed band. */}
-        <div className="relative mx-auto flex h-full w-full max-w-[1440px] flex-col gap-10 px-5 py-14 sm:block sm:gap-0 sm:px-0 sm:py-0">
+        <div className="relative mx-auto flex h-full w-[370px] max-w-[1440px] flex-col gap-[44px] pt-12 pb-[127px] sm:block sm:w-full sm:gap-0 sm:py-0">
           {/* Bottom Glow Ellipse Assets */}
-          <div className="pointer-events-none absolute bottom-[-119px] left-[calc(50%+571.5px)] size-[669px] -translate-x-1/2">
+          <div className="pointer-events-none absolute bottom-[-65.6px] left-[calc(50%+159.5px)] size-[186.76px] -translate-x-1/2 sm:bottom-[-119px] sm:left-[calc(50%+571.5px)] sm:size-[669px]">
             <div className="absolute inset-[-44.84%]">
               <Image
                 src="/footer/ellipse-6133.svg"
@@ -277,7 +274,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute bottom-[-127px] left-[calc(50%-468px)] size-[640px] -translate-x-1/2">
+          <div className="pointer-events-none absolute bottom-[-67.8px] left-[calc(50%-130.7px)] size-[178.67px] -translate-x-1/2 sm:bottom-[-127px] sm:left-[calc(50%-468px)] sm:size-[640px]">
             <div className="absolute inset-[-46.88%]">
               <Image
                 src="/footer/ellipse-6134.svg"
@@ -289,7 +286,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="pointer-events-none absolute bottom-[-206px] left-[calc(50%+6.5px)] size-[695px] -translate-x-1/2">
+          <div className="pointer-events-none absolute bottom-[-89.9px] left-[calc(50%+1.8px)] size-[194.02px] -translate-x-1/2 sm:bottom-[-206px] sm:left-[calc(50%+6.5px)] sm:size-[695px]">
             <div className="absolute inset-[-43.17%]">
               <Image
                 src="/footer/ellipse-6135.svg"
@@ -301,12 +298,58 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Brand Info & Social Icons (Left Side) */}
+          <div className="relative z-10 flex w-full flex-col items-center gap-[44px] sm:absolute sm:top-[80px] sm:left-[100px] sm:w-[298px] sm:items-start sm:gap-[40px]">
+            {/* White Logomark Asset */}
+            <Link
+              href="/"
+              aria-label="Banrox home"
+              className="relative flex h-[29px] w-[138px] shrink-0 items-center overflow-hidden sm:block sm:h-[32px] sm:w-[150px]"
+            >
+              <Image
+                src="/footer/logo-white.svg"
+                alt="Banrox"
+                width={150}
+                height={32}
+                className="h-[29px] w-[138px] object-contain object-left sm:h-[32px] sm:w-[150px]"
+                priority
+              />
+            </Link>
+
+            {/* Social Icons with exact Figma SVG assets */}
+            <div className="relative flex shrink-0 items-center gap-[16px]">
+              {socials.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="flex size-[40px] shrink-0 items-center justify-center overflow-hidden rounded-[30px] border border-solid border-white/15 bg-[rgba(255,255,255,0.02)] transition-colors hover:bg-white/10 active:bg-white/15"
+                >
+                  <Image
+                    src={social.src}
+                    alt={social.label}
+                    width={social.size}
+                    height={social.size}
+                    style={{ width: social.size, height: social.size }}
+                  />
+                </a>
+              ))}
+            </div>
+            <p className="font-sans w-full text-center text-[14px] leading-[1.5] font-normal tracking-[-0.32px] text-white opacity-70 sm:text-left sm:text-[16px]">
+              Banrox is a financial operating system protecting Americans&apos;
+              credit, identity, privacy, and business health through AI-powered
+              monitoring—24/7
+            </p>
+          </div>
+
           {/* Navigation Links Columns (Right Side) */}
-          <div className="relative z-10 grid w-full grid-cols-2 items-start gap-x-6 gap-y-10 text-[16px] leading-none tracking-[-0.32px] sm:absolute sm:top-[80px] sm:right-[100px] sm:flex sm:w-auto sm:gap-[32px]">
+          <div className="relative z-10 grid w-full grid-cols-2 items-start gap-x-4 gap-y-[44px] text-[16px] leading-none tracking-[-0.32px] sm:absolute sm:top-[80px] sm:right-[100px] sm:flex sm:w-auto sm:gap-[32px]">
             {navColumns.map((column) => (
               <div
                 key={column.title}
-                className="relative flex w-full shrink-0 flex-col items-start gap-4 sm:w-[180px] sm:gap-[32px]"
+                className="relative flex w-full shrink-0 flex-col items-start gap-[28px] sm:w-[180px] sm:gap-[32px]"
               >
                 <h4 className="font-sans w-full font-semibold text-white">
                   {column.title}
@@ -315,7 +358,7 @@ export default function Footer() {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`font-sans flex min-h-[44px] w-full items-center font-normal transition-colors sm:min-h-0 sm:block ${
+                    className={`font-sans block w-full font-normal transition-colors ${
                       "highlight" in item && item.highlight
                         ? "text-[#8585e9]"
                         : "text-white/70 hover:text-white"
@@ -328,55 +371,8 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* Brand Info & Social Icons (Left Side) */}
-          <div className="relative z-10 flex w-full flex-col items-start gap-8 sm:absolute sm:top-[80px] sm:left-[100px] sm:w-[298px] sm:gap-[40px]">
-            {/* White Logomark Asset */}
-            <Link
-              href="/"
-              aria-label="Banrox home"
-              className="relative flex h-11 w-[150px] shrink-0 items-center overflow-hidden sm:block sm:h-[32px]"
-            >
-              <Image
-                src="/footer/logo-white.svg"
-                alt="Banrox"
-                width={150}
-                height={32}
-                className="h-[32px] w-[150px] object-contain object-left"
-                priority
-              />
-            </Link>
-
-            <p className="font-sans w-full text-[16px] leading-[1.5] font-normal tracking-[-0.32px] text-white opacity-70">
-              Banrox is a financial operating system protecting Americans&apos;
-              credit, identity, privacy, and business health through AI-powered
-              monitoring—24/7
-            </p>
-
-            {/* Social Icons with exact Figma SVG assets */}
-            <div className="relative flex shrink-0 items-center gap-[16px]">
-              {socials.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[30px] border border-solid border-white/15 bg-[rgba(255,255,255,0.02)] transition-colors hover:bg-white/10 active:bg-white/15 sm:size-[40px]"
-                >
-                  <Image
-                    src={social.src}
-                    alt={social.label}
-                    width={social.size}
-                    height={social.size}
-                    style={{ width: social.size, height: social.size }}
-                  />
-                </a>
-              ))}
-            </div>
-          </div>
-
           {/* Legal Disclaimer Box */}
-          <div className="font-sans relative z-10 flex w-full flex-col items-start gap-5 overflow-hidden rounded-3xl border-[1.5px] border-solid border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.1)] p-6 text-left text-base font-normal tracking-[-0.28px] text-white backdrop-blur-md sm:absolute sm:top-[584px] sm:left-[100px] sm:w-[1240px] sm:gap-[24px] sm:rounded-[32px] sm:p-[40px] sm:text-center sm:text-[14px]">
+          <div className="font-sans relative z-10 flex w-full flex-col items-start gap-[24px] overflow-hidden rounded-3xl border-[1.5px] border-solid border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.1)] p-5 text-center text-[12px] font-normal tracking-[-0.28px] text-white backdrop-blur-md sm:absolute sm:top-[584px] sm:left-[100px] sm:w-[1240px] sm:rounded-[32px] sm:p-[40px] sm:text-[14px]">
             <p className="w-full leading-[1.5] opacity-70">
               Banrox is a financial operating system protecting Americans&apos;
               credit, identity, privacy, and business health through AI-powered
@@ -397,7 +393,7 @@ export default function Footer() {
           </div>
 
           {/* Bottom Copyright & Terms Bar */}
-          <div className="font-sans relative z-10 flex w-full flex-col items-start gap-4 text-base leading-none font-normal tracking-[-0.28px] text-white uppercase sm:absolute sm:top-[837px] sm:left-[100px] sm:w-[1240px] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:text-[14px] sm:whitespace-nowrap">
+          <div className="font-sans relative z-10 flex w-full flex-col items-center gap-4 text-center text-[14px] leading-none font-normal tracking-[-0.28px] text-white uppercase sm:absolute sm:top-[837px] sm:left-[100px] sm:w-[1240px] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:text-left sm:whitespace-nowrap">
             <p className="opacity-70">
               Copyright © 2025 Banrox Inc. All rights reserved.
             </p>

@@ -110,7 +110,7 @@ const glowIn = (tl: gsap.core.Timeline, el: HTMLElement) => {
  * The heading block: badge, headline, sub-paragraph, each scaling up out of
  * nothing as it rises.
  *
- * Six of the seven sections open exactly this way, and deliberately so — the
+ * Seven of the eight sections open exactly this way, and deliberately so — the
  * payload underneath is where each one gets to be itself, and seven different
  * heading treatments would flatten that rather than add to it.
  */
@@ -1259,6 +1259,102 @@ export function intelVerdict(el: HTMLElement) {
  * instant, so the whole thing reads as one panel arriving rather than a box
  * that lands and is then filled.
  */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Life Inside Squad: a lane, a cover, and the squad's own health.
+ *
+ * Split into two beats rather than one, and not because the section is long —
+ * it is one screen like every other. It is that the health card sits at the
+ * foot of the diagram, and the section's own trigger fires with its top edge a
+ * quarter of the way up the window, which puts that card most of a windowful
+ * below the fold. Measured at 1440x900: 337px past it. So the two cards the
+ * reader can actually see arrive with the heading, and the ledger under them
+ * waits for its own moment — the same bargain aloneRails and approveLedger
+ * strike, for the same reason. See Beat.own.
+ */
+
+/** The top row: the lane being spent down, and the member covering it. */
+export function lifeLanes(el: HTMLElement) {
+  const cards = [...q(el, "lane"), ...q(el, "cover")];
+  const items = q(el, "item");
+  const aura = q(el, "aura");
+
+  gsap.set(cards, { opacity: MOTION.enter.from, y: MOTION.enter.lift });
+  gsap.set(items, { opacity: MOTION.enter.from, y: MOTION.life.itemRise });
+  glowStart(aura);
+
+  /*
+   * All three at position 0, all three on the heading's clock — see `inStep`.
+   * The items sit inside the cards, so their travel is the card's plus their
+   * own; one duration and one ease is what keeps that sum proportional the
+   * whole way rather than the cards arriving and their contents then catching
+   * up inside them.
+   */
+  const tl = beat()
+    .to(
+      cards,
+      { opacity: 1, y: 0, ...inStep(), stagger: MOTION.life.cardStagger },
+      0,
+    )
+    .to(
+      items,
+      { opacity: 1, y: 0, ...inStep(), stagger: MOTION.life.itemStagger },
+      0,
+    )
+    .to(aura, { opacity: 1, x: 0, y: 0, ...inStep() }, 0);
+
+  /*
+   * The lane's own readout: $3,860 counting up while the bar under it fills to
+   * the 71.7% that is the same fact.
+   *
+   * Scoped to the lane card rather than to the section, which is the one thing
+   * here that is not like the other counting beats. Every other section counts
+   * everything it has in one go; this one has a second card of figures at its
+   * foot on a trigger of its own, and a section-wide sweep would spend them
+   * from up here — where nobody can see them — a screen before that trigger
+   * fires.
+   */
+  const { figures } = MOTION.life;
+  const lane = q(el, "lane")[0];
+  if (lane) {
+    countUp(tl, lane, figures.after, figures);
+    meters(tl, lane, figures.after, figures.meter, figures.stagger);
+  }
+
+  /* And the hairline between the two faces, drawn last — a payment travelling
+     from one of them to the other is the one thing on this row that is an
+     event rather than a state. */
+  trace(tl, el, "-=0.4");
+  return tl;
+}
+
+/** The ledger under them, on its own trigger. */
+export function lifeHealth(el: HTMLElement) {
+  const card = q(el, "health");
+  const scores = q(el, "score");
+
+  gsap.set(card, { opacity: MOTION.enter.from, y: MOTION.enter.lift });
+  gsap.set(scores, { opacity: MOTION.enter.from, y: MOTION.life.scoreRise });
+
+  const tl = beat()
+    .to(card, { opacity: 1, y: 0, ...inStep() }, 0)
+    .to(
+      scores,
+      { opacity: 1, y: 0, ...inStep(), stagger: MOTION.life.scoreStagger },
+      0,
+    );
+
+  /* Seven figures on one card — three about the squad and four about the people
+     in it — counted in document order, inside the card that is still arriving.
+     Scoped to it for the reason lifeLanes is scoped to the lane. */
+  const { figures } = MOTION.life;
+  if (card[0]) countUp(tl, card[0], figures.after, figures);
+  return tl;
+}
+
+/* -------------------------------------------------------------------------- */
+
 export function inviteCard(el: HTMLElement) {
   const card = q(el, "card");
   const items = q(el, "item");

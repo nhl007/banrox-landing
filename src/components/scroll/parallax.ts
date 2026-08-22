@@ -162,7 +162,7 @@ type Content = { node: HTMLElement; d: number };
  * its payload — see PARALLAX.spend for why there is a limit at all.
  *
  * The heading and the payload are two blocks with --screen-gap between them and
- * NOTHING else, and depth moves them independently. Three of the seven sections
+ * NOTHING else, and depth moves them independently. Most of the sections
  * give the heading a near depth and something at the top of the payload a far
  * one, which means that as the section rises into the window those two travel
  * towards each other: measured at 1440x720, the approve diagram's Squad card

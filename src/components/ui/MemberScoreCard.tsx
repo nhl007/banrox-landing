@@ -39,7 +39,7 @@ export default function MemberScoreCard({
   meterPercent,
 }: MemberScoreCardProps) {
   return (
-    <div className="relative h-[172px] w-full shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[rgba(8,8,20,0.2)] sm:w-[260px] sm:max-w-none">
+    <div className="relative h-[172px] w-[260px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[rgba(8,8,20,0.2)]">
       <Image
         src="/intel/score-glow-1.svg"
         alt=""

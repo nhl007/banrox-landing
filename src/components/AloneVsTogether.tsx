@@ -16,6 +16,13 @@ import { CLUSTER_FRAMING, PEOPLE, type PersonKey } from "@/data/people";
 const ROW_W = 1240;
 const ROW_H = 628;
 
+/**
+ * And the phone's, which is the same pair stacked: 514 of panel, 24, the 48px
+ * VS, 24, 514 of panel. 370 wide is the mobile frame less its 16px gutters.
+ */
+const PHONE_COLUMN_W = 370;
+const PHONE_COLUMN_H = 1124;
+
 /** The squad cluster: offsets and diameters straight off the artboard. */
 const CLUSTER: {
   person: PersonKey;
@@ -42,7 +49,13 @@ function Separator({ tone }: { tone: "negative" | "success" }) {
 function AloneCard() {
   return (
     <ComparisonCard variant="alone" reveal="card-left">
-      <div className="flex w-full flex-col items-center gap-5 px-4 pt-6 sm:absolute sm:top-[148px] sm:left-1/2 sm:w-[216px] sm:-translate-x-1/2 sm:px-0 sm:pt-0">
+      {/*
+        The verdict, in the middle of the rings. 216 wide at y148 on the wide
+        panel; the same 216 at three quarters the size, dead centre, at y119.5 on
+        the phone's. origin-top is what keeps the top edge on that 119.5 while
+        the box shrinks around its own centre line.
+      */}
+      <div className="absolute top-[119.5px] left-1/2 flex w-[216px] origin-top -translate-x-1/2 scale-75 flex-col items-center gap-5 sm:top-[148px] sm:scale-100">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
             <AvatarRing size={56} tone="muted">
@@ -78,53 +91,53 @@ function AloneCard() {
           </div>
         </div>
 
-        <p className="font-heading w-full text-center text-base leading-[1.5] text-white opacity-50 sm:text-[12px] sm:leading-[1.4]">
+        <p className="font-heading w-full text-center text-[12px] leading-[1.4] text-white opacity-50">
           File, on its own. High DTI. Rebuilding score. No approval.
         </p>
       </div>
 
-      {/* Scattered around the panel on the artboard, a wrapped row underneath
-          the verdict on a phone: their positions mean "all around you", which a
-          564px frame can say and a 320px one cannot. */}
-      <div className="flex flex-wrap justify-center gap-2 px-4 pt-5 sm:contents">
-        <PersonChip
-          person="lilit"
-          reason="Income too low"
-          left={367}
-          top={47}
-        />
-        <PersonChip
-          person="aram"
-          reason="Recent account issue"
-          left={34}
-          top={100}
-        />
-        <PersonChip
-          person="mika"
-          reason="Limited credit history"
-          left={16}
-          top={353}
-        />
-        <PersonChip
-          person="david"
-          reason="High utilization"
-          left={381}
-          top={376}
-        />
-      </div>
+      {/* Scattered around the rings on both artboards — the phone's frame is
+          smaller and pulls them in, so each carries the two positions rather
+          than one and a fallback. */}
+      <PersonChip
+        person="lilit"
+        reason="Income too low"
+        left={367}
+        top={47}
+        phone={{ left: 240.25, top: 63.75 }}
+      />
+      <PersonChip
+        person="aram"
+        reason="Recent account issue"
+        left={34}
+        top={100}
+        phone={{ left: 20.5, top: 83.5 }}
+      />
+      <PersonChip
+        person="mika"
+        reason="Limited credit history"
+        left={16}
+        top={353}
+        phone={{ left: 18, top: 273.25 }}
+      />
+      <PersonChip
+        person="david"
+        reason="High utilization"
+        left={381}
+        top={376}
+        phone={{ left: 220.75, top: 290.5 }}
+      />
 
-      <div className="px-4 pt-5 pb-5 sm:contents">
-        <StrengthBar
-          reveal="bar"
-          title="Alone Strength"
-          note="Not enough approval power."
-          stats={[
-            { value: "502", label: "Credit Score" },
-            { value: "68%", label: "DTI" },
-            { value: "$4.5k", label: "Income" },
-          ]}
-        />
-      </div>
+      <StrengthBar
+        reveal="bar"
+        title="Alone Strength"
+        note="Not enough approval power."
+        stats={[
+          { value: "502", label: "Credit Score" },
+          { value: "68%", label: "DTI" },
+          { value: "$4.5k", label: "Income" },
+        ]}
+      />
     </ComparisonCard>
   );
 }
@@ -132,7 +145,9 @@ function AloneCard() {
 function SquadCard() {
   return (
     <ComparisonCard variant="squad" reveal="card-right">
-      <div className="flex w-full flex-col items-center gap-5 px-4 pt-6 sm:absolute sm:top-[133.5px] sm:left-[calc(50%+1px)] sm:w-[241px] sm:-translate-x-1/2 sm:px-0 sm:pt-0">
+      {/* 241 wide, a pixel right of centre on the wide panel and 1.25 on the
+          phone's — Figma's own nudge in each frame. See the alone card. */}
+      <div className="absolute top-[108.625px] left-[calc(50%+1.25px)] flex w-[241px] origin-top -translate-x-1/2 scale-75 flex-col items-center gap-5 sm:top-[133.5px] sm:left-[calc(50%+1px)] sm:scale-100">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
             {/* AvatarRing is itself `relative`, so placement goes on a wrapper
@@ -172,30 +187,50 @@ function SquadCard() {
           </div>
         </div>
 
-        <p className="w-full max-w-[192px] text-center text-base leading-[1.5] tracking-[-0.24px] text-white/50 sm:text-[12px] sm:leading-[1.4]">
+        <p className="w-full max-w-[192px] text-center text-[12px] leading-[1.4] tracking-[-0.24px] text-white/50">
           Same file. Backed by three others and one shared reserve.
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 px-4 pt-5 sm:contents">
-        <PersonChip person="lilit" approved left={336} top={42} />
-        <PersonChip person="aram" approved left={22} top={76} />
-        <PersonChip person="mika" approved left={16} top={327} />
-        <PersonChip person="david" approved left={373} top={373} />
-      </div>
+      <PersonChip
+        person="lilit"
+        approved
+        left={336}
+        top={42}
+        phone={{ left: 226, top: 60 }}
+      />
+      <PersonChip
+        person="aram"
+        approved
+        left={22}
+        top={76}
+        phone={{ left: 17.5, top: 63.5 }}
+      />
+      <PersonChip
+        person="mika"
+        approved
+        left={16}
+        top={327}
+        phone={{ left: 15, top: 300.75 }}
+      />
+      <PersonChip
+        person="david"
+        approved
+        left={373}
+        top={373}
+        phone={{ left: 217.75, top: 309.25 }}
+      />
 
-      <div className="px-4 pt-5 pb-5 sm:contents">
-        <StrengthBar
-          reveal="bar"
-          title="Squad Strength"
-          note="Higher approval power."
-          stats={[
-            { value: "712", label: "Avg Squad score", positive: true },
-            { value: "34%", label: "Avg DTI", positive: true },
-            { value: "$21.5K", label: "Combined Income", positive: true },
-          ]}
-        />
-      </div>
+      <StrengthBar
+        reveal="bar"
+        title="Squad Strength"
+        note="Higher approval power."
+        stats={[
+          { value: "712", label: "Avg Squad score", positive: true },
+          { value: "34%", label: "Avg DTI", positive: true },
+          { value: "$21.5K", label: "Combined Income", positive: true },
+        ]}
+      />
     </ComparisonCard>
   );
 }
@@ -211,11 +246,11 @@ export default function AloneVsTogether() {
           escape to either side of that. See .screen-glow. */}
       <SectionBloom id="alone" />
       <div className="screen-body relative z-10">
-        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-5 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
+        <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
           <div className="flex" data-reveal="copy">
             <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
           </div>
-          <div className="flex w-full flex-col items-center gap-[clamp(0.5rem,1.8svh,1rem)] text-center">
+          <div className="flex w-full flex-col items-center gap-4 text-center sm:gap-[clamp(0.5rem,1.8svh,1rem)]">
             {/* pb-px: Figma measures this two-line box at 97px where the
                 browser lays it out at 96, which would pull everything below
                 up by a pixel. The glyphs themselves already align. */}
@@ -223,8 +258,13 @@ export default function AloneVsTogether() {
               className="font-heading type-title w-full pb-px leading-none font-normal"
               data-reveal="copy"
             >
-              Alone, each of you falls short.
-              <br />
+              {/* Both breaks are the wide layout's. The phone's frame lets the
+                  heading and the lede wrap where they will — three lines and
+                  two — and its breaks fall in different places than these. A
+                  <br> set to display:none makes no break, so one copy of the
+                  words carries both. */}
+              Alone, each of you falls short.{" "}
+              <br className="hidden sm:inline" />
               <span className="font-display italic">Together,</span> you qualify
               for more.
             </h2>
@@ -232,8 +272,8 @@ export default function AloneVsTogether() {
               className="type-lede type-measure max-w-[604px] tracking-[-0.32px] text-white/70"
               data-reveal="copy"
             >
-              Squad combines your profiles into one group application.
-              <br />
+              Squad combines your profiles into one group application.{" "}
+              <br className="hidden sm:inline" />
               Different strengths, one shared line.
             </p>
           </div>
@@ -252,7 +292,7 @@ export default function AloneVsTogether() {
           beside the existing `overflow-y: hidden` computes back to `hidden`,
           leaving it a scroll container.
         */}
-        <div className="screen-payload px-5 sm:px-0">
+        <div className="screen-payload px-4 sm:px-0">
           <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"
@@ -295,17 +335,38 @@ export default function AloneVsTogether() {
                   cards; there is nothing to scale down there and doing it would
                   just make a phone's cards smaller than its own margins.
                 */}
-                <div className="flex w-full flex-col items-stretch gap-4 sm:h-full sm:scale-[0.92] sm:flex-row sm:items-start sm:gap-28">
-                  <AloneCard />
-                  {/* Between the two panels on a phone, dead centre of the row
-                      from sm: up — the same word doing the same job either way. */}
-                  <span
-                    className="font-display self-center text-[40px] leading-none text-white italic opacity-70 my-6 sm:my-0 sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:self-auto sm:text-[48px]"
-                    data-reveal="vs"
+                {/*
+                  The phone's artboard for the pair: 370x1124, which is panel,
+                  24, VS, 24, panel. Above the gate the three .panel-* elements
+                  are display:contents and the row below is a direct child of
+                  .stage exactly as it was.
+                */}
+                <div className="panel-fit">
+                  <div
+                    className="panel-sizer"
+                    style={
+                      {
+                        "--panel-w": PHONE_COLUMN_W,
+                        "--panel-h": PHONE_COLUMN_H,
+                      } as React.CSSProperties
+                    }
                   >
-                    VS
-                  </span>
-                  <SquadCard />
+                    <div className="panel-stage">
+                      <div className="flex w-full flex-col items-center gap-6 sm:h-full sm:scale-[0.92] sm:flex-row sm:items-start sm:gap-28">
+                        <AloneCard />
+                        {/* Between the two panels on a phone, dead centre of the
+                            row from sm: up — the same word doing the same job
+                            either way. 48px in both, in a 48px box. */}
+                        <span
+                          className="font-display flex h-12 items-center text-[48px] leading-none text-white italic opacity-70 sm:absolute sm:top-1/2 sm:left-1/2 sm:h-auto sm:-translate-x-1/2 sm:-translate-y-1/2"
+                          data-reveal="vs"
+                        >
+                          VS
+                        </span>
+                        <SquadCard />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

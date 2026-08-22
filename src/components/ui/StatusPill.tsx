@@ -24,7 +24,7 @@ export default function StatusPill({ status }: { status: Status }) {
       ) : (
         <span className="bg-pending block size-[3px] shrink-0 rounded-full" />
       )}
-      <span className="font-heading text-sm sm:text-[10px] leading-[1.2] whitespace-nowrap">
+      <span className="font-heading text-[10px] leading-[1.2] whitespace-nowrap">
         {status === "approved" ? (
           "Approved"
         ) : (

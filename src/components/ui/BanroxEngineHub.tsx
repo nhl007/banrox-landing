@@ -7,12 +7,14 @@ import Image from "next/image";
  */
 
 function Dot() {
-  return <span className="bg-white/70 block size-[3px] shrink-0 rounded-full" />;
+  return (
+    <span className="bg-white/70 block size-[3px] shrink-0 rounded-full" />
+  );
 }
 
 export default function BanroxEngineHub() {
   return (
-    <div className="relative h-[336px] w-full max-w-[342px] shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[rgba(8,8,20,0.5)] backdrop-blur-[22px] sm:w-[342px] sm:max-w-none">
+    <div className="relative h-[336px] w-[342px] shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-[rgba(8,8,20,0.5)] backdrop-blur-[22px]">
       {/*
         data-glow: these three never settle — the section's ambient loop breathes
         them for as long as it is on screen (see intelAmbient). Tagged in DOM

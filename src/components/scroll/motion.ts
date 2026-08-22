@@ -181,11 +181,11 @@ export const MOTION = {
    * A section's ambient glow: the soft bloom behind whatever that section is
    * about.
    *
-   * Not new artwork. Four of the seven screens already carried one — the bloom
+   * Not new artwork. Five of the eight screens already carried one — the bloom
    * and band behind the hero's card fan, the halo behind the approve diagram's
-   * Squad card, the aura behind the intelligence funnel, the pair behind the
-   * Early Access card — and the other three now use the same asset (see
-   * SectionBloom). What is new is that all of them move: they arrive from a
+   * Squad card, the aura behind the intelligence funnel, the one over the three
+   * cards of Life Inside Squad, the pair behind the Early Access card — and the
+   * other three now use the same asset (see SectionBloom). What is new is that all of them move: they arrive from a
    * direction rather than fading up in place, and they never settle afterwards.
    *
    * `travel` is how far a glow comes in from, along its section's own direction
@@ -608,6 +608,69 @@ export const MOTION = {
      * rather than the whole bloom pulsing as one plate.
      */
     glow: { duration: 2.2, stagger: 0.28, ease: "sine.inOut", dim: 0.5 },
+  },
+
+  /* --- life inside squad ------------------------------------------------ */
+
+  /*
+   * Three cards that are three moments of one week: a lane being spent down, a
+   * member covering another member, and the squad's own health. So the section
+   * arrives as three statements rather than as one diagram — the two on the top
+   * row together, the ledger under them when the reader reaches it.
+   */
+  life: {
+    /**
+     * The gap between the lane card and the one beside it.
+     *
+     * Small, and the smallest stagger on the page. These two are read as a pair
+     * — a lane, and someone covering it — so they arrive as a pair with just
+     * enough offset to say which one is the subject. Anything longer and the
+     * second card reads as a consequence of the first rather than as the other
+     * half of the same sentence.
+     */
+    cardStagger: 0.09,
+    /**
+     * How far below its place each thing INSIDE a card starts.
+     *
+     * The same 22 the invite card's contents use, and for the same reason: the
+     * item's travel is the card's plus its own, so a short one keeps that sum
+     * proportional instead of the card landing and its contents then sliding
+     * the last stretch into a box that has already stopped.
+     */
+    itemRise: 22,
+    itemStagger: 0.08,
+    /**
+     * The lane's figures, and the bar under them.
+     *
+     * One duration for both because they are one fact stated twice — $3,860
+     * available IS the 71.7% of the bar that is not filled — and a meter that
+     * arrives full under a number still climbing reads as two unrelated
+     * readouts sharing a card. Same argument as the funnel's score cards; the
+     * numbers differ because there are four figures here against that row's
+     * four, spread across two cards rather than one row.
+     *
+     * Decelerating, so the last few hundred tick over slowly enough to be read
+     * as they settle rather than being cut off at full speed.
+     */
+    figures: {
+      count: { duration: 1.8, ease: "power2.out" },
+      meter: { duration: 1.8, ease: "power2.out" },
+      stagger: 0.1,
+      /** Held just long enough that the card is legibly on its way in before
+          the number inside it starts moving. */
+      after: 0.25,
+    },
+    /**
+     * The health card, which arrives on its own trigger at the foot of the
+     * section — see Beat.own.
+     *
+     * Its four score cells are the only staggered thing on it: the three stats
+     * above them are one reading of one squad and land together, where the
+     * scores are four people and are worth counting off. `scoreRise` is short
+     * for the same reason `itemRise` is.
+     */
+    scoreRise: 18,
+    scoreStagger: 0.09,
   },
 
   /* --- squad invitation ------------------------------------------------- */

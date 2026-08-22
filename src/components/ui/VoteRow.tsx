@@ -60,10 +60,16 @@ export default function VoteRow({
 
       <div className="absolute top-1/2 left-0 flex w-full -translate-y-1/2 items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <AvatarRing size={40} person={person} framing={VOTE_FRAMING[personKey]} />
+          <AvatarRing
+            size={40}
+            person={person}
+            framing={VOTE_FRAMING[personKey]}
+          />
           <div className="flex flex-col gap-1 text-[14px] leading-[1.2]">
             <p className="font-heading font-medium text-white">{person.name}</p>
-            <p className={`font-sans text-center font-semibold tracking-[-0.28px] ${TONE[status]}`}>
+            <p
+              className={`font-sans text-center font-semibold tracking-[-0.28px] ${TONE[status]}`}
+            >
               {amount}
             </p>
           </div>

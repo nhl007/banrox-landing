@@ -17,6 +17,8 @@ import {
   intelSignals,
   intelVerdict,
   inviteCard,
+  lifeHealth,
+  lifeLanes,
   traceLoop,
   worksAmbient,
   worksCards,
@@ -98,7 +100,7 @@ export type SectionSpec = {
   /**
    * What sets this section's beats going.
    *
-   * "scroll" is the default and what six of the seven do: the section plays its
+   * "scroll" is the default and what seven of the eight do: the section plays its
    * entrance the first time it is scrolled into view, once, and never again —
    * see the controller.
    *
@@ -249,6 +251,26 @@ export const SECTIONS: SectionSpec[] = [
        once everything above it has arrived and settled. */
     ambient: [intelAmbient, traceLoop, glowDrift],
   },
+  {
+    /*
+     * The one section between the funnel and the invitation, and the only one
+     * that is about a week rather than about a mechanism: a lane being spent
+     * down, a member covering another member, the squad's own health. So the
+     * two cards the reader lands on arrive with the heading and the ledger
+     * under them waits for its own moment — see lifeHealth and Beat.own.
+     */
+    id: "life",
+    label: "Life Inside Squad",
+    beats: [
+      { play: copyIn },
+      { play: lifeLanes, delay: WITH_HEADING },
+      { play: lifeHealth, own: "[data-reveal='health']" },
+    ],
+    /* traceLoop for the hairline between the two faces, which is the one thing
+       in the section still happening once everything has arrived. */
+    ambient: [traceLoop, glowDrift],
+  },
+
   {
     id: "invitation",
     label: "Invite Your Squad",

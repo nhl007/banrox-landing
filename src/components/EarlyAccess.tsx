@@ -31,7 +31,7 @@ function Glow({
 }) {
   return (
     <div
-      className="pointer-events-none absolute -z-10 size-103 -translate-x-1/2"
+      className="pointer-events-none absolute -z-10 hidden size-103 -translate-x-1/2 sm:block"
       style={{ top, left: `calc(50% + ${offsetX}px)` }}
       data-reveal="glow"
       data-glow-from="0.7 -0.7"
@@ -76,11 +76,8 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <div className="flex w-full flex-col gap-2 sm:min-w-px sm:flex-1 sm:gap-0">
-      <label
-        htmlFor={name}
-        className="text-base leading-none font-medium text-white/70 sm:sr-only"
-      >
+    <div className="flex w-full flex-col sm:min-w-px sm:flex-1">
+      <label htmlFor={name} className="sr-only">
         {label}
       </label>
       <input
@@ -100,17 +97,49 @@ function Field({
 export default function EarlyAccess() {
   return (
     <section
-      className="screen relative w-full overflow-x-clip"
+      className="screen relative isolate w-full overflow-x-clip"
       data-sequence-section="early"
     >
-      <div className="screen-body">
+      {/*
+        Ellipses 6150 and 6151 at the size the phone's frame draws them: two
+        260px circles rather than the 412s the wide layout carries, and placed
+        against the section rather than against the card's slot — the mobile
+        frame puts one off the left edge level with the heading and the other
+        just right of centre a little below it.
+
+        Their own files, because the blur does not scale with the circle: Figma
+        blurs both at 130 whatever size the circle is, so shrinking the 932px
+        asset to fit a 260px circle would shrink the blur to 82 with it and turn
+        a wash into a disc. Same circle, same gradient, same opacity, stated at
+        260 with the blur left at 130. Compare the hero's bloom, which has the
+        same problem for the same reason.
+      */}
+      <div className="screen-glow sm:hidden" aria-hidden="true">
+        <Image
+          src="/early/glow-back-phone.svg"
+          alt=""
+          width={780}
+          height={780}
+          className="absolute max-w-none"
+          style={{ left: "calc(50% - 483px)", top: 80.1 }}
+        />
+        <Image
+          src="/early/glow-front-phone.svg"
+          alt=""
+          width={780}
+          height={780}
+          className="absolute max-w-none"
+          style={{ left: "calc(50% - 262px)", top: 99.1 }}
+        />
+      </div>
+      <div className="screen-body relative z-10">
         {/*
           The one section that leads with artwork, so the card takes the flexible
           slot and the words below it take only what they need — the reverse of
           everywhere else. The card keeps its 420x260 proportions and scales
           rather than reflowing.
         */}
-        <div className="screen-payload px-5 sm:px-6">
+        <div className="screen-payload px-4 sm:px-6">
           <Glow src="/early/glow-back.svg" top="79%" offsetX={0} />
           <Glow src="/early/glow-front.svg" top="117%" offsetX={60} />
 
@@ -136,7 +165,7 @@ export default function EarlyAccess() {
           </div>
         </div>
 
-        <div className="screen-copy mx-auto flex max-w-204 flex-col items-center gap-8 px-5 sm:gap-[clamp(1rem,3.2svh,3.75rem)] sm:px-6">
+        <div className="screen-copy mx-auto flex max-w-204 flex-col items-center gap-12 px-4 sm:gap-[clamp(1rem,3.2svh,3.75rem)] sm:px-6">
           <div className="flex w-full flex-col items-center gap-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)]">
             <div className="flex" data-reveal="copy">
               <Badge icon={<CreditCard />}>Early Access</Badge>
@@ -158,8 +187,8 @@ export default function EarlyAccess() {
             </p>
           </div>
 
-          <form className="flex w-full flex-col items-center gap-8 sm:gap-[clamp(1rem,3.2svh,3.75rem)]">
-            <div className="flex w-full flex-col gap-5 sm:flex-row sm:gap-4">
+          <form className="flex w-full flex-col items-center gap-12 sm:gap-[clamp(1rem,3.2svh,3.75rem)]">
+            <div className="flex w-full flex-col gap-4 sm:flex-row">
               <Field
                 name="firstName"
                 label="First Name"
@@ -176,7 +205,7 @@ export default function EarlyAccess() {
 
             <div className="flex w-full flex-col items-center gap-4">
               <p
-                className="w-full text-center text-base leading-normal tracking-[-0.24px] text-white/70 sm:text-xs"
+                className="w-full text-center text-xs leading-normal tracking-[-0.24px] text-white/70"
                 data-reveal="field"
               >
                 <span className="font-medium text-white">2,847</span> people on
@@ -184,12 +213,12 @@ export default function EarlyAccess() {
               </p>
               {/* The wrapper takes the hinge: Button owns its own hover
                   transform, and two owners on one transform collide. */}
-              <div className="flex w-full sm:w-auto" data-reveal="cta">
+              <div className="flex" data-reveal="cta">
                 <Button
                   type="submit"
                   size="lg"
                   icon={<ArrowUpRight />}
-                  className="w-full justify-center sm:w-auto"
+                  className="justify-center"
                 >
                   Join the Waitlist
                 </Button>
