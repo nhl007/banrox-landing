@@ -197,15 +197,19 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
       const foldHero = ({
         trigger,
         start,
+        out = MOTION.hero.fold.out,
       }: {
         trigger: HTMLElement | null;
         start: string;
+        /** How much scrolling it takes, as a fraction of the window. The phone
+            folds a smaller fan over a shorter run — see MOTION.hero.foldPhone. */
+        out?: number;
       }) => {
         const heroEl = section("hero");
         const fold = heroEl && heroFold(heroEl);
         if (!heroEl || !fold || !trigger) return;
 
-        const { out, lag, settle } = MOTION.hero.fold;
+        const { lag, settle } = MOTION.hero.fold;
 
         /*
          * Built late, and it has to be.
@@ -452,9 +456,14 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         }
 
         parallaxScene({ tier: "phone" });
+        /* Not "bottom bottom" — the deck clears the fold too early for that to
+           mean "done with it" any more. It waits `lead` of a window longer, and
+           then folds over a shorter run so that it is finished while the deck is
+           still whole on the screen. See MOTION.hero.foldPhone. */
         foldHero({
           trigger: one(section("hero") ?? document.body, "[data-reveal='fan']"),
-          start: "bottom bottom",
+          start: `bottom bottom-=${MOTION.hero.foldPhone.lead * 100}%`,
+          out: MOTION.hero.foldPhone.out,
         });
 
         /*

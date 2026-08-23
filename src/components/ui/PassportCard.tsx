@@ -8,6 +8,13 @@ import { VerifiedCheck } from "@/components/ui/icons";
  * and scaled by the container that places it (see CardFan).
  */
 
+/**
+ * That design size, stated once and exported, because a container that scales
+ * the card has to divide by it: the phone's deck draws the same card at four
+ * different widths and needs the ratio each of them comes to. See HeroFanPhone.
+ */
+export const PASSPORT_CARD = { width: 260, height: 379 } as const;
+
 const BUREAUS = {
   experian: { src: "/card/logo-experian.svg", label: "Experian", width: 10.1 },
   transunion: {
@@ -72,6 +79,31 @@ export type PassportCardProps = {
   bureaus: [BureauScore, BureauScore, BureauScore];
   metrics: [Metric, Metric, Metric, Metric];
   className?: string;
+  /**
+   * Lay the card out from its right edge instead of its left.
+   *
+   * For a card whose LEFT side is the side nobody sees — the two on the right
+   * of the phone's deck, which are behind the Squad card from their own left
+   * edge inwards (see HeroFanPhone). Unmirrored, the 55px of them that is on
+   * the screen is the tail of the card: the far end of a name, the last bureau
+   * tile, the right-hand column of metrics and an empty strip of the verified
+   * bar. Mirrored, the same 55px is the head of it — the avatar, the name, the
+   * first bureau — so all four cards in the deck lead with a face and the
+   * composition reads outwards from the product in both directions.
+   *
+   * `direction: rtl`, not a scaleX. A flip mirrors the glyphs with everything
+   * else and every label on the card comes out backwards; direction reverses
+   * the LAYOUT and leaves the type alone, which is the whole of what is wanted.
+   * The absolutely-positioned artwork — the three top glows, the fingerprint,
+   * the pieces inside the verified bar, the fill on a bureau meter — follows it
+   * because those are placed on `inset-inline-start` rather than on `left`, so
+   * the mirror is the card's own and not a set of exceptions to it.
+   *
+   * The portrait inside the avatar ring is the one thing that does NOT turn:
+   * AvatarRing frames it on physical left/right, deliberately, because a face
+   * is not a layout.
+   */
+  mirrored?: boolean;
 };
 
 /** Falls back to a straight 300-850 mapping when no explicit fill is given. */
@@ -79,6 +111,19 @@ function meterWidth({ score, fill }: BureauScore) {
   if (fill !== undefined) return Math.min(60, Math.max(0, fill));
   return Math.min(60, Math.max(0, ((score - 300) / 550) * 60));
 }
+
+/*
+ * Every piece of anonymous artwork on this card carries `rtl:` scaleX(-1) as
+ * well as a logical inset, and the two are one idea: on a mirrored card (see
+ * `mirrored`) the inset moves the artwork to the other side and the flip turns
+ * it round, which is what a mirror actually is. Position alone is not enough
+ * for anything with a shape — the verified bar's wave is cut flush with one end
+ * of the bar and fades out at the other, so moved-but-not-turned it puts its
+ * cut edge in the middle of the bar. Visible, and the reason this exists.
+ *
+ * The bureau logos, the metric icons and the portrait in the avatar ring are
+ * NOT in this set. They are marks and a face; the mirror is of the layout.
+ */
 
 /** Blurred triangles that bloom out of the top edge; the card clips them. */
 /*
@@ -107,21 +152,21 @@ function TopGlow() {
         alt=""
         width={420}
         height={339}
-        className={`pointer-events-none absolute -top-[127px] -left-20 max-w-none ${GLOW_HOVER}`}
+        className={`pointer-events-none absolute -top-[127px] -start-20 max-w-none rtl:[transform:scaleX(-1)] ${GLOW_HOVER}`}
       />
       <Image
         src="/card/glow-2.svg"
         alt=""
         width={341}
         height={336}
-        className={`pointer-events-none absolute -top-[124px] -left-9 max-w-none ${GLOW_HOVER}`}
+        className={`pointer-events-none absolute -top-[124px] -start-9 max-w-none rtl:[transform:scaleX(-1)] ${GLOW_HOVER}`}
       />
       <Image
         src="/card/glow-3.svg"
         alt=""
         width={257}
         height={339}
-        className={`pointer-events-none absolute -top-[127px] left-2 max-w-none mix-blend-plus-lighter ${GLOW_HOVER}`}
+        className={`pointer-events-none absolute -top-[127px] start-2 max-w-none mix-blend-plus-lighter rtl:[transform:scaleX(-1)] ${GLOW_HOVER}`}
       />
     </>
   );
@@ -158,7 +203,7 @@ function BureauTile(props: BureauScore) {
         </span>
         <span className="relative block h-[3px] w-[60px] rounded-[20px] bg-white/10">
           <span
-            className="bg-score-meter absolute top-0 left-0 block h-[3px] rounded-[20px]"
+            className="bg-score-meter absolute top-0 start-0 block h-[3px] rounded-[20px]"
             style={{ width: meterWidth(props) }}
           />
         </span>
@@ -176,7 +221,21 @@ function MetricTile({ icon, label, value, tone = "default" }: Metric) {
       {/* Figma marks these nowrap; "Identity & privacy" only just fits. */}
       <span className="font-heading flex flex-col gap-1 leading-none font-medium whitespace-nowrap">
         <span className="text-[8px] text-white opacity-50">{label}</span>
-        <span className={`text-[12px] ${TONES[tone]}`}>{value}</span>
+        {/*
+          <bdi>, and only here. On a mirrored card (see `mirrored`) the text
+          direction is rtl, and "$19,500/mo" is not one run to the bidi
+          algorithm: the digits are weak, the slash between them and "mo" is
+          neutral, so it splits into a number and a word and lays the two out
+          right to left — "mo/$19,500". Measured, on the card that is FIRST in
+          the deck's right-hand rank, in the strip of it the reader can see.
+          An isolate takes its direction from its own first strong character
+          and puts the run back together; it changes nothing in the other four
+          cards, where the paragraph was already ltr. The label above it and
+          every other string on the card are whole words and need none.
+        */}
+        <span className={`text-[12px] ${TONES[tone]}`}>
+          <bdi>{value}</bdi>
+        </span>
       </span>
     </div>
   );
@@ -189,10 +248,13 @@ export default function PassportCard({
   bureaus,
   metrics,
   className = "",
+  mirrored = false,
 }: PassportCardProps) {
   return (
     <div
-      className={`bg-card relative h-[379px] w-[260px] overflow-hidden rounded-2xl border border-white/10 ${className}`.trim()}
+      className={`bg-card relative overflow-hidden rounded-2xl border border-white/10 ${className}`.trim()}
+      style={{ width: PASSPORT_CARD.width, height: PASSPORT_CARD.height }}
+      dir={mirrored ? "rtl" : undefined}
     >
       <TopGlow />
 
@@ -202,10 +264,13 @@ export default function PassportCard({
         alt=""
         width={131}
         height={131}
-        className="pointer-events-none absolute -top-[39px] left-[157px] max-w-none"
+        className="pointer-events-none absolute -top-[39px] start-[157px] max-w-none rtl:[transform:scaleX(-1)]"
       />
 
-      <div className="relative flex w-[260px] flex-col gap-4 p-4">
+      <div
+        className="relative flex flex-col gap-4 p-4"
+        style={{ width: PASSPORT_CARD.width }}
+      >
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <AvatarRing
@@ -256,7 +321,7 @@ export default function PassportCard({
             alt=""
             width={420}
             height={339}
-            className="pointer-events-none absolute -top-[126px] left-[82px] max-w-none"
+            className="pointer-events-none absolute -top-[126px] start-[82px] max-w-none rtl:[transform:scaleX(-1)]"
           />
           {/* Exported at the bar's clip bounds, so it drops straight in. */}
           <Image
@@ -264,9 +329,9 @@ export default function PassportCard({
             alt=""
             width={556}
             height={168}
-            className="pointer-events-none absolute top-0 left-[42.57px] h-14 w-[185.43px] max-w-none"
+            className="pointer-events-none absolute top-0 start-[42.57px] h-14 w-[185.43px] max-w-none rtl:[transform:scaleX(-1)]"
           />
-          <span className="absolute top-[11px] left-[11px] flex items-center gap-2">
+          <span className="absolute top-[11px] start-[11px] flex items-center gap-2">
             <Image
               src="/card/verified-shield.svg"
               alt=""

@@ -27,7 +27,7 @@ import { MOTION } from "./motion";
  * Whether this element is part of the layout the window is currently getting.
  *
  * Two tiers of markup share one DOM tree. The hero holds a fan of five cards
- * laid out across a 1262px stage AND the same five re-stacked two-and-two for a
+ * laid out across a 1262px stage AND the same five re-stacked as a deck for a
  * 370px column; the funnel holds three drawn connectors AND the four dashed
  * drops that replace them; three sections hold a bloom for the wide layout and
  * a differently-sized one for the phone. Exactly one of each pair is rendered
@@ -501,6 +501,17 @@ export function heroCards(el: HTMLElement) {
    */
   gsap.set(anchor, { rotationZ: MOTION.hero.turn });
 
+  /*
+   * The one place the two tiers do not share a number, and the only one they
+   * cannot. Everything else here is measured off whichever layout is rendered
+   * and comes out right by construction; how long a movement should TAKE is not
+   * something the DOM can be asked, and the deck covers a quarter of the wide
+   * fan's distance. The layout says which it is — see the note on
+   * MOTION.hero.fanPhone, and [data-tier] in HeroFanPhone.
+   */
+  const deal =
+    fan[0]?.dataset.tier === "phone" ? MOTION.hero.fanPhone : MOTION.hero.fan;
+
   return (
     beat()
       .to(glow, { opacity: 1, x: 0, y: 0, ...MOTION.hero.glow }, 0)
@@ -511,7 +522,7 @@ export function heroCards(el: HTMLElement) {
       /* Only now does anything come out from behind the Squad card — overlapped
        with the last of the lift, so they start emerging as it finishes standing
        rather than after a pause with nothing happening. */
-      .to(cards, { opacity: 1, x: 0, ...MOTION.hero.fan }, "-=0.35")
+      .to(cards, { opacity: 1, x: 0, ...deal }, "-=0.35")
   );
 }
 

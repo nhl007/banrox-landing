@@ -10,6 +10,14 @@ import Image from "next/image";
 const CARD_W = 420;
 const CARD_H = 260;
 
+/**
+ * That authored face, exported for the same reason PASSPORT_CARD is: a
+ * container placing the card upright has to know what it comes to. Landscape,
+ * as Figma draws it — on its end the two swap, which is what `upright` below
+ * does. See HeroFanPhone, whose whole deck is built out from this height.
+ */
+export const SQUAD_CARD = { width: CARD_W, height: CARD_H } as const;
+
 const engravedText = {
   backgroundImage: "linear-gradient(to bottom, #526cef 0%, #121e57 100%)",
   backgroundClip: "text",

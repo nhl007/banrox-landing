@@ -310,6 +310,31 @@ export const MOTION = {
     fan: { duration: 2, stagger: 0.2, ease: "power1.out" },
 
     /**
+     * The same movement on a phone, where it is not the same movement.
+     *
+     * The one number in the hero that could not be shared between the tiers,
+     * and the reason is arithmetic rather than taste. Up here the four cards
+     * travel 250 and 501px out from the Squad card's centre; the phone's deck
+     * sits them 56 and 126 behind it (see HeroFanPhone), which is a quarter of
+     * the distance. Played at the wide fan's duration that is a quarter of the
+     * speed — four cards easing apart so slowly that the deck reads as settling
+     * rather than opening, and the last of them still arriving long after the
+     * copy above it has finished.
+     *
+     * A distance is not a duration, and the fix is to say the second one too.
+     * Roughly the wide fan's pace over the deck's own distance, which is what
+     * makes the two tiers look like the same gesture rather than the same
+     * timeline.
+     *
+     * The stagger comes down with it and for the same reason: 0.2 between four
+     * cards that each take 1.2 is most of the movement spent waiting. Tight
+     * enough that the deck opens as one hand and loose enough that it is four
+     * cards — they go out back rank first, alternating sides, which is the
+     * order HERO_DECK_PHONE is written in.
+     */
+    fanPhone: { duration: 1.2, stagger: 0.14, ease: "power1.out" },
+
+    /**
      * And the fan closing again on the way out, scrubbed by the scroll rather
      * than played — see heroFold.
      *
@@ -354,6 +379,40 @@ export const MOTION = {
      * be late, because until then there is nothing to scroll past.
      */
     fold: { out: 0.6, stagger: 0.12, lag: 0.6, settle: 2.5 },
+
+    /**
+     * The same fold on a phone, which starts later and finishes sooner — and
+     * has to, because the thing it is folding is a third of the size.
+     *
+     * Both tiers hang the fold on the fan being done with: up here that is the
+     * hero's top edge reaching the top of the window, down there the fan's own
+     * bottom edge clearing the bottom of it. That second rule was written for a
+     * 539px fan and reads completely differently against a 278px deck, because
+     * a shorter thing clears the fold sooner. Measured at rest: the deck's foot
+     * sits 30px under the fold on a 430x932 phone, so the reader nudged the page
+     * a thumb's width to see the whole of it and the fan took that as their cue
+     * to start closing it. The one moment the section is FOR, spent in a
+     * scroll gesture.
+     *
+     * `lead` is what buys that moment back, as a fraction of the window: the
+     * fold waits until the deck's foot has come up 30% of the window past the
+     * fold, which is the point at which it is not merely on the screen but
+     * being looked at. A fraction rather than a distance, and for the same
+     * reason MOTION.own.line is one — it is a position in the reader's view,
+     * and every phone has a different number of pixels for it. Worth checking:
+     * it holds the fold off for 230-280px at every phone size, against 30 at
+     * the worst of them, and it stays positive on a window tall enough to show
+     * the whole hero at once.
+     *
+     * `out` is then shorter than the wide tier's 0.6, and that is forced by the
+     * first half. The fold has to be over while the deck is still on the screen
+     * — it is four cards folding into a fifth, and the fifth being the only one
+     * left is the picture it exists to make. Starting a fifth of a window later
+     * and running the wide tier's distance would finish it with the deck a
+     * third of the way off the top. 0.35 lands it with the deck at the top of
+     * the window and whole, at every size measured.
+     */
+    foldPhone: { lead: 0.3, out: 0.35 },
 
     /**
      * The four passport cards, breathing, once the fan has finished opening.
@@ -601,7 +660,7 @@ export const MOTION = {
        * just long enough that the card is legibly on its way in before the
        * number inside it starts moving.
        */
-      after: 0.5,
+      after: 0.8,
     },
 
     /**

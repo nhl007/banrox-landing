@@ -4,8 +4,8 @@ import Button from "@/components/ui/Button";
 import StageBackdrop from "@/components/ui/StageBackdrop";
 import { ArrowUpRight, CreditCard } from "@/components/ui/icons";
 import CardFan, { FAN_STAGE, cards } from "@/components/CardFan";
-import PassportCard from "@/components/ui/PassportCard";
-import SquadCard from "@/components/ui/SquadCard";
+import PassportCard, { PASSPORT_CARD } from "@/components/ui/PassportCard";
+import SquadCard, { SQUAD_CARD } from "@/components/ui/SquadCard";
 
 /*
  * The ambient bloom behind the card fan — Figma's Ellipse 6145 and 6146. Both
@@ -51,32 +51,116 @@ function HeroGlow() {
 }
 
 /*
- * The phone's fan, which is a different arrangement of the same five cards.
+ * The phone's fan, which is a different arrangement of the same five cards: a
+ * deck rather than a row.
  *
- * Landscape it is one row of four files with the product laid across them;
- * upright there is no room for a row, so the artboard stacks them two and two
- * and stands the Squad card on end in the middle of the four. The passports run
- * off both edges on purpose — the section clips them (overflow-x: clip on
- * .screen) and what is left reads as four files the product is sitting on.
+ * Landscape it is one row of four files with the product laid across them. On a
+ * phone there is no width for a row, so the four passports tuck in BEHIND the
+ * Squad card — centred on one line, each rank drawn smaller than the one in
+ * front of it and stepped further out, so all four show an edge and the card
+ * they are gathered around is the whole of what is on top.
  *
- * Every number here is an offset from the fan's own vertical centre line rather
+ * It replaced a two-and-two arrangement 230px either side of the middle, which
+ * wanted a wider frame than any phone has. Measured at 390: Aram sat entirely
+ * behind Mika and David entirely behind Lilit, so two of the four people the
+ * section is about were not on the screen at all, and the two that were ran off
+ * both edges with their headings cut in half. The deck is the same five cards
+ * in the width a phone actually has — and it says the sentence the hero is
+ * making better than the row did, because a stack whose front card is the
+ * product is that sentence.
+ *
+ * Every horizontal number is an offset from the fan's own centre line rather
  * than from its left edge, because the composition is symmetrical about that
  * line and phones are not all 402px wide. A card whose left edge is fixed at
  * -159 is a different picture at 360 and at 430; a card whose centre is fixed
- * 230px left of the middle is the same picture at both, with a little more or
- * less of it showing. dx is that offset, y is measured from the top of the fan
- * (the artboard's 739).
+ * 126px left of the middle is the same picture at both, with a little more or
+ * less of its outer edge showing.
  *
- * z: Mika over Aram and Lilit over David, which is Figma's own layer order —
- * the two lower cards overlap the two upper ones, so the fan reads as opening
- * towards the reader rather than away.
+ * The widths are the other half of it, and they are the part the row had no
+ * answer for. A passport is authored at 260 and the Squad card at 260 on its
+ * end; at those sizes two passports either side of the product is 900px of
+ * composition. Drawing each rank smaller is what the eye reads as depth AND
+ * what closes the whole deck up to 392px — one phone wide, with the outermost
+ * pair breaking the edge by a couple of pixels the way the frame draws it.
+ *
+ * Nothing is stated as a `top`. Every box in the deck is centred on one
+ * horizontal line, which is what makes the ranks read as one object seen from
+ * the front rather than as four cards that happen to be behind a fifth.
+ *
+ * And the two on the right are laid out from their right edge — see `mirrored`
+ * on PassportCard. Which end of a card is on the screen is a fact about which
+ * side of the deck it is on, so the two facts are the same one: `dx > 0`.
  */
-const HERO_FAN_PHONE = [
-  { name: "Aram Petrosyan", dx: -230, y: 0, z: 10 },
-  { name: "David Melkonyan", dx: 230, y: 0, z: 10 },
-  { name: "Mika Grigoryan", dx: -150, y: 60, z: 20 },
-  { name: "Lilit Sargsyan", dx: 150, y: 60, z: 20 },
-] as const;
+const DECK = {
+  /*
+   * The Squad card on its end — the front of the deck, and the measure
+   * everything else is drawn against. 172 rather than the 260 the row used: the
+   * two ranks behind it have to fit either side within a phone, and 260 leaves
+   * them nowhere to go. It is still the largest thing in the deck by a rank and
+   * still the only card whose face is fully on the screen.
+   */
+  squad: 172,
+  /* The rank immediately behind it, all but hidden: 2px inside the Squad card's
+     edge on both sides when the deck is closed, so the fan opens out of a
+     silhouette with nothing peeking. */
+  inner: { width: 168, dx: 56 },
+  /* And the back of the stack, seen only as an edge. */
+  outer: { width: 140, dx: 126 },
+} as const;
+
+/** The Squad card's box on its end, whose height is the deck's own. */
+const SQUAD_BOX = {
+  width: DECK.squad,
+  height: Math.round((DECK.squad * SQUAD_CARD.width) / SQUAD_CARD.height),
+} as const;
+
+/** A passport drawn at `width`, and the scale that gets it there. */
+function passport(width: number) {
+  return {
+    width,
+    height: Math.round((width * PASSPORT_CARD.height) / PASSPORT_CARD.width),
+    scale: width / PASSPORT_CARD.width,
+  };
+}
+
+/*
+ * The four, in the order they are dealt.
+ *
+ * Left and right are the row's own — Aram and Mika to the left of the product,
+ * Lilit and David to its right — so nobody has swapped sides between the two
+ * tiers. What changed is rank: the pair Figma layered on top (Mika, Lilit) is
+ * the pair nearest the front here, which is the same statement about depth the
+ * wide fan makes with its z-order.
+ *
+ * Outer pair first, so the fan opens back to front and alternates sides as it
+ * goes — see MOTION.hero.fanPhone for the stagger that reads it out.
+ */
+const HERO_DECK_PHONE = [
+  {
+    name: "Aram Petrosyan",
+    dx: -DECK.outer.dx,
+    z: 10,
+    ...passport(DECK.outer.width),
+  },
+  {
+    name: "David Melkonyan",
+    dx: DECK.outer.dx,
+    z: 10,
+    ...passport(DECK.outer.width),
+  },
+  {
+    name: "Mika Grigoryan",
+    dx: -DECK.inner.dx,
+    z: 20,
+    ...passport(DECK.inner.width),
+  },
+  {
+    name: "Lilit Sargsyan",
+    dx: DECK.inner.dx,
+    z: 20,
+    ...passport(DECK.inner.width),
+  },
+];
 
 /**
  * Anything centred on the fan's own middle line, at a given offset from it.
@@ -97,26 +181,45 @@ function onCentre(dx: number, width: number, top: number, zIndex?: number) {
   return { left: `calc(50% + ${dx - width / 2}px)`, top, zIndex } as const;
 }
 
-/** The passport card's own width, and the Squad card's on its end. */
-const PHONE_CARD_W = 260;
+/**
+ * A box in the deck: centred on the fan's middle line at `dx`, and on its one
+ * horizontal line vertically.
+ *
+ * The size goes on this wrapper rather than being left to whatever it contains,
+ * and that is not tidiness. heroCards and heroFold measure where a card sits
+ * when the deck is closed as `offsetLeft + offsetWidth / 2` against the same on
+ * the Squad card, and offsetWidth is the LAYOUT width — it does not know about
+ * a scale transform. A wrapper that shrink-wrapped a scaled 260px card would
+ * measure 260 and every card would fold to the wrong place by half the
+ * difference. The wrapper is the drawn box; the scale lives one level inside it.
+ */
+function inDeck(dx: number, box: { width: number; height: number }, z: number) {
+  return {
+    ...onCentre(dx, box.width, Math.round((SQUAD_BOX.height - box.height) / 2), z),
+    width: box.width,
+    height: box.height,
+  } as const;
+}
 
 function HeroFanPhone() {
   return (
-    /* 739 to 1278 on the artboard: the top of the first passport to the foot of
-       the Squad card.
+    /* As tall as the card at the front of it, which is the tallest thing in it.
+       The ranks behind are shorter and centred, so the deck has its own slack
+       top and bottom and the float never pushes a card out of the box.
 
        The perspective is the same 900px the wide fan's stage carries, and for
        the same reason: the deck opens from lying flat on the display plane, and
        at MOTION.flat.angle a plane with no camera distance to project against
        is a horizontal line. See CardFan. */
     <div
-      className="relative h-[539px] w-full shrink-0 [perspective:900px] sm:hidden"
+      className="relative w-full shrink-0 [perspective:900px] sm:hidden"
+      style={{ height: SQUAD_BOX.height }}
       aria-hidden
     >
       {/*
         Ellipse 6145 — the hero's bloom, at the size the phone's frame draws it:
-        a 634px circle centred 10px right of the middle and 366px down from the
-        top of the fan, against the 1028px one the wide layout carries.
+        a 634px circle centred 10px right of the middle, against the 1028px one
+        the wide layout carries.
 
         Its own file rather than /hero/glow-bloom.svg scaled down, because the
         blur does not scale with the circle. Figma blurs both by the same
@@ -130,6 +233,11 @@ function HeroFanPhone() {
 
         The 1434 box is the circle plus 2 sigma either side, which is how the
         wide one is exported too (1028 + 800 = 1828).
+
+        On the deck's own centre, not the artboard's 366 down from the top of the
+        fan. That number placed a 634px circle under a 539px composition; this
+        one is 278 tall and the same offset would put most of the light below it.
+        The deck has one horizontal line and this is the light behind it.
       */}
       {/*
         Outside the fan, not in it: the fan hinges up off the display plane on
@@ -145,7 +253,7 @@ function HeroFanPhone() {
         width={1434}
         height={1434}
         className="pointer-events-none absolute max-w-none"
-        style={onCentre(10, 1434, 366 - 717)}
+        style={onCentre(10, 1434, Math.round(SQUAD_BOX.height / 2) - 717)}
         data-reveal="glow"
         data-glow-from="0 1"
       />
@@ -156,39 +264,58 @@ function HeroFanPhone() {
         once it has. Exactly the roles the wide fan carries, so both tiers open
         on one timeline — see heroCards, and `shown` in timelines.ts for what
         keeps each of them looking at its own layout.
+
+        [data-tier] is the one thing about the deck the timeline cannot measure
+        for itself: how far these cards travel is a quarter of what the wide fan
+        covers, and a distance is not a duration. See heroCards.
       */}
-      <div className="absolute inset-0" data-reveal="fan">
-        {HERO_FAN_PHONE.map(({ name, dx, y, z }) => {
+      <div className="absolute inset-0" data-reveal="fan" data-tier="phone">
+        {HERO_DECK_PHONE.map(({ name, dx, z, width, height, scale }) => {
           const card = cards.find((c) => c.name === name);
           if (!card) return null;
           return (
             <div
               key={name}
               className="absolute"
-              style={onCentre(dx, PHONE_CARD_W, y, z)}
+              style={inDeck(dx, { width, height }, z)}
               data-reveal="card"
             >
-              <PassportCard
-                name={card.name}
-                subtitle={card.subtitle}
-                avatar={card.avatar}
-                bureaus={card.bureaus}
-                metrics={card.metrics}
-              />
+              {/* The card at its authored 260x379, shrunk into the box above.
+                  A transform rather than a smaller card: every offset inside
+                  PassportCard is Figma's, and a card re-laid-out at 140 would
+                  be a different card — 4px type, a 40px avatar ring at 21, and
+                  a border that no longer lines up with the meters under it. */}
+              <div
+                className="origin-top-left"
+                style={{
+                  width: PASSPORT_CARD.width,
+                  height: PASSPORT_CARD.height,
+                  transform: `scale(${scale})`,
+                }}
+              >
+                <PassportCard
+                  name={card.name}
+                  subtitle={card.subtitle}
+                  avatar={card.avatar}
+                  bureaus={card.bureaus}
+                  metrics={card.metrics}
+                  mirrored={dx > 0}
+                />
+              </div>
             </div>
           );
         })}
 
-        {/* 260x420 standing up, centred, 119px down — and in front of all four.
+        {/* The front of the deck, and in front of all four.
             [data-fan-anchor], like the wide fan's: it is the product and it is
             held still, so the float that keeps the other four alive skips it
             and the fold that puts them away leaves it on the screen alone. */}
         <div
           className="absolute"
-          style={onCentre(0, PHONE_CARD_W, 119, 30)}
+          style={inDeck(0, SQUAD_BOX, 30)}
           data-fan-anchor=""
         >
-          <SquadCard orientation="portrait" size={260} />
+          <SquadCard orientation="portrait" size={SQUAD_BOX.width} />
         </div>
       </div>
     </div>
@@ -319,9 +446,10 @@ export default function Hero() {
             The phone gets its own fan rather than a shrunk copy of the wide
             one. Fitting the 1262px artboard to 360 scales it to 0.28 and lands
             its labels at four pixels, which is not a smaller version of the
-            idea but a picture of one; the artboard answers that by re-stacking
-            the same five cards two-and-two around an upright Squad card at full
-            size. See HeroFanPhone.
+            idea but a picture of one; the answer down here is to re-stack the
+            same five cards as a deck — the four passports tucked in behind an
+            upright Squad card, in ranks, each rank drawn a size smaller than the
+            one in front of it. See HeroFanPhone.
           */}
           <HeroFanPhone />
 
