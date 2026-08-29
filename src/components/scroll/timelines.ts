@@ -457,8 +457,6 @@ const driftOf = (d: { chain: { el: HTMLElement; w: number; h: number }[] }) => {
   return { x, y };
 };
 
-/** Zero at both ends of a leg, one in the middle of it. */
-const arch = (p: number) => 0.5 - Math.cos(2 * Math.PI * p) / 2;
 /** `sine.inOut`, as a number rather than an ease. */
 const soft = (t: number) =>
   0.5 - Math.cos(Math.PI * Math.min(1, Math.max(0, t))) / 2;
@@ -483,6 +481,58 @@ const soft = (t: number) =>
 const glide = (t: number) => {
   const u = Math.min(1, Math.max(0, t));
   return u * u * u * (u * (u * 6 - 15) + 10);
+};
+
+/**
+ * `glide`'s own rate: `30t^2(1-t)^2`, clamped flat outside [0,1].
+ *
+ * Wanted for the lean, which is how fast the card is crossing sideways rather
+ * than how far across it has got — see MOTION.travel.bank. Differentiated
+ * rather than sampled: a central difference of a function this cheap costs more
+ * than its derivative and is only approximately right at the ends, where being
+ * exactly right is what makes the lean exactly zero at a dock.
+ */
+const glideRate = (t: number) => {
+  const u = Math.min(1, Math.max(0, t));
+  return 30 * u * u * (1 - u) * (1 - u);
+};
+
+/** `glide`'s own integral, `t^6 - 3t^5 + 2.5t^4` — half of a unit at t = 1. */
+const glideArea = (t: number) => {
+  const u = Math.min(1, Math.max(0, t));
+  return u * u * u * u * (u * (u - 3) + 2.5);
+};
+
+/**
+ * A ramp from 0 to 1 that leaves at rest, arrives at rest, and runs at a
+ * CONSTANT rate in between — `ease` of it spent getting up to speed at either
+ * end. See MOTION.travel.ease.
+ *
+ * The trapezoid the card's steady half is built on, and the reason there is a
+ * steady half at all. `glide` alone cannot serve: its rate is zero at both ends
+ * AND highest in the middle, so mixing it with the knot path deepens the stalls
+ * instead of filling them. This has a genuine plateau, and it is the plateau
+ * that does the work — between the two ramps the card is covering the same page
+ * per pixel of scroll no matter what the knots are doing.
+ *
+ * Built by integrating the rate profile rather than by pasting three curves
+ * together, so the joins are exact rather than nearly exact: `glide` up over
+ * the first `ease`, one through the middle, `glide` down over the last. Each
+ * ramp covers half of what it would at full rate — that is what `glideArea`
+ * knows — so the whole profile covers `1 - ease` and dividing by that is what
+ * lands it on exactly 1.
+ *
+ * C2 at both docks and at both joins, which the whole path needs and which is
+ * the only reason to do it this carefully.
+ */
+const cruise = (u: number, leave: number, land: number) => {
+  const t = Math.min(1, Math.max(0, u));
+  const a = Math.min(0.49, Math.max(0.0001, leave));
+  const b = Math.min(0.49, Math.max(0.0001, land));
+  const span = 1 - (a + b) / 2;
+  if (t < a) return (a * glideArea(t / a)) / span;
+  if (t > 1 - b) return (span - b * glideArea((1 - t) / b)) / span;
+  return (t - a / 2) / span;
 };
 
 /**
@@ -553,6 +603,12 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
         exactly on that slot and not moving, which is the only stretch a
         hand-over may happen in. See `held` in `apply`. */
     landed: number;
+    /** Where the card is first allowed to MOVE, which is `knots[0].s` on the
+        long leg and the far end of the hero's hand-over on the short one. The
+        steady half of the path is clocked from here rather than from the leg's
+        start, so it contributes exactly nothing while the hero still has its
+        own card up and the two have to be in the same place. */
+    hold0: number;
   };
 
   let docks: Dock[] = [];
@@ -569,6 +625,7 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
    */
   const measure = () => {
     const vh = window.innerHeight;
+    survey();
 
     docks = [
       dockAt(heroSlot, true),
@@ -687,11 +744,19 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
 
       /*
        * One appointment per seam the card crosses: when that seam is centred in
-       * the window, the card is centred in the window too. It is the only
-       * moment in a section's whole crossing when there is nothing for the card
-       * to be behind — one section's light going out and the next one's not yet
-       * up — so it is where it is allowed to be at its brightest and its
-       * lowest.
+       * the window, the card wants to be centred in the window too. It is the
+       * only moment in a section's whole crossing when there is nothing for the
+       * card to be behind — one section's light going out and the next one's
+       * not yet up — so it is where it is allowed to be at its brightest and
+       * its lowest.
+       *
+       * Wants, and no longer exactly gets: what is drawn is this mixed with a
+       * steady glide (see MOTION.travel.rhythm), so the card crosses each seam
+       * a little before or after the appointment rather than on it. That costs
+       * nothing, because the brightness is read off the card's own position
+       * against the seams — `clearance` — and not off the appointment. The
+       * appointments still do the work they were added for, which is to put the
+       * quick part of each descent in the gap between two sections.
        *
        * An appointment the card cannot both REACH and LEAVE at a sane rate is
        * dropped rather than honoured: near a dock the two constraints fight,
@@ -725,12 +790,15 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
            hand-over is the one that has to run against a card the page drew
            itself. See MOTION.travel.handover. */
         landed: i === 0 ? s0 : arrives(from),
+        /* Past the flat head knot where there is one — see the Leg type. */
+        hold0: i === 0 ? knots[1]!.s : s0,
       };
     });
   };
 
   /**
-   * Where the card's centre sits at this scroll.
+   * The SHAPE of the card's descent — where a card obeying the page's rhythm
+   * outright would sit at this scroll. `pathAt` below is what is drawn.
    *
    * `glide` between knots, and each stretch's own progress warped by a power
    * before it is eased — see MOTION.travel.cadence, which ramps that power
@@ -757,6 +825,37 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
   };
 
   /**
+   * And the path the card actually takes: the knots above mixed with a steady
+   * glide from dock to dock. See MOTION.travel.rhythm, which is the mix.
+   *
+   * The knot path alone spends a leg's whole page in its falls, so between two
+   * of them it is exactly stationary — and since every other property the card
+   * has is a function of how far it has travelled, a stationary path is a
+   * frozen object. Four hundred pixels of scroll at a time where nothing about
+   * the card changed at all. This is the fix, and it is a mix rather than a
+   * redrawn path because the mix keeps every property the knots were chosen
+   * for: the card still quickens through a seam and eases over a section, it
+   * simply never arrives at a rate of zero.
+   *
+   * Both ends stay exact and the one hard rule holds, by arithmetic rather than
+   * by care. `cruise` and `pathY` agree at `hold0` and at `s1` — the first
+   * because both are still at the leg's head there, the second because both
+   * finish on the dock — so the mix agrees with them at both. And both are
+   * monotone with `cruise` strictly increasing, so the mix is strictly
+   * increasing: the card cannot climb, and cannot stop.
+   */
+  const pathAt = (leg: Leg, s: number) => {
+    const s1 = leg.knots[leg.knots.length - 1]!.s;
+    const { rhythm, ease } = MOTION.travel;
+    const steady =
+      leg.from.y +
+      (leg.to.y - leg.from.y) *
+        cruise((s - leg.hold0) / (s1 - leg.hold0 || 1), ease.leave, ease.land);
+    const knotted = pathY(leg, s);
+    return steady + (knotted - steady) * rhythm;
+  };
+
+  /**
    * How much of a card the reader is being shown at this page position.
    *
    * Highest in a seam, lowest over a section's payload — which is what turns a
@@ -772,11 +871,167 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
     return 1 - soft(near / (window.innerHeight * 0.5));
   };
 
-  /** The quarter turn, held back to the last stretch of the final approach —
-      and run on travelled page rather than on scroll, so the reader sees the
-      whole of it rather than a third of it at a time. See MOTION.travel.turn. */
-  const turnAt = (w: number) =>
-    glide((w - MOTION.travel.turn) / (1 - MOTION.travel.turn || 1));
+  /*
+   * THE ENVELOPE — the shape of a crossing, and the thing every transit channel
+   * on the card is carried on: OUT over the first of a leg's travelled page,
+   * travelling across the middle, and BACK over the last. See MOTION.travel.form.
+   *
+   * `out` and `home` are the two crossings, each a `glide` and so each C2 at
+   * both of its ends. Their product is the envelope — one by the time the card
+   * has finished leaving, still one until it starts arriving, zero at both
+   * docks exactly rather than nearly.
+   *
+   * Keyed on `long` rather than on the leg, because `measure` needs to ask
+   * these questions before there is a leg to ask them about.
+   */
+  const shape = (long: boolean) =>
+    long ? MOTION.travel.form.long : MOTION.travel.form.lead;
+  const out = (long: boolean, w: number) => glide(w / (shape(long).flat || 1));
+  const home = (long: boolean, w: number) => {
+    const { back } = shape(long);
+    return glide((w - back) / (1 - back || 1));
+  };
+
+  /** How far from its docks the card is: zero at both of them, one across the
+      middle. What the size, the slots' own depth and the lane are all scaled
+      by, so none of them can disagree about when a crossing is over. */
+  const awayAt = (long: boolean, w: number) =>
+    out(long, w) * (1 - home(long, w));
+  /** And its rate — `out` climbing while `home` is still flat, then `home`
+      falling while `out` is. */
+  const awayRate = (long: boolean, w: number) => {
+    const { flat, back } = shape(long);
+    return (
+      (glideRate(w / (flat || 1)) / (flat || 1)) * (1 - home(long, w)) -
+      out(long, w) * (glideRate((w - back) / (1 - back || 1)) / (1 - back || 1))
+    );
+  };
+
+  /**
+   * WHICH LANE the card is heading for at this point of the leg — see
+   * MOTION.travel.sway, which is the pair, and `form.cross` and `form.over`,
+   * which are where the change happens and how long it takes.
+   *
+   * A `glide` from the first to the second, so the change is C2 like everything
+   * else and the card crosses at rest and arrives at rest. Where the two are
+   * equal this is a constant and the whole term disappears, which is what the
+   * short leg does.
+   */
+  const lanes = (long: boolean) => (long ? sway.long : sway.lead);
+  const laneOf = (long: boolean, w: number) => {
+    const { first, second } = lanes(long);
+    const { cross, over } = shape(long);
+    return (
+      first + (second - first) * glide((w - (cross - over / 2)) / (over || 1))
+    );
+  };
+  const laneRate = (long: boolean, w: number) => {
+    const { first, second } = lanes(long);
+    const { cross, over } = shape(long);
+    return (
+      ((second - first) * glideRate((w - (cross - over / 2)) / (over || 1))) /
+      (over || 1)
+    );
+  };
+
+  /**
+   * Where the card actually is sideways, in fractions of the window's width —
+   * the envelope times the lane, so it is exactly on the slot's own centre line
+   * at both docks whatever the lanes say.
+   */
+  const sideAt = (long: boolean, w: number) =>
+    awayAt(long, w) * laneOf(long, w);
+
+  /**
+   * And how FAST it is going sideways — the product rule on the line above,
+   * which is the whole reason it is written analytically rather than sampled.
+   *
+   * This is what the lean is written on. A card tilted in proportion to how far
+   * across it has got is a card that sits at a fixed angle for the length of a
+   * lane; a card tilted in proportion to how fast it is crossing leans over as
+   * it goes out, rides level down each lane, leans the OTHER way through a
+   * change that reverses direction, and comes back to plumb as it arrives.
+   *
+   * Taking the real derivative rather than the envelope's is what makes that
+   * true for any lane pair anyone types, signs included. The envelope alone
+   * knows nothing about which way the card is going, so on a lane to the left
+   * it banked away from the direction of travel, and through a change of sides
+   * it did not bank at all.
+   *
+   * Exactly zero at both docks without being told where they are: `awayRate`
+   * and `awayAt` are both zero there, and every term has one of them in it.
+   */
+  const sideRate = (long: boolean, w: number) =>
+    awayRate(long, w) * laneOf(long, w) + awayAt(long, w) * laneRate(long, w);
+
+  /**
+   * The two numbers the lane needs that are facts about the WINDOW rather than
+   * about the choreography, re-derived on every refresh because both are.
+   *
+   * `swing` is the sharpest the card ever crosses on this leg, which is what
+   * the lean is measured against so that MOTION.travel.bank stays "degrees at
+   * the sharpest crossing" whatever the lanes are set to.
+   *
+   * `fit` is the fraction of the lane the window will take. The card in transit
+   * is a 420x260 face at `far` leaning up to `bank` degrees, and half of that
+   * bounding box has to stay inside half the window — less a fiftieth of the
+   * window at either side, because a card that exactly kisses the edge reads
+   * as one about to be cut off. So if the wider lane would put it past that,
+   * BOTH lanes are scaled down by the same factor. Scaling rather than
+   * clamping is the point: a clamp is a corner, and the card would arrive at
+   * the edge of the window and stop dead. Scaled, the shape and all of its
+   * derivatives survive and only the size gives.
+   *
+   * Sampled rather than solved because `sideAt` is a product of three glides
+   * and its extremum has no useful closed form. Four hundred points twice, on
+   * refresh only.
+   */
+  const swing = { lead: 1, long: 1 };
+  const fit = { lead: 1, long: 1 };
+  const survey = () => {
+    const turned = (Math.abs(MOTION.travel.bank) * Math.PI) / 180;
+    const halfSpan =
+      (far *
+        (SQUAD_CARD.width * Math.cos(turned) +
+          SQUAD_CARD.height * Math.sin(turned))) /
+      2;
+    const room = Math.max(
+      0,
+      window.innerWidth / 2 - halfSpan - window.innerWidth * 0.02,
+    );
+    for (const long of [false, true]) {
+      let peak = 0;
+      let reach = 0;
+      for (let i = 0; i <= 400; i++) {
+        const w = i / 400;
+        peak = Math.max(peak, Math.abs(sideRate(long, w)));
+        reach = Math.max(reach, Math.abs(sideAt(long, w)));
+      }
+      const wants = reach * window.innerWidth;
+      const key = long ? "long" : "lead";
+      swing[key] = peak || 1;
+      fit[key] = wants > room ? room / wants : 1;
+    }
+  };
+
+  /**
+   * The pose: the card lies flat to travel, and stands back up into whatever
+   * the dock ahead of it draws.
+   *
+   * Two ramps on the same envelope rather than one interpolation from dock to
+   * dock, and that is the whole gesture. The face is authored landscape and the
+   * two upper slots are it turned a quarter, so leaving one means lying down and
+   * arriving at another means standing up — and between them the card is simply
+   * itself, at zero, for the stretch of the leg the reader spends the most time
+   * in.
+   *
+   * It falls out of the arithmetic that the long leg needs no third rule: Early
+   * Access's slot is the landscape one, so `to.turn` is zero there and the card
+   * that lay down on leaving the diagram is already in the pose it lands in.
+   * One statement, two different-looking crossings.
+   */
+  const poseAt = (leg: Leg, w: number) =>
+    leg.from.turn * (1 - out(leg.long, w)) + leg.to.turn * home(leg.long, w);
 
   /**
    * Place the card for a scroll position.
@@ -795,7 +1050,7 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
         : (legs.find((l) => s <= l.knots[l.knots.length - 1]!.s) ??
           (s > last.knots[last.knots.length - 1]!.s ? null : last));
 
-    const { taper, bank, approach, grip } = MOTION.travel;
+    const { taper, bank, grip } = MOTION.travel;
     const vh = window.innerHeight;
 
     if (!leg) {
@@ -851,7 +1106,7 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
 
     const s0 = leg.knots[0]!.s;
     const s1 = leg.knots[leg.knots.length - 1]!.s;
-    const y = pathY(leg, s);
+    const y = pathAt(leg, s);
 
     /*
      * THE ODOMETER: how much of this leg's PAGE the card has actually covered,
@@ -874,26 +1129,31 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
      * and turns while the reader is watching it turn.
      *
      * It also inherits the path's own smoothness, and that is the half of this
-     * that could not be got any other way. The odometer's rate IS the fall's
-     * rate — so every property decelerates to rest as the card settles onto a
-     * seam and picks up again as it leaves, on the same curve the fall itself
-     * uses. The arrival at each seam is a miniature of the arrival at a dock.
+     * that could not be got any other way. The odometer's rate IS the path's
+     * rate — so every property eases as the card settles towards a seam and
+     * picks up again as it leaves, on the same curve the path itself uses. The
+     * arrival at each seam is a miniature of the arrival at a dock.
+     *
+     * Which cuts both ways, and is why MOTION.travel.rhythm had to exist. On a
+     * path that stops, everything on this clock stops with it: measured over
+     * the three stretches of the long leg where the knot path was flat, x,
+     * scale and lean did not change by a hundredth over six hundred pixels of
+     * scrolling apiece. The mix that keeps the path moving is what keeps the
+     * whole object moving, and it is one number rather than four because they
+     * all read the same clock.
      */
     const w = Math.min(
       1,
       Math.max(0, (y - leg.from.y) / (leg.to.y - leg.from.y || 1)),
     );
-    /* Zero at both ends of a leg and one in the middle: the shape every transit
-       property is expressed in, so all of them resolve together at a dock and
-       none of them has to be told where the docks are. */
-    const away = arch(w);
-    /*
-     * And the destination taking hold before the card gets there: the last of
-     * the leg over which the drift and the lean are folded away, so the final
-     * approach is plumb and centred and the only thing still moving on the
-     * card as it lands is the turn. See MOTION.travel.approach.
-     */
-    const hush = 1 - glide((w - (1 - approach)) / (approach || 1));
+    /* Zero at both ends of a leg and one across the middle of it: the shape
+       every transit property is expressed in, so all of them resolve together
+       at a dock and none of them has to be told where the docks are. And the
+       destination has hold of the card well before it gets there — the lane,
+       the size and the pose all come home over the same last stretch, so the
+       final approach is plumb, centred, upright and still. */
+    const away = awayAt(leg.long, w);
+    const key = leg.long ? "long" : "lead";
 
     const base = leg.from.scale + (leg.to.scale - leg.from.scale) * w;
     const light = leg.long ? lit.long : lit.lead;
@@ -964,31 +1224,30 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
         leg.from.x +
         (leg.to.x - leg.from.x) * w +
         drift.x +
-        /* Of the window's WIDTH, which is what MOTION.travel.sway has always
-           said it was and what its own arithmetic about reaching the edge is
-           done in. */
-        (leg.long ? sway * window.innerWidth * away * hush : 0),
+        /* The lanes, signed and measured in the window's WIDTH — which is
+           what the arithmetic about reaching the edge of the screen is done
+           in, and why `fit` is a fraction of it. See MOTION.travel.sway for
+           the pair and MOTION.travel.form for where the change between them
+           happens. */
+        sideAt(leg.long, w) * window.innerWidth * fit[key],
       y: y + drift.y,
       scale: base + (far - base) * away,
       opacity: (transit + (1 - transit) * edge) * rise,
       force3D: true,
     });
     gsap.set(turn, {
-      rotationZ:
-        leg.from.turn +
-        (leg.to.turn - leg.from.turn) * turnAt(w) +
-        /*
-         * Banked in proportion to how fast the card is drifting sideways,
-         * which is what a sine of twice the excursion's phase is: `away` is
-         * one cosine hump across the leg, and this is its derivative. So the
-         * card leans INTO its drift and comes back to plumb as that drift
-         * stops, which is the relationship an aircraft has with a turn and the
-         * one a rectangle sliding about at a fixed tilt does not.
-         *
-         * It costs nothing that was not already being spent — the same
-         * property the quarter turn is written on, one term further along.
-         */
-        bank * Math.sin(2 * Math.PI * w) * hush,
+      /*
+       * The flip out of the dock's pose and back into the next one, plus the
+       * lean — banked in proportion to how fast the card is crossing into its
+       * lane rather than to how far across it has got, so it leans INTO the
+       * crossing and comes back to plumb as the crossing stops. That is the
+       * relationship an aircraft has with a turn and the one a rectangle
+       * sliding about at a fixed tilt does not.
+       *
+       * It costs nothing that was not already being spent — the same property
+       * the flip is written on, one term further along.
+       */
+      rotationZ: poseAt(leg, w) + (bank * sideRate(leg.long, w)) / swing[key],
     });
 
     /*

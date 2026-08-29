@@ -295,17 +295,40 @@ export const MOTION = {
    *
    * All the freedom is in how the rate is DISTRIBUTED. So:
    *
-   *   the card holds its place on the page while a section is being read,
-   *   and falls a whole section's worth in the seam between two.
+   *   the card quickens through the seam between two sections
+   *   and eases while one of them is being read.
    *
    * It is the page's own rhythm rather than one imposed on it — the seams are
    * measured, not assumed, which is what lets the same rule serve a phone where
    * a section is two or three windows tall and the seam is 96px of padding
    * rather than 144px of margin. And it produces both halves of every hand-off
-   * from one sentence: a release is the section leaving while the card stays, a
-   * catch is the section arriving while the card stays. Which is heroFold's
-   * closing argument — the four passports fold in and leave the product alone
-   * on the screen — said again at every anchor.
+   * from one sentence: a release is the section leaving while the card hangs
+   * back, a catch is the section arriving while the card hangs back. Which is
+   * heroFold's closing argument — the four passports fold in and leave the
+   * product alone on the screen — said again at every anchor.
+   *
+   * Written as EASES rather than as holds, and that is the correction the
+   * shape needed. Taken to its limit the same sentence says the card is
+   * exactly stationary while a section is read, which is where this started
+   * and which is worse than it sounds: the card is the only thing on the page
+   * whose position is not a function of time, so a stationary path is a card
+   * with nothing happening to it at all, sliding up and out of the top of the
+   * window like a sticker. `rhythm` is the limit, and it is not one — 42% of
+   * the shape against 58% of a steady glide, which keeps the quickening
+   * legible and the card in the window and moving for the whole of both legs.
+   *
+   * ---------------------------------------------------------------------------
+   * AND THE OTHER AXIS
+   *
+   * A card that is always moving is also always somewhere, and the centre line
+   * is the worst place for it to be — it is where the page's own spine is. So
+   * the crossing has a shape sideways as well as down: the card lies flat as
+   * it is let go, crosses into a lane to the right of the slots, travels down
+   * it, and crosses back and stands up into whatever pose the dock ahead of it
+   * draws. `sway` is the lane, `form` is the crossing, and everything the card
+   * does in transit is carried on that one envelope so that the two ends of a
+   * leg read as one gesture each rather than as four channels resolving near
+   * each other.
    */
   travel: {
     /**
@@ -332,12 +355,81 @@ export const MOTION = {
      * layout will give it — the bargain `room` already strikes sideways and
      * `--stage-scale` strikes with the diagrams themselves.
      *
-     * Where the clamp binds, the card is exactly stationary on the page for the
-     * length of that hold. Worth avoiding if anyone could see it; nobody can,
-     * because the clamp binding is the same fact as the card being off the top
-     * of the window.
+     * Where the clamp binds, the knot path is exactly flat for the length of
+     * that hold — which used to mean the card was, and no longer does: what is
+     * drawn is this mixed with a steady glide, so the flattest stretch of the
+     * shape is a slow drift rather than a stop. See `rhythm`, which is where
+     * that went wrong and how it was fixed.
      */
     lift: 0.1,
+
+    /**
+     * How much of that rhythm survives against a steady glide — and the number
+     * that decides whether the card ever STOPS.
+     *
+     * The rule above distributes a leg's page between holds and falls, and
+     * taken neat it distributes ALL of it: the card is exactly stationary on
+     * the page while a section is being read, which means every property it has
+     * is stationary too. Measured on the long leg at 1440x900, three stretches
+     * of it — 3584 to 4160, 4672 to 5184, 5760 to 6208 — where x, scale and
+     * lean did not change by a hundredth over six hundred pixels of scrolling.
+     * A rectangle of fixed size and fixed attitude sliding up and out of the
+     * top of the window, four times. It reads as a sticker on the page rather
+     * than an object moving down it, and it is what "it gets stuck on the
+     * Intelligence Layer" means.
+     *
+     * So the path is mixed with a steady one: this much of the seam rhythm,
+     * and the rest a constant rate from dock to dock. The falls stay falls —
+     * blended, a fall still descends the window at four fifths of the reader's
+     * scroll — and the holds become a slow drift instead of a freeze.
+     *
+     * The arithmetic guarantee is the point of writing it this way rather than
+     * by moving knots about. Both halves of the mix are monotone and the
+     * steady half is STRICTLY increasing, so the sum is strictly increasing:
+     * below one, there is no scroll position anywhere on the page where the
+     * card is not moving. Nothing has to be checked, and no layout can produce
+     * a stall by accident.
+     *
+     * And it carries the whole object with it, because everything else runs on
+     * the odometer — the card's travelled page — rather than on the reader's
+     * scroll. A path that never stops is a size, a lean, a drift and a turn
+     * that never stop either.
+     */
+    rhythm: 0.42,
+
+    /**
+     * How much of a leg the steady half spends getting up to speed, at either
+     * end.
+     *
+     * The steady half cannot be a straight line: a straight line has the same
+     * rate at the dock as in the middle, and the card is STOPPED at a dock. Cut
+     * in at full rate it would leave with a jolt and arrive with a thud, which
+     * is the one thing the knot path had right and the reason its stalls were
+     * ever tolerable.
+     *
+     * So it is a trapezoid — `glide` up out of the dock behind, a constant rate
+     * through the middle, `glide` down into the dock ahead. Zero velocity AND
+     * zero acceleration where it meets each dock, so it inherits the same C2
+     * join everything else on this path has, and a genuinely constant rate in
+     * between, which is what stops the mix from stalling.
+     *
+     * The two ends are not the same length, and the difference is the whole
+     * character of a crossing: brisk away, long and slow in. A card leaves
+     * because it has been let go and arrives because it is being caught, and
+     * anything that takes as long to leave as to land reads as indecision at
+     * one end or a slam at the other.
+     *
+     * `leave` also has a floor the geometry sets, and it is worth writing down.
+     * A dock releases the card at MOTION.own.line's complement — a seventh of a
+     * window down from the top — so until the card is covering more page than
+     * the reader is scrolling it is going UP the window and out of it. Measured
+     * on the long leg at 1440x900, where the whole leg is only 1.14 pages of
+     * scroll and there is very little to spare: at a fifth of a leg the card
+     * spent five hundred pixels of scroll above the top of the window, and it
+     * spent them performing the flip. At this it clears the fold with fifty
+     * pixels in hand and the flip happens where it can be seen.
+     */
+    ease: { leave: 0.06, land: 0.22 },
 
     /**
      * How long the hero holds the card after it has been let go, as a fraction
@@ -371,6 +463,12 @@ export const MOTION = {
      * At two and a half the card descends the window at one and a half times
      * the speed the page rises through it, which is the fastest anything on
      * this page moves and about as fast as a fall can be and still be watched.
+     *
+     * A ceiling on the test rather than on the card. What is drawn is this
+     * mixed with a steady glide, so the fastest the card actually goes is
+     * lower — measured at 2.38 on the long leg at 1440x900 against a knot path
+     * asking for 2.5, and 2.88 on the short one, where the leg itself is
+     * steeper than the ceiling.
      */
     dash: 2.5,
 
@@ -475,7 +573,19 @@ export const MOTION = {
      */
     phone: {
       far: 0.28,
-      sway: 0,
+      /*
+       * A narrower lane rather than none. The column IS the window down here,
+       * so there is no margin to move into and the card is behind something
+       * wherever it goes — but "behind the middle of the paragraph" and "behind
+       * its right-hand edge" are still not the same thing, and the crossing has
+       * to read as a crossing on both tiers or the choreography is a wide-screen
+       * feature. At 390 this is a 55px lane for a card 118 wide, which keeps it
+       * off the centre line and 20px clear of the window's right edge.
+       */
+      sway: {
+        lead: { first: 0.1, second: -0.1 },
+        long: { first: 0.1, second: -0.1 },
+      },
       lit: {
         lead: { seam: 0.24, over: 0.09 },
         long: { seam: 0.15, over: 0.04 },
@@ -493,71 +603,148 @@ export const MOTION = {
     taper: 0.55,
 
     /**
-     * One `sine.inOut` excursion sideways and back on the long leg, as a
-     * fraction of the window's WIDTH, peaking over the Intelligence Layer.
+     * WHERE THE CARD GOES SIDEWAYS — the lanes it travels down between two
+     * docks, signed, as fractions of the window's WIDTH.
      *
-     * The funnel's spine is the one place on the page where a dim vertical
-     * shape on the exact centre line would be read as one of its own
-     * connectors. Small enough that it cannot reach the edge of the window at
-     * any width — 72px at 1440, against a card 143 wide on a centre line 720
-     * from either edge — so it can never become the scrollable overflow that
-     * .screen's own comment warns about. Zero on a phone, where the column IS
-     * the window and there is nowhere to go: see travel.phone. And leg one has
-     * none either, because there the centre line is a corridor deliberately
-     * left empty between two panels, and falling down it is the best thing the
-     * card could be doing on that screen.
+     * Positive is right of the slots' own centre line, negative is left, and
+     * zero is straight down it. Two per leg, because a leg is not one crossing:
+     * the card leaves the dock into `first`, travels down it, changes lanes to
+     * `second` somewhere in the middle, travels down THAT, and comes home
+     * before it arrives. Set both to the same number and it is one lane, which
+     * is what this was before.
      *
-     * One excursion across the leg, but spent entirely in the falls — it runs
-     * on the card's travelled page rather than on the reader's scroll, so the
-     * card slides sideways only while it is also coming down. That is what
-     * makes each crossing an arc instead of a vertical line with a fixed
-     * offset on it, and it is where the whole of the effect went before: half
-     * of the excursion used to be spent above the top of the window, where
-     * there is nobody to see it.
+     * The long leg is why there are two. It is four sections and five and a
+     * half screens, and a single offset held across the whole of it is one
+     * decision covering a third of the page — the card picks a side at Squad
+     * Approves and is still on it at the waitlist. Two lanes and a crossing
+     * between them make it a journey with a middle: over, down, across, down,
+     * home. The short leg is a single section and does not need it, so its two
+     * are equal.
+     *
+     * A lane rather than an excursion, which is the part that makes any of this
+     * survivable. A sine hump is at its far point for one frame; a lane is
+     * somewhere else for the whole of the crossing, which is what lets the slow
+     * stretches of `rhythm` sit off the copy instead of on it.
+     *
+     * WHEN each of the five parts happens is `form`, not here. This is only how
+     * far.
+     *
+     * Nothing here can push the card off the screen. The offset is fitted to
+     * the window at measure time — the whole lane pair is scaled down together
+     * if the wider of the two would put the card's leaning bounding box past an
+     * edge, so the shape and every one of its derivatives survive and only the
+     * size gives. It binds first at the bottom of the wide tier — at 641, which
+     * is barely four card-widths across, anything past 0.36 is scaled back, and
+     * 0.4 lands the card 15px inside the edge instead of 2. At 1440 there is
+     * room for 0.43 either way before it does anything at all.
      */
-    sway: 0.05,
+    sway: {
+      lead: { first: 0.4, second: 0.4 },
+      long: { first: -0.4, second: 0.4 },
+    },
 
     /**
-     * The last of a leg — measured in the card's own travelled page — over
-     * which its excursions are folded away.
+     * A few degrees off plumb while it crosses into its lane and back out of
+     * it, resolving to nothing at each dock.
      *
-     * `sway` and `bank` both resolve to nothing at a dock anyway, but only
-     * exactly AT it, and a card still correcting its lean in the last few
-     * pixels reads as being placed rather than as settling. Folded away over a
-     * sixth of the leg, the destination has hold of the card before it gets
-     * there: it comes down the last stretch plumb and on the slot's own centre
-     * line, and the only thing still happening at the moment it lands is the
-     * quarter turn finishing.
-     */
-    approach: 0.16,
-
-    /**
-     * A few degrees off plumb while it falls, resolving to nothing at each
-     * dock.
+     * Carried on the RATE of the lane envelope rather than on its value, which
+     * is the difference between a card that leans into its own drift and a
+     * rectangle sitting at a fixed tilt. So it banks over as it crosses out,
+     * sits level for as long as it is travelling straight down the lane, and
+     * banks back as it returns — the relationship an aircraft has with a turn,
+     * and exactly zero at both ends of every leg because the envelope is flat
+     * there.
      *
-     * The cheapest thing on the list and the one that turns a translate into a
-     * fall: it is the same property the quarter turn already uses, so it costs
-     * one number of arithmetic and no extra channel. Deliberately small — a
-     * card that tumbles is a card nobody can read, and this one is legible at
-     * both ends of every leg.
+     * The cheapest thing on the list: it is the same property the flip already
+     * uses, so it costs one number of arithmetic and no extra channel.
+     * Deliberately small — a card that tumbles is a card nobody can read, and
+     * this one is legible at every point of every crossing.
      */
     bank: 5,
 
     /**
-     * Where in the leg's travelled page the quarter turn starts.
+     * WHEN each part of a crossing happens, in fractions of a leg's travelled
+     * page: where the card has finished lying flat and reaching its first lane,
+     * where it changes lanes and over how much of the leg, and where it starts
+     * coming back to the pose the dock ahead of it draws.
      *
-     * Held back to the final approach on purpose: the turn is the page's
-     * closing gesture and the mirror of the hero's opening one, so it wants to
-     * be the last thing the card does rather than something it has been doing
-     * all the way down.
+     * `flat` is the end of the way out. `cross` is the middle of the lane
+     * change and `over` is how long that change takes — so it runs from
+     * `cross - over/2` to `cross + over/2`, and wants to sit between `flat` and
+     * `back` where the card is simply travelling. `back` is the start of the
+     * way home.
      *
-     * In travelled page rather than in scroll, and that is what makes it
-     * visible. On the scroll clock a third of the rotation was spent while the
-     * card was parked above the top of the window between two seams, and the
-     * card reappeared at the next crossing already turned — a quarter turn
-     * nobody watched, delivered in instalments behind the sections.
+     * `sway` is how far; this is when. The two are separate on purpose: a lane
+     * change placed on a seam and a lane change placed in the middle of a
+     * section are the same move and completely different animations, because
+     * the card is four times brighter in the first.
+     *
+     * The card is authored landscape and the two upper docks are that face
+     * turned a quarter, so "flat" is not a trick played on it — it is the card
+     * with nothing done to it, and the docks are the poses. Which makes the
+     * shape of a crossing say itself: the card is let go, it lies down, it
+     * glides, and it stands back up into the slot it is arriving at. Between
+     * `flat` and `back` it is doing none of those things and simply travelling,
+     * which is the stretch the reader spends the most scroll in and the one
+     * that has to be the calmest.
+     *
+     * One envelope, and everything the transit does is on it. The lane sideways
+     * crosses out over the same first stretch and back over the same last one;
+     * the card shrinks and grows with it; the lean is its RATE, so the card
+     * banks while it is crossing and sits level while it is not. So there is
+     * one gesture at each end of a leg rather than four channels that happen to
+     * resolve near each other, and `back` is the whole of what the eye reads as
+     * the card seeing the section coming and gathering itself for it.
+     *
+     * The short leg's numbers are not the long one's, and they are further
+     * apart than they look. Every one of these is a fraction of a LEG, and the
+     * two legs are not the same size: 1152px of scroll against 4230, covering
+     * page half again as fast. So the same fraction buys a third of the time
+     * down there, and the short leg's crossings came out three times sharper
+     * than the long one's — measured at 1440x900, a quarter turn in 144px of
+     * scroll against 544, 74 degrees per hundred pixels against 22, and the
+     * card crossing sideways at nearly five times the reader's scroll.
+     *
+     * So `flat` and `back` are pushed out until the two legs move at something
+     * like the same speed. It costs the short leg most of its cruise — 13% of
+     * it rather than 40% — and that is the right trade on a leg one section
+     * long: the card goes out, reaches its lane, and comes straight back, which
+     * is one arc rather than five parts. Past about here it stops helping,
+     * because the two crossings start compounding instead of taking turns.
+     *
+     * It closes most of the gap and cannot close all of it. At these the short
+     * leg peaks at 2.5x scroll sideways and 39 degrees per hundred pixels
+     * against the long leg's 1.9 and 22, and its quarter turn takes 320px
+     * rather than 144. The rest is geometry — a 1152px leg cannot hold a 544px
+     * gesture and a lane and a return — and the last of it lives in `sway`
+     * rather than here: the lateral peak is proportional to the lane, so a
+     * short leg at 0.31 instead of 0.4 would land exactly on the long one.
+     *
+     * `back` is also where the two legs part company for a second reason,
+     * and that one is `lit`. The
+     * card is bright in a seam and dim over a section's payload, so where the
+     * return is placed decides how much of it anybody sees — and the long leg
+     * ends with a seam 324px above its dock, which is the brightest stretch of
+     * its whole crossing. Swept at 1440x900 against the card's own measured
+     * opacity: two thirds of the way puts half the return in the dark, four
+     * fifths puts nearly two thirds of it in the light, and pushing further
+     * buys the rest at the price of a card that visibly rushes the last screen.
+     *
+     * The short leg wants the earlier one for the opposite reason. It is a
+     * single section long, so there is no dark stretch to place anything
+     * outside of, and anything later than this reads as a correction rather
+     * than as an approach.
+     *
+     * In travelled page rather than in scroll, and that is what makes any of it
+     * visible. On the scroll clock a third of the quarter turn was spent while
+     * the card was parked above the top of the window between two seams, and it
+     * came back at the next crossing already turned — a quarter turn nobody
+     * watched, delivered in instalments behind the sections.
      */
-    turn: 0.62,
+    form: {
+      lead: { flat: 0.42, back: 0.55, cross: 0.5, over: 0.34 },
+      long: { flat: 0.22, back: 0.8, cross: 0.5, over: 0.46 },
+    },
 
     /**
      * The scrub's catch-up, in seconds — MOTION.hero.fold.lag's own number, and
