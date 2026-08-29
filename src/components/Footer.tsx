@@ -23,14 +23,6 @@ import Twinkle from "@/components/footer/Twinkle";
 
 const productsLinks = [
   { label: "Credit Monitoring", href: "/products/credit-monitoring" },
-  {
-    label: "Identity Protection",
-    href: "/products/identity-protection",
-    highlight: true,
-  },
-  { label: "Privacy Protect", href: "/products/privacy-protect" },
-  { label: "Debt Navigator", href: "/products/debt-navigator" },
-  { label: "Student Loan Aid", href: "/products/student-loan-aid" },
   { label: "Payment Processing", href: "/products/payment-processing" },
   { label: "Business Credit", href: "/products/business-credit" },
 ];
