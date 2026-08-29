@@ -571,6 +571,12 @@ body {
      * horizontal scrollbar that resizes every container query the stages derive
      * --stage-scale from. Open vertically, because travelling the length of the
      * page is the entire point.
+     *
+     * The sideways half earns its keep now that the card has a lane to the
+     * right of the slots to travel down — MOTION.travel.sway, which is bounded
+     * so that this never has to fire, and measured at 1440, 1280, 768, 390 and
+     * 320 where it does not. It is the backstop for the widths nobody thought
+     * of, not the mechanism.
      */
     inset: 0 0 auto 0;
     height: 0;
