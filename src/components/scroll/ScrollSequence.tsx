@@ -10,7 +10,7 @@ import { MOTION } from "./motion";
 import { authoredRect, authoredTop, leadOf } from "./measure";
 import { parallaxScene } from "./parallax";
 import { SECTIONS } from "./sections";
-import { heroFold, navbarDrop, one } from "./timelines";
+import { heroFold, navbarDrop, one, squadTravel } from "./timelines";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -72,6 +72,11 @@ const WRITTEN = [
   ".screen-payload",
   ".screen-glow",
   ".stage-backdrop",
+  /* The travelling Squad card, which is written to on every frame of the
+     journey and must be put back to the stylesheet's nothing when the window
+     leaves the gate — see squadTravel and .squad-trail. */
+  ".squad-trail-frame",
+  "[data-card-turn]",
 ].join(",");
 
 /**
@@ -194,6 +199,106 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
        * The fold then runs from there to the fan's own exit — every frame of it
        * on screen, which is what it is for.
        */
+      /* --- the Squad card's journey --------------------------------------
+       *
+       * The one piece of motion on this page that spans more than a section,
+       * and the second the reader performs rather than watches: the card leaves
+       * the hero's fan once the fan has folded into it, falls down the page
+       * behind everything, is set down in the approve diagram's slot, falls
+       * again through four sections, and lies down flat in Early Access. See
+       * squadTravel for the path and MOTION.travel for the arithmetic.
+       *
+       * A proxy rather than the card itself, so that `scrub` has something to
+       * lag and one function still owns every property the card has. Scrubbed
+       * with a lag rather than locked to the scrollbar: rigid, it reads as a
+       * scrollbar; a fraction of a second behind, it reads as an object with
+       * weight being carried down a page. It is also what rounds the corners
+       * where the path changes rate.
+       *
+       * Built inside both tier handlers, so the whole thing is torn down by the
+       * same matchMedia revert that tears the sequence down — and never built
+       * below the gate, where the trail element is display:none and the page's
+       * own three cards are the finished page.
+       */
+      const flyCard = (tier: "full" | "phone") => {
+        const scene = document.querySelector<HTMLElement>(".scene-track");
+        const travel = scene && squadTravel(document.documentElement, tier);
+        if (!travel) {
+          /*
+           * Nothing to fly the card with, so give the two slots back to their
+           * own sections. Neither reveals its Squad card any more — that is the
+           * traveller's job (see approveDiagram and earlyCard) — and above the
+           * gate the stylesheet holds every [data-reveal] at nothing, so
+           * without this a flight that failed to build for any reason would
+           * leave the approve diagram and Early Access with a hole where their
+           * subject goes. Cheap insurance against the one failure this change
+           * could cause that the reader would actually notice.
+           */
+          for (const sel of [
+            "[data-sequence-section='approve'] [data-reveal='squad']",
+            "[data-sequence-section='early'] [data-reveal='card']",
+          ])
+            for (const el of document.querySelectorAll<HTMLElement>(sel))
+              gsap.set(el, { opacity: 1 });
+          return;
+        }
+
+        /*
+         * The two slots the traveller stands in for, held at nothing, and this
+         * has to be written rather than left to the stylesheet. Above the gate
+         * `[data-reveal] { opacity: 0 }` would hide them for free — but the
+         * phone branch ends by sweeping every untouched [data-reveal] back to
+         * full, precisely so that a hook nobody wired cannot leave a hole in
+         * the page. Writing the zero here is what tells that sweep these two
+         * are spoken for.
+         */
+        travel.park();
+
+        const at = { p: 0 };
+        const run = gsap.to(at, {
+          p: 1,
+          ease: "none",
+          paused: true,
+          onUpdate: () => {
+            const { from, to } = travel.span();
+            travel.apply(from + at.p * (to - from));
+          },
+        });
+
+        ScrollTrigger.create({
+          trigger: scene,
+          start: () => travel.span().from,
+          end: () => travel.span().to,
+          scrub: MOTION.travel.lag,
+          animation: run,
+          /*
+           * Re-measured on refreshINIT rather than on refresh, and the
+           * difference is the whole of whether this survives a resize.
+           *
+           * A refresh computes a trigger's start and end and THEN calls
+           * onRefresh, so a path measured in onRefresh is a path the bounds
+           * were derived from one refresh ago. On load that means bounds of
+           * zero length; across a resize it means the card's progress is
+           * resolved against the window it just left. Measured: crossing from
+           * 1440x900 to 390x844 left the card parked in the approve slot at
+           * full strength with the reader back at the top of the page, and the
+           * only reason the wide tier looked right was that heroFold's own
+           * delayed refresh happened to run a second one.
+           */
+          onRefreshInit: () => travel.measure(),
+          /*
+           * And re-placed after them: a resize moves all three slots and every
+           * seam between them, and the card has to be put back on the line
+           * between where they are now rather than left on the one between
+           * where they were. This is also what places it for the first time.
+           */
+          onRefresh: () => {
+            const { from, to } = travel.span();
+            travel.apply(from + at.p * (to - from));
+          },
+        });
+      };
+
       const foldHero = ({
         trigger,
         start,
@@ -456,6 +561,7 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         }
 
         parallaxScene({ tier: "phone" });
+        flyCard("phone");
         /* Not "bottom bottom" — the deck clears the fold too early for that to
            mean "done with it" any more. It waits `lead` of a window longer, and
            then folds over a shorter run so that it is finished while the deck is
@@ -703,6 +809,7 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
          */
         parallaxScene({ tier: "full" });
 
+        flyCard("full");
         foldHero({ trigger: section("hero"), start: "top top" });
       });
     },

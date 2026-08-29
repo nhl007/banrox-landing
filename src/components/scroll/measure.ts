@@ -38,12 +38,29 @@ import type gsap from "gsap";
 export const asAuthored = <T>(nodes: HTMLElement[], read: () => T): T => {
   const saved: [HTMLElement, string, string][] = [];
   const seen = new Set<HTMLElement>();
+  /*
+   * Transforms come off anything; heights come off [data-reveal] only.
+   *
+   * A transform on this page is always the sequence's — nothing in the markup
+   * carries one that is not accounted for (see the note on WRITTEN). A height
+   * is not: the hero's phone deck states its own in the markup, because it is
+   * as tall as the card at the front of it and its contents are all absolutely
+   * positioned. Stripping that collapsed the deck to nothing, took 278px out of
+   * the hero, and moved every section boundary below it up by the same — which
+   * is a page-wide measurement error introduced by the act of measuring.
+   *
+   * [data-reveal] is the honest line because the only heights the sequence
+   * writes are the comparison panels', and those are exactly the elements this
+   * was built for: alonePanels parks them at the height their strength rail
+   * begins at, and aloneRails grows them back.
+   */
   const strip = (el: HTMLElement) => {
     seen.add(el);
-    if (!el.style.transform && !el.style.height) return;
-    saved.push([el, el.style.transform, el.style.height]);
+    const height = el.hasAttribute("data-reveal") ? el.style.height : "";
+    if (!el.style.transform && !height) return;
+    saved.push([el, el.style.transform, height]);
     el.style.transform = "";
-    el.style.height = "";
+    if (height) el.style.height = "";
   };
 
   for (const n of nodes)
@@ -81,7 +98,7 @@ export const asAuthored = <T>(nodes: HTMLElement[], read: () => T): T => {
   } finally {
     for (const [el, t, h] of saved) {
       el.style.transform = t;
-      el.style.height = h;
+      if (h) el.style.height = h;
     }
   }
 };
@@ -124,16 +141,24 @@ export const authoredTop = (node: HTMLElement) =>
  */
 export const leadOf = (tl: gsap.core.Timeline): HTMLElement | null => {
   const seen = new Set<HTMLElement>();
+  const light = new Set<HTMLElement>();
   for (const child of tl.getChildren(true, true, false))
     for (const target of (child as gsap.core.Tween).targets())
-      if (
-        target instanceof HTMLElement &&
-        !target.hasAttribute("data-glow-from") &&
-        target.getClientRects().length
-      )
-        seen.add(target);
+      if (target instanceof HTMLElement && target.getClientRects().length)
+        (target.hasAttribute("data-glow-from") ? light : seen).add(target);
 
-  const nodes = [...seen];
+  /*
+   * Unless light is all it has.
+   *
+   * Early Access's opening beat used to be a card and two glows; the card is
+   * flown in by the reader now (see squadTravel) and what is left is the light
+   * it lands in. A beat made only of light is still a beat and still has to
+   * fire somewhere — and these two are placed against the section rather than
+   * against a diagram, so they are a fair enough stand-in for it. Excluded
+   * first because a bloom is never what a beat is ABOUT when there is anything
+   * else in the frame.
+   */
+  const nodes = [...(seen.size ? seen : light)];
   if (!nodes.length) return null;
 
   /* One survey for the whole set — where each of them RESTS, not where the beat

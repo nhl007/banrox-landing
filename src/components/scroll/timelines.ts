@@ -1,5 +1,6 @@
 import gsap from "gsap";
-import { asAuthored } from "./measure";
+import { SQUAD_CARD } from "@/components/ui/SquadCard";
+import { asAuthored, authoredRect } from "./measure";
 import { MOTION } from "./motion";
 
 /*
@@ -168,14 +169,28 @@ const glowStart = (els: HTMLElement[]) =>
  * scene, bought by nothing. Read off the timeline rather than configured, so it
  * cannot drift out of agreement with the copy it is under.
  */
-const glowIn = (tl: gsap.core.Timeline, el: HTMLElement) => {
+const glowIn = (tl: gsap.core.Timeline, el: HTMLElement, runs?: number) => {
   const glow = q(el, "glow");
   if (!glow.length) return tl;
 
   glowStart(glow);
   return tl.to(
     glow,
-    { opacity: 1, x: 0, y: 0, duration: tl.duration(), ease: MOTION.copy.ease },
+    {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      /*
+       * The beat's own length, except where the beat no longer has one. Early
+       * Access's card is flown in by the reader now (see squadTravel), so the
+       * only thing left in that beat is this light — and a background that
+       * measured itself against a timeline containing nothing but itself would
+       * come out at zero and take the section's whole clock with it, since
+       * WITH_CARD queues the form behind this beat's duration.
+       */
+      duration: runs ?? tl.duration(),
+      ease: MOTION.copy.ease,
+    },
     0,
   );
 };
@@ -360,6 +375,752 @@ export function traceLoop(el: HTMLElement) {
   if (tl.duration()) tl.repeat(-1);
 
   return tl;
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One dock: where a slot rests, how big the card is there, and how it is turned.
+ *
+ * `authoredRect` rather than a live one, and it earns its keep three times
+ * over: the hero's card spends the page's first two and a half seconds
+ * mid-quarter-turn, the approve slot is parked 56px low until its section
+ * arrives, and Early Access's is parked 300px low and turned on its side. A
+ * live rect at any of those moments is a measurement of an animation rather
+ * than of a layout.
+ *
+ * `up` is the pose the slot draws: the two portrait slots are the authored
+ * 420x260 face turned a quarter, so what the traveller has to match there is
+ * their HEIGHT, and the landscape one is matched on width.
+ */
+const dockAt = (el: HTMLElement, up: boolean) => {
+  const r = authoredRect(el);
+  /*
+   * The slot, and everything between it and its section that depth might be
+   * moving — with the size each of those is a percentage OF, taken now.
+   *
+   * The chain is what makes this right on both tiers rather than only the one
+   * it was written on. Above the gate the approve card is a depth layer in its
+   * own right; on a phone it is not, and the diagram is moved by a single
+   * `.screen-payload` entry over the whole thing (see DepthLayer.phone). Read
+   * off the slot alone, the traveller would carry the wide tier's displacement
+   * and none of the phone's, and drift up to 11px out of its own slot during a
+   * hand-over — while the real card, which IS displaced, sat next to it.
+   *
+   * Sizes cached here rather than read per frame: xPercent and yPercent are
+   * percentages of a box, and asking a box how big it is on every frame of a
+   * scroll is a forced layout on every frame of a scroll.
+   */
+  const chain: { el: HTMLElement; w: number; h: number }[] = [
+    { el, w: r.width, h: r.height },
+  ];
+  for (
+    let n = el.parentElement;
+    n && !n.dataset.sequenceSection;
+    n = n.parentElement
+  )
+    chain.push({ el: n, w: n.offsetWidth, h: n.offsetHeight });
+
+  return {
+    el,
+    chain,
+    x: r.left + window.scrollX + r.width / 2,
+    y: r.top + window.scrollY + r.height / 2,
+    scale: (up ? r.height : r.width) / SQUAD_CARD.width,
+    turn: up ? -90 : 0,
+  };
+};
+
+/**
+ * How far the depth system currently has a slot displaced from where it rests.
+ *
+ * The two lower slots are depth layers of their own sections — the approve
+ * card at 46 and Early Access's at -28 — and they still are, because they are
+ * still in the layout and still describe real elements. But the card the reader
+ * sees in them is the traveller, so the traveller is what has to carry that
+ * displacement or the section's own parallax stops applying to the one thing in
+ * it that matters. Read off the slot rather than re-derived: `parallaxScene`
+ * owns xPercent/yPercent there and nothing else writes them, so this is the
+ * exact number, live, for the cost of two property reads.
+ *
+ * Measured against the alternative: docking on the authored rect alone put the
+ * card 3.3px above Early Access's slot at 1440x900, growing to 15 at the ends
+ * of that section's crossing.
+ */
+const driftOf = (d: { chain: { el: HTMLElement; w: number; h: number }[] }) => {
+  let x = 0;
+  let y = 0;
+  for (const link of d.chain) {
+    x += ((Number(gsap.getProperty(link.el, "xPercent")) || 0) / 100) * link.w;
+    y += ((Number(gsap.getProperty(link.el, "yPercent")) || 0) / 100) * link.h;
+  }
+  return { x, y };
+};
+
+/** Zero at both ends of a leg, one in the middle of it. */
+const arch = (p: number) => 0.5 - Math.cos(2 * Math.PI * p) / 2;
+/** `sine.inOut`, as a number rather than an ease. */
+const soft = (t: number) =>
+  0.5 - Math.cos(Math.PI * Math.min(1, Math.max(0, t))) / 2;
+
+/**
+ * `6t^5 - 15t^4 + 10t^3`, and a quintic rather than a cosine for exactly one
+ * reason: its FIRST and SECOND derivatives are both zero at either end.
+ *
+ * The path is a chain of knots — a hold, a fall, a hold, a fall — and every
+ * join is somewhere the reader could see a corner. `sine.inOut` closes the
+ * velocity gap and leaves the acceleration one: it arrives at a knot at rest
+ * and leaves at rest, but it starts pulling at full force the instant it
+ * leaves, so a fall begins with a jolt the hold before it did not have. With
+ * both derivatives clamped there is nothing at the join to see at all.
+ *
+ * And because everything else about the card is now a function of how far it
+ * has travelled — see the odometer in `apply` — the whole object inherits it:
+ * position, size, lean and turn are continuous to the second derivative for
+ * the length of the page. There is no frame anywhere on the journey where
+ * anything about the card changes rate abruptly.
+ */
+const glide = (t: number) => {
+  const u = Math.min(1, Math.max(0, t));
+  return u * u * u * (u * (u * 6 - 15) + 10);
+};
+
+/**
+ * The Squad card's journey: the hero's fan, the approve diagram, Early Access.
+ *
+ * One object, three docks, two legs, every frame of it a function of where the
+ * reader is and none of it of time — so scrolling up runs the whole thing
+ * backwards, stopping stops it, and reloading half way down the page puts the
+ * card where it belongs rather than where an animation had got to.
+ *
+ * See MOTION.travel for the arithmetic that decides the shape, .squad-trail in
+ * globals.css for where the card paints, and SquadCardTrail.tsx for why it is a
+ * fourth card rather than one of the three it stands in for.
+ *
+ * Returns a controller rather than a timeline, and it has to: the path is a
+ * piecewise function of ABSOLUTE scroll whose knots are derived from where
+ * eight sections and three slots happen to be, and every one of those moves on
+ * a resize. `measure` re-derives it; the caller scrubs a proxy through `apply`.
+ *
+ * Null when the trail or any of the three slots is missing, which is every
+ * tier below the motion gate — down there the trail element is `display: none`
+ * and the page's own three cards are the finished page.
+ */
+export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
+  const frame = root.querySelector<HTMLElement>("[data-card-travel]");
+  const turn = root.querySelector<HTMLElement>("[data-card-turn]");
+  /* The hero's is whichever of the two fans this width renders — the wide row
+     or the phone's deck — which is what `one` is for. The other two are the
+     same element in both tiers. */
+  const fan = one(root, "[data-sequence-section='hero'] [data-reveal='fan']");
+  const slots = [
+    one(root, "[data-sequence-section='hero'] [data-fan-anchor]"),
+    one(root, "[data-sequence-section='approve'] [data-reveal='squad']"),
+    one(root, "[data-sequence-section='early'] [data-reveal='card']"),
+  ];
+  if (!frame || !turn || !fan || slots.some((el) => !el)) return null;
+  const [heroSlot, approveSlot, earlySlot] = slots as HTMLElement[];
+
+  /*
+   * The eight sections, and NOT the navbar.
+   *
+   * It carries [data-sequence-section] because the sequence opens on it, but it
+   * is a bar in flow above the page rather than one of the screens: there is no
+   * band of air between it and the hero, so the line between them is a boundary
+   * and not a seam. Left in, it put a phantom appointment at page 72 — always
+   * before every leg and so always dropped, but also always the nearest "seam"
+   * to the top of the page, which is the one term `clearance` reads.
+   */
+  const sections = gsap.utils
+    .toArray<HTMLElement>(root.querySelectorAll("[data-sequence-section]"))
+    .filter((el) => el.dataset.sequenceSection !== "navbar");
+
+  /* The tier's own numbers where it has them — see MOTION.travel.phone. */
+  const { far, lit, sway } =
+    tier === "phone"
+      ? { ...MOTION.travel, ...MOTION.travel.phone }
+      : MOTION.travel;
+
+  type Dock = ReturnType<typeof dockAt>;
+  type Knot = { s: number; y: number };
+  type Leg = {
+    from: Dock;
+    to: Dock;
+    knots: Knot[];
+    long: boolean;
+    /** Where the card came to rest on this leg's HEAD dock — the far end of
+        the leg before it. From here to `knots[0].s` the card is sitting
+        exactly on that slot and not moving, which is the only stretch a
+        hand-over may happen in. See `held` in `apply`. */
+    landed: number;
+  };
+
+  let docks: Dock[] = [];
+  let legs: Leg[] = [];
+  /** Page lines the card falls through — the middle of each section boundary. */
+  let seams: number[] = [];
+
+  /**
+   * Re-derive the whole journey from where the page currently is.
+   *
+   * Called on every ScrollTrigger refresh, because every term here is a
+   * function of the window: the slots move, the sections change height, and
+   * the seams with them.
+   */
+  const measure = () => {
+    const vh = window.innerHeight;
+
+    docks = [
+      dockAt(heroSlot, true),
+      dockAt(approveSlot, true),
+      dockAt(earlySlot, false),
+    ];
+
+    /*
+     * The seam between two sections: the page line half way between the bottom
+     * of one and the top of the next.
+     *
+     * Above the gate that is the middle of --screen-between, 144px of margin at
+     * 1440x900 and the band globals.css calls the dark between two lit rooms.
+     * On a phone the sections butt edge to edge and their own --screen-pad
+     * supplies the air, so the same expression lands on the boundary itself.
+     * Measured either way, which is the whole reason one rule survives a tier
+     * where nothing about the pitch is constant.
+     */
+    /*
+     * Measured AS AUTHORED, like the docks above and for the same reason: the
+     * page this runs on is not the page the reader will be looking at.
+     *
+     * The comparison panels are parked at the height their strength rail begins
+     * at until that rail is brought out (see alonePanels), and on a phone —
+     * where a section is as tall as its contents — that makes the whole
+     * document 236px shorter while they are parked. Every seam below Alone Vs
+     * Together would be measured that much too high, against docks that were
+     * measured correctly: half the path derived from one page and half from
+     * another. `asAuthored` already knows how to put the parked heights back.
+     *
+     * The hero's fan goes in the same survey for the same class of reason: it
+     * spends the page's opening rotated 78deg and pushed 180px back, and the
+     * phone's release is derived from where its bottom edge rests.
+     */
+    const boxes = asAuthored([...sections, fan], () => ({
+      edge: sections.map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          top: r.top + window.scrollY,
+          bottom: r.bottom + window.scrollY,
+        };
+      }),
+      fanBottom: fan.getBoundingClientRect().bottom + window.scrollY,
+    }));
+    const { edge } = boxes;
+    seams = edge
+      .slice(1)
+      .map((e, i) => ((edge[i]?.bottom ?? e.top) + e.top) / 2);
+
+    /*
+     * A dock is a stretch of scroll over which the card does not move on the
+     * page at all — which is the only thing "docked" can mean for something in
+     * page coordinates, and the exact opposite of holding a place in the
+     * window. It runs from the moment the slot clears the fold to the moment it
+     * leaves the top, and both ends are MOTION.own.line and its complement:
+     * the same line every late beat on this page fires on. So the card is in
+     * its slot for as long as the slot is anywhere the reader could be looking,
+     * and not one pixel longer.
+     */
+    const arrives = (d: Dock) => d.y - vh * MOTION.own.line;
+    const leaves = (d: Dock) => d.y - vh * (1 - MOTION.own.line);
+
+    /*
+     * The hero is the exception, and the fold is what makes it one. The card is
+     * not released when its slot clears anything — it is released when the four
+     * passport cards have finished folding in behind it and it is the only
+     * thing left on the screen. That is the moment the hero's own choreography
+     * argues for, and taking the card at any other one would be taking it from
+     * a fan that was still closing. See MOTION.hero.fold.
+     *
+     * Which means reading the fold's own trigger rather than a number: the two
+     * tiers hang it on different things. Above the gate it starts as the hero's
+     * top edge reaches the top of the window — scroll zero — and runs
+     * `fold.out` of a window. On a phone the deck clears the fold far too early
+     * for that to mean "done with it", so it is hung on the deck's own bottom
+     * edge leaving the bottom of the window, held `foldPhone.lead` longer, and
+     * run over a shorter distance. Using the wide number down there released
+     * the card 150px of scroll before the deck had finished closing.
+     */
+    const { fold, foldPhone } = MOTION.hero;
+    const release =
+      tier === "phone"
+        ? boxes.fanBottom - vh * (1 - foldPhone.lead - foldPhone.out)
+        : /* The hero's own top edge, not the document's: the fold is hung on
+             `top top` and the hero starts below the navbar, so the fold ends
+             `out` of a window after the bar has gone rather than after nothing
+             at all. 72px at 1440x900. */
+          (edge[0]?.top ?? 0) + fold.out * vh;
+
+    const { lift, dash } = MOTION.travel;
+
+    legs = [0, 1].map((i) => {
+      const from = docks[i]!;
+      const to = docks[i + 1]!;
+      const s0 = i === 0 ? release : leaves(from);
+      const s1 = arrives(to);
+      const knots: Knot[] = [{ s: s0, y: from.y }];
+      /* The hero's hand-over, as a stretch of path on which the card does not
+         move — see MOTION.travel.handover. Everywhere else the traveller is
+         already the only card there is and no exchange is needed. */
+      if (i === 0)
+        knots.push({ s: s0 + vh * MOTION.travel.handover, y: from.y });
+
+      /* A crest between one appointment and the next: the card climbs back
+         towards the top of the window while the section between them is being
+         read, which is the half of every cycle that keeps it out of the way.
+         Clamped between its neighbours, which is the one hard rule on this
+         path — the card may never move UP the page. */
+      const crestBefore = (next: Knot) => {
+        const prev = knots[knots.length - 1]!;
+        if (next.s - prev.s < vh * 0.6) return;
+        const mid = (prev.s + next.s) / 2;
+        const want = mid - vh * lift;
+        knots.push({ s: mid, y: Math.min(Math.max(want, prev.y), next.y) });
+      };
+
+      /*
+       * One appointment per seam the card crosses: when that seam is centred in
+       * the window, the card is centred in the window too. It is the only
+       * moment in a section's whole crossing when there is nothing for the card
+       * to be behind — one section's light going out and the next one's not yet
+       * up — so it is where it is allowed to be at its brightest and its
+       * lowest.
+       *
+       * An appointment the card cannot both REACH and LEAVE at a sane rate is
+       * dropped rather than honoured: near a dock the two constraints fight,
+       * and the dock is the one that has to be exact. Both halves are needed
+       * and the second half is not hypothetical — at 1440x900 the seam above
+       * Early Access is centred in the window three pixels of scroll before
+       * that section's card reaches its own line, so honouring it asked for
+       * 318px of page in 3px of wheel. Measured, and it is a layout accident
+       * rather than a size: 0.85 of a window less half of one is 315, and the
+       * Early card happens to sit 318 below the seam.
+       */
+      for (const seam of seams) {
+        const at = seam - vh / 2;
+        const prev = knots[knots.length - 1]!;
+        if (at <= prev.s + 1 || at >= s1 - 1) continue;
+        if (seam <= prev.y) continue;
+        if ((seam - prev.y) / (at - prev.s) > dash) continue;
+        if ((to.y - seam) / (s1 - at) > dash) continue;
+        crestBefore({ s: at, y: seam });
+        knots.push({ s: at, y: seam });
+      }
+
+      crestBefore({ s: s1, y: to.y });
+      knots.push({ s: s1, y: to.y });
+      return {
+        from,
+        to,
+        knots,
+        long: i === 1,
+        /* The hero is never "landed" — the card starts there, and its
+           hand-over is the one that has to run against a card the page drew
+           itself. See MOTION.travel.handover. */
+        landed: i === 0 ? s0 : arrives(from),
+      };
+    });
+  };
+
+  /**
+   * Where the card's centre sits at this scroll.
+   *
+   * `glide` between knots, and each stretch's own progress warped by a power
+   * before it is eased — see MOTION.travel.cadence, which ramps that power
+   * down the leg so that the first fall hangs before it commits and the last
+   * lets go early and floats in. Four crossings, four shapes, one number.
+   *
+   * The warp cannot move a knot and cannot let the card climb: it is a power
+   * of a number between zero and one, so it is zero at zero, one at one, and
+   * increasing in between. The docks stay exact and the one hard rule on this
+   * path holds.
+   */
+  const pathY = (leg: Leg, s: number) => {
+    const k = leg.knots;
+    let i = 1;
+    while (i < k.length - 1 && k[i]!.s < s) i++;
+    const a = k[i - 1]!;
+    const b = k[i]!;
+    const t = Math.min(1, Math.max(0, (s - a.s) / (b.s - a.s || 1)));
+    /* Where down the leg this stretch happens, which is what sets its shape.
+       The flat holds take the same warp and are unmoved by it. */
+    const at = ((a.y + b.y) / 2 - leg.from.y) / (leg.to.y - leg.from.y || 1);
+    const bias = 1 + MOTION.travel.cadence * (1 - 2 * at);
+    return a.y + (b.y - a.y) * glide(Math.pow(t, bias));
+  };
+
+  /**
+   * How much of a card the reader is being shown at this page position.
+   *
+   * Highest in a seam, lowest over a section's payload — which is what turns a
+   * fade into an occlusion. The page cannot occlude anything (every .screen is
+   * transparent to the page's own ground), so what is behind the card has to be
+   * authored; what makes it honest is that the schedule comes from the LAYOUT
+   * and not from the journey's progress. Every term is a function of place, so
+   * scrolling up runs it exactly backwards.
+   */
+  const clearance = (y: number) => {
+    let near = Infinity;
+    for (const seam of seams) near = Math.min(near, Math.abs(seam - y));
+    return 1 - soft(near / (window.innerHeight * 0.5));
+  };
+
+  /** The quarter turn, held back to the last stretch of the final approach —
+      and run on travelled page rather than on scroll, so the reader sees the
+      whole of it rather than a third of it at a time. See MOTION.travel.turn. */
+  const turnAt = (w: number) =>
+    glide((w - MOTION.travel.turn) / (1 - MOTION.travel.turn || 1));
+
+  /**
+   * Place the card for a scroll position.
+   *
+   * One statement of where the card is and what it looks like at any point,
+   * rather than two that have to agree.
+   */
+  const apply = (s: number) => {
+    if (!legs.length) return;
+
+    const first = legs[0]!;
+    const last = legs[legs.length - 1]!;
+    const leg =
+      s < first.knots[0]!.s
+        ? null
+        : (legs.find((l) => s <= l.knots[l.knots.length - 1]!.s) ??
+          (s > last.knots[last.knots.length - 1]!.s ? null : last));
+
+    const { taper, bank, approach, grip } = MOTION.travel;
+    const vh = window.innerHeight;
+
+    if (!leg) {
+      /* Docked: at the hero before the release, at Early Access after the last
+         approach. Nothing is in transit, so nothing carries a transit value. */
+      const home = s < first.knots[0]!.s;
+      const d = home ? docks[0]! : docks[2]!;
+      const drift = driftOf(d);
+      /*
+       * And past the last dock, the hand-over — which happens HERE rather than
+       * on the way in, and that is the fix for the two cards Early Access used
+       * to show.
+       *
+       * The card has landed and stopped. From this point the section's own
+       * card comes up over a traveller still at full strength, in exactly the
+       * same place, over MOTION.travel.grip of the window: two appearances of
+       * one object dissolving into each other rather than two objects trading
+       * places. Only when it has completely taken over does the traveller go
+       * out, and by then there is an identical opaque card drawn over it.
+       */
+      const land = home
+        ? 0
+        : soft((s - last.knots[last.knots.length - 1]!.s) / (vh * grip));
+      gsap.set(frame, {
+        x: d.x + drift.x,
+        y: d.y + drift.y,
+        scale: d.scale,
+        /*
+         * Nothing at all, at either end. Before the release the hero still has
+         * its own card; past the last dock Early Access has taken its own back
+         * (see `hold`), and a traveller left at full strength behind it is a
+         * frozen copy that the real card's own depth drifts out from behind by
+         * up to fifteen pixels as the reader goes down the section.
+         *
+         * The hero end is the one that had to be got right rather than merely
+         * tidy.
+         *
+         * The hero spends the page's opening turning that card up out of
+         * landscape (MOTION.hero.turn), and a portrait copy held at full
+         * strength underneath a card sweeping through a quarter circle is two
+         * Squad cards for the length of the entrance — the exact failure the
+         * first attempt at this effect shipped and documented. Screenshotted at
+         * 500ms and unmistakable. There is nothing for the traveller to do here
+         * anyway: the card in this slot IS the hero's, and the traveller's
+         * whole job starts when it leaves.
+         */
+        opacity: home || land >= 1 ? 0 : 1,
+      });
+      gsap.set(turn, { rotationZ: d.turn });
+      hold(-1, home ? 1 : 0, 0, home ? 0 : land);
+      return;
+    }
+
+    const s0 = leg.knots[0]!.s;
+    const s1 = leg.knots[leg.knots.length - 1]!.s;
+    const y = pathY(leg, s);
+
+    /*
+     * THE ODOMETER: how much of this leg's PAGE the card has actually covered,
+     * and the clock every one of its own properties runs on.
+     *
+     * Scroll progress is the obvious choice and it is the wrong one, because
+     * this path deliberately spends half of its scroll standing still. On that
+     * clock the card's size, its lean, its drift sideways and its quarter turn
+     * all advanced while it was parked above the top of the window between two
+     * seams, and were very nearly FROZEN over the moments it was actually on
+     * screen. What the reader saw was a rectangle of fixed size and fixed
+     * attitude sliding down a straight vertical line, four times, finding
+     * itself mysteriously smaller and further round each time it came back.
+     * Every secondary channel on the card was being spent where there was
+     * nobody to see it.
+     *
+     * On the odometer all of them are spent where the card is moving, which is
+     * exactly where it can be seen: each crossing is an arc rather than a
+     * line, the card leans into its own drift, changes size as it goes past,
+     * and turns while the reader is watching it turn.
+     *
+     * It also inherits the path's own smoothness, and that is the half of this
+     * that could not be got any other way. The odometer's rate IS the fall's
+     * rate — so every property decelerates to rest as the card settles onto a
+     * seam and picks up again as it leaves, on the same curve the fall itself
+     * uses. The arrival at each seam is a miniature of the arrival at a dock.
+     */
+    const w = Math.min(
+      1,
+      Math.max(0, (y - leg.from.y) / (leg.to.y - leg.from.y || 1)),
+    );
+    /* Zero at both ends of a leg and one in the middle: the shape every transit
+       property is expressed in, so all of them resolve together at a dock and
+       none of them has to be told where the docks are. */
+    const away = arch(w);
+    /*
+     * And the destination taking hold before the card gets there: the last of
+     * the leg over which the drift and the lean are folded away, so the final
+     * approach is plumb and centred and the only thing still moving on the
+     * card as it lands is the turn. See MOTION.travel.approach.
+     */
+    const hush = 1 - glide((w - (1 - approach)) / (approach || 1));
+
+    const base = leg.from.scale + (leg.to.scale - leg.from.scale) * w;
+    const light = leg.long ? lit.long : lit.lead;
+    /*
+     * The taper the depth system already runs, for the same reason: motion that
+     * is exhilarating at the top of a page is exhausting at the bottom. Read
+     * off the card's own position down the document rather than off the leg, so
+     * it is one continuous fall rather than two that reset.
+     */
+    const quiet =
+      1 -
+      (1 - taper) *
+        Math.min(1, y / (document.documentElement.scrollHeight || 1));
+    const transit =
+      (light.over + (light.seam - light.over) * clearance(y)) * quiet;
+    /*
+     * Full strength at both ends of every leg, whatever the transit track says
+     * — a dock is the card, not a picture of it.
+     *
+     * Measured in SCROLL rather than in fractions of a leg, and that is the fix
+     * for the one place this went visibly wrong. A tenth of the long leg is
+     * 436px of scroll at 1440x900, and 436px before the last dock the card is
+     * still crossing the middle of Invite Your Squad — so it came up to a third
+     * opacity directly behind that section's QR panel, which is 50% black on a
+     * near-black ground and hides nothing. Tied to the window instead, the card
+     * is only allowed to be a card again once it is within a fifth of a window
+     * of the slot, by which point it is in the seam above it and there is
+     * nothing left to be behind.
+     *
+     * Kept as two ramps rather than one symmetric value, because the two ends
+     * of a leg hand over to different elements — see `hold`.
+     */
+    const into = 1 - soft((s - s0) / (vh * 0.2));
+    const onto = 1 - soft((s1 - s) / (vh * 0.2));
+    const edge = Math.max(into, onto);
+
+    /* The slots' own depth, blended out as the card leaves them: full at either
+       end of a leg, nothing in the middle, where the card belongs to no section
+       and there is nothing for it to be a layer of. */
+    const a = driftOf(leg.from);
+    const b2 = driftOf(leg.to);
+    const drift = {
+      x: (a.x + (b2.x - a.x) * w) * (1 - away),
+      y: (a.y + (b2.y - a.y) * w) * (1 - away),
+    };
+
+    /*
+     * The hand-over at the hero, in the order that makes it invisible, and over
+     * the stretch of path where the card is not moving — see
+     * MOTION.travel.handover, and the knot `measure` pushes for it.
+     *
+     * The traveller comes up first, under a card at full strength in exactly
+     * the same pose and the same place, so bringing it up changes nothing the
+     * reader can see. Only then does the hero let go. Crossing them the other
+     * way round is a hole; crossing them at the same time is two half-strength
+     * copies compositing to a quarter less than either; and crossing them while
+     * the traveller is already falling is two cards in two places, which is
+     * what this looked like before the flat run was put in.
+     *
+     * Both are functions of scroll and both therefore reverse: scroll back up
+     * and the hero takes its card back.
+     */
+    const swap = (s - s0) / (vh * MOTION.travel.handover);
+    const rise = leg.long ? 1 : soft(swap / 0.35);
+
+    gsap.set(frame, {
+      x:
+        leg.from.x +
+        (leg.to.x - leg.from.x) * w +
+        drift.x +
+        /* Of the window's WIDTH, which is what MOTION.travel.sway has always
+           said it was and what its own arithmetic about reaching the edge is
+           done in. */
+        (leg.long ? sway * window.innerWidth * away * hush : 0),
+      y: y + drift.y,
+      scale: base + (far - base) * away,
+      opacity: (transit + (1 - transit) * edge) * rise,
+      force3D: true,
+    });
+    gsap.set(turn, {
+      rotationZ:
+        leg.from.turn +
+        (leg.to.turn - leg.from.turn) * turnAt(w) +
+        /*
+         * Banked in proportion to how fast the card is drifting sideways,
+         * which is what a sine of twice the excursion's phase is: `away` is
+         * one cosine hump across the leg, and this is its derivative. So the
+         * card leans INTO its drift and comes back to plumb as that drift
+         * stops, which is the relationship an aircraft has with a turn and the
+         * one a rectangle sliding about at a fixed tilt does not.
+         *
+         * It costs nothing that was not already being spent — the same
+         * property the quarter turn is written on, one term further along.
+         */
+        bank * Math.sin(2 * Math.PI * w) * hush,
+    });
+
+    /*
+     * And the hero's own card goes out under the traveller as it takes over.
+     * Both are the same card at the same size in the same place for the whole
+     * of the hand-over and the hero's is in FRONT of it, so what the reader
+     * sees is one card the whole time rather than two at half strength each.
+     */
+    /*
+     * And the slots, which take the card back at every dock.
+     *
+     * The traveller paints behind every section, and a section is not opaque —
+     * so at a dock it is lit by whatever that section hangs in FRONT of it.
+     * Measured at Early Access, whose two 412px blooms sit at -z-10 inside the
+     * one stacking context the card cannot get into: the flown card came out
+     * visibly lilac and a stop lower in contrast than the authored one, at the
+     * last and most important dock on the page.
+     *
+     * There is no z-index that fixes that. Five of the eight sections carry
+     * `isolate`, so from outside one there is no position between a section's
+     * light and its content — the card is either entirely behind the section or
+     * entirely in front of it, and in front is the distraction this whole shape
+     * exists to avoid.
+     *
+     * So the real card takes over at the dock, which is what it is there for.
+     * It comes up OVER the traveller, at exactly the same size in exactly the
+     * same place — measured at [0,0,0,0] on every dock at every width — so the
+     * only thing that changes across the hand-over is the light on it, and it
+     * changes over a fifth of a window of scrolling. The card arrives and the
+     * section's light comes up on it, which is what arriving in a lit room
+     * looks like.
+     *
+     * The hero is the one that goes the other way, and it has to: there the
+     * real card is the one that starts visible, so the traveller comes up
+     * underneath it first and only then does the hero let go. Crossing either
+     * of them the other way round is two half-strength copies of one card,
+     * which composites to a quarter less than either.
+     */
+    /*
+     * How much of the approve slot's own card is showing — and it is a
+     * function of the DOCK, not of the approach.
+     *
+     * A dock is a stretch of scroll, from `landed` (where the card comes to
+     * rest on the slot) to `s0` (where it starts moving again), over which the
+     * traveller is exactly on the slot, at full strength, and stationary. Both
+     * halves of the exchange happen inside it: the section's card comes up
+     * over the traveller once the traveller has stopped, and goes back down
+     * before it moves again. Whichever card is underneath is at full strength
+     * for the whole of the other one's ramp, which is the ordering the hero's
+     * hand-over has always used and the reason it is invisible.
+     *
+     * Both cards are opaque — measured, the mean colour inside the card at a
+     * dock is identical with the traveller behind it and without it — so a
+     * ramp of the top one over a full-strength bottom one composites to
+     * `a * top + (1 - a) * bottom` at every point. One object changing its
+     * light, in place, with nothing to see at either end of it.
+     *
+     * What this replaces was a ramp measured in SCROLL, a fifth of a window
+     * either side of the dock line, and it straddled that line: the slot's own
+     * card was already half lit while the traveller was still on its way in.
+     * Measured at 1440x900 — the approve slot at 0.36 with the traveller at
+     * 0.47 and 233px short of it, and again at 0.39 on the way out with the
+     * card 26px gone. Two cards, at both ends of both docks.
+     */
+    const held = Math.min(
+      soft((s - leg.landed) / (vh * grip)),
+      1 - soft((s - (s0 - vh * grip)) / (vh * grip)),
+    );
+
+    hold(
+      -1,
+      /* The hero lets go a beat AFTER the traveller has come up under it. */
+      leg.long ? 0 : 1 - soft((swap - 0.35) / 0.65),
+      /* The approve slot is docked for the head of the long leg, and not yet
+         reached for the whole of the short one. */
+      leg.long ? held : 0,
+      /* And Early Access takes its own card back past the last dock rather
+         than on the way to it — see the branch above. */
+      0,
+    );
+  };
+
+  /**
+   * What each of the three slots is showing.
+   *
+   * Called from every frame of `apply`, with `at` naming the dock the card is
+   * sitting in outright (or -1 for none) and the three ramps overriding that
+   * where a hand-over is under way. One writer for all three, so no two of them
+   * can disagree about which is holding the card.
+   */
+  const hold = (at: number, ...ramp: number[]) => {
+    [heroSlot, approveSlot, earlySlot].forEach((el, i) =>
+      gsap.set(el, { opacity: ramp[i] ?? (at === i ? 1 : 0) }),
+    );
+  };
+
+  /**
+   * The two slots the traveller stands in for, held at nothing.
+   *
+   * They stay in the DOM, in the layout, and are still what everything else is
+   * measured against — the approve diagram's connectors are drawn against that
+   * box and the Early stage is sized by its card — they simply never draw,
+   * because the card that belongs in them is the one coming down the page. See
+   * approveDiagram and earlyCard, which no longer reveal them, and the note in
+   * the controller on why this has to be written rather than left to the
+   * stylesheet.
+   */
+  const park = () => gsap.set([approveSlot, earlySlot], { opacity: 0 });
+
+  /**
+   * The scroll range the whole journey is scrubbed across — and a window past
+   * the last dock, which is the half of this that is load-bearing.
+   *
+   * A scrubbed trigger stops calling its animation at the end of its range, so
+   * a range that ended AT the dock left the traveller frozen on the page at
+   * whatever position it was last handed — while the real card it had just
+   * given the slot back to went on drifting with Early Access's own parallax.
+   * Measured at 1440x900: the two were 15px apart by the time that section had
+   * finished arriving, both at full strength, at the closing image of the
+   * page. The branch in `apply` that hands that slot over past the last dock
+   * was written for exactly this and could never be reached.
+   *
+   * With the tail it runs from the first frame past the dock, which is where
+   * the whole of Early Access's exchange now happens.
+   */
+  const span = () => ({
+    from: legs[0]?.knots[0]?.s ?? 0,
+    to:
+      (legs[1]?.knots[legs[1]!.knots.length - 1]?.s ?? 0) + window.innerHeight,
+  });
+
+  return { measure, apply, park, span };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1075,11 +1836,20 @@ export function approveDiagram(el: HTMLElement, only?: number) {
    */
   const part = (i: number) => only === undefined || only === i;
   const request = part(0) ? q(el, "request") : [];
-  const squad = part(1) ? q(el, "squad") : [];
   const votes = part(2) ? q(el, "votes") : [];
   const halo = part(1) ? q(el, "squad-glow") : [];
+  /*
+   * No `squad`. This diagram's Squad card slot is filled by the card that has
+   * travelled down from the hero — see squadTravel — so the element itself is
+   * never revealed here: it holds the space the traveller lands in and the
+   * coordinates the connectors point at, and nothing else. What the section
+   * loses is a piece of its four-part arrival; what it gains is that the thing
+   * the request and the votes gather around is visibly on its way in for eight
+   * hundred pixels of scroll before it lands, rather than fading up out of
+   * nothing when they do.
+   */
 
-  const { from, shift, lift } = MOTION.enter;
+  const { from, shift } = MOTION.enter;
 
   /*
    * Left, right, up — and nothing measured. The request card and the vote list
@@ -1095,7 +1865,6 @@ export function approveDiagram(el: HTMLElement, only?: number) {
    */
   park(request, { opacity: from, x: -shift });
   park(votes, { opacity: from, x: shift });
-  park(squad, { opacity: from, y: lift });
   glowStart(halo);
 
   /* One position for all four, so they are one object arriving rather than
@@ -1107,7 +1876,6 @@ export function approveDiagram(el: HTMLElement, only?: number) {
   };
   add(request, { opacity: 1, x: 0, ...inStep() });
   add(votes, { opacity: 1, x: 0, ...inStep() });
-  add(squad, { opacity: 1, y: 0, ...inStep() });
   add(halo, { opacity: 1, x: 0, y: 0, ...MOTION.approve.glow });
 
   /*
@@ -1589,25 +2357,20 @@ export function inviteCard(el: HTMLElement) {
  */
 
 export function earlyCard(el: HTMLElement) {
-  const card = q(el, "card");
-  /* The turn stays — it is the gesture the hero opened on, mirrored, and a
-     quarter turn is not a grow. Only the distance changed, from 440px (off the
-     bottom of the window) down to the shared lift. */
-  gsap.set(card, {
-    opacity: MOTION.enter.from,
-    y: MOTION.early.cardRise,
-    rotationZ: MOTION.early.turn,
-  });
-  const tl = beat().to(card, {
-    opacity: 1,
-    y: 0,
-    rotationZ: 0,
-    ...MOTION.early.card,
-  });
-
-  /* The two glows behind the card arrive with it rather than with the words —
-     this section leads with its artwork, so that beat is where they begin. */
-  return glowIn(tl, el);
+  /*
+   * No card. The one that belongs here is the one that has been coming down the
+   * page since the hero, and it arrives on the reader's own scroll rather than
+   * on a clock — see squadTravel. The quarter turn goes with it: the page
+   * opened on this card standing up out of landscape and it lies back down at
+   * the end, and now that is literally the same card doing both, performed
+   * rather than restated.
+   *
+   * The beat keeps its name, its place as the section's first, and its length,
+   * so WITH_CARD still means what it says and the copy, the fields and the
+   * button still travel and land together on MOTION.early.card's clock. What is
+   * left in it is the light the card lands in.
+   */
+  return glowIn(beat(), el, MOTION.early.card.duration);
 }
 
 export function earlyForm(el: HTMLElement) {

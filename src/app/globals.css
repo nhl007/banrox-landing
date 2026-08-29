@@ -483,6 +483,120 @@ body {
 }
 
 /*
+ * ---------------------------------------------------------------------------
+ * THE TRAVELLING SQUAD CARD
+ *
+ * The page has three Squad cards in it — the one at the front of the hero's
+ * fan, the one the approve diagram gathers around, and the one Early Access
+ * leads with. They are the same object: it is the product, and it is what all
+ * three of those sections are about. Until now they were three pictures of it
+ * and scrolling between them said nothing.
+ *
+ * This is the card that does the travelling. It picks up exactly where the
+ * hero's sits once the fan has folded into it, falls down the page as the
+ * reader scrolls, is set down in the approve diagram's slot, falls again, and
+ * lies down flat in Early Access — one card, four thousand pixels, no cuts.
+ *
+ * WHY IT IS A FOURTH CARD RATHER THAN ONE OF THE THREE. None of them can
+ * leave. All three live inside a .stage — a scaled artboard with a container
+ * query on it — and the hero's is inside .stage-viewport, which clips on both
+ * axes precisely so the fan's entrance can start off the edge. A card animated
+ * out of that box is a card cut in half by it. Measured. So the three stay
+ * where they are, holding the layout and the space, and this one is what moves.
+ *
+ * WHERE IT PAINTS. First child of <main>, before .scene-track, and that is
+ * load-bearing: both are positioned elements with no z-index of their own, so
+ * they paint in document order and everything in every section lands on top of
+ * this. Verified rather than assumed — a probe element placed here is behind
+ * every card, every diagram and every glyph on the page, and shows only in the
+ * gaps between them. It is the only place on the page a large object can cross
+ * five screens without being in the way of any of them.
+ *
+ * WHY IT IS ABSOLUTE AND NOT FIXED. Nothing above it is positioned, so its
+ * containing block is the initial one and its x/y are page coordinates. The
+ * three slots are fixed points on the page; the card is somewhere on the line
+ * between them; scrolling does the rest. A fixed element would have to be
+ * re-derived against the window on every frame instead.
+ *
+ * WHY IT IS TWO ELEMENTS. The frame owns x, y, scale and opacity; the card
+ * inside it owns rotation. Two owners on one transform collide — the page
+ * learned that on the comparison panels' orbit rings and again on the hero
+ * deck's centring — so the split is the existing fix rather than a new idea.
+ * The frame is offset by half the authored face so that its x/y ARE the card's
+ * centre, which is what makes a dock a single measured point rather than a
+ * corner plus a size.
+ */
+.squad-trail {
+  display: none;
+}
+
+/*
+ * Held at nothing unconditionally, outside the query below.
+ *
+ * Two reasons, and the second is the one that matters. The page is
+ * server-rendered and paints before any of this exists, so an unplaced card
+ * would flash at the document's top-left corner for a frame. And below the gate
+ * the only thing keeping this off the page is its parent's `display: none` —
+ * which is one edit away from not being true, and the failure it would hide is
+ * a second full-strength Squad card sitting in the corner of a page that has
+ * no controller to move it.
+ */
+.squad-trail-frame {
+  opacity: 0;
+}
+
+/*
+ * Only where the sequence runs, which is the union of the two motion tiers and
+ * exactly the guard the [data-reveal] start state uses. Below it the page is
+ * delivered finished by the server, all three real cards are visible, and a
+ * fourth one would be a second Squad card sitting on the hero for ever.
+ */
+@media (min-height: 480px) and (prefers-reduced-motion: no-preference) {
+  .squad-trail {
+    display: block;
+    position: absolute;
+    /*
+     * As wide as the page and no taller than a line, which is a clip and not a
+     * layout: the frame inside is absolutely positioned against this box's
+     * top-left corner, so the coordinate system is the page's either way.
+     *
+     * Clipped sideways and open top and bottom, exactly as .screen-glow is and
+     * for the same pair of reasons. Sideways, because this is the one moving
+     * thing on the page that no section clips — every .screen carries
+     * `overflow-x: clip` and cuts its own contents off at the window's edge,
+     * and the traveller is outside all of them by construction. Measured at
+     * 320x720, where the Early Access stage bottoms out on its own minimum
+     * scale: the card is 312px wide in a 320px window and hangs 8px past the
+     * right edge, which on this page is not a cosmetic overflow but a
+     * horizontal scrollbar that resizes every container query the stages derive
+     * --stage-scale from. Open vertically, because travelling the length of the
+     * page is the entire point.
+     */
+    inset: 0 0 auto 0;
+    height: 0;
+    overflow-x: clip;
+    overflow-y: visible;
+    pointer-events: none;
+  }
+
+  /*
+   * The box is the authored face, offset by half of itself, so the frame's
+   * origin is the card's centre — see above. transform-origin is that centre
+   * too, so the scale the controller gives it is measured from the same point
+   * its x and y are, and the two compose into one placement instead of fighting
+   * over where the middle is.
+   */
+  .squad-trail-frame {
+    position: absolute;
+    left: -210px;
+    top: -130px;
+    width: 420px;
+    height: 260px;
+    transform-origin: 50% 50%;
+  }
+}
+
+/*
  * The break above the footer, in both tiers, from one rule.
  *
  * A between on this page is never just the margin: it is the section above's

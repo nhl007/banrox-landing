@@ -267,6 +267,309 @@ export const MOTION = {
     },
   },
 
+  /* --- the travelling Squad card ----------------------------------------- */
+
+  /*
+   * One card, three docks, four thousand pixels of page.
+   *
+   * The Squad card is drawn three times — the front of the hero's fan, the
+   * middle of the approve diagram, flat over the Early Access form — and it is
+   * the same object every time. This is what carries it between them, scrubbed
+   * by the reader rather than played at them, because where an object IS ought
+   * to be a function of where the reader is. See squadTravel in timelines.ts
+   * for the path and .squad-trail in globals.css for where it paints.
+   *
+   * ---------------------------------------------------------------------------
+   * THE ARITHMETIC THAT DECIDES THE WHOLE SHAPE
+   *
+   * Between two docks the card must advance exactly as much PAGE as the reader
+   * scrolls: 4988px of page over 4358px of scroll on the long leg at 1440x900,
+   * a ratio of 1.14. An average rate of about one is a card glued to the
+   * WINDOW — and no easing between two endpoints escapes it, because easing
+   * only redistributes the same net rate. Interpolated straight, the card sits
+   * within 150px of one viewport position for five and a half screens, parked
+   * over four sections it has nothing to do with. That is the failure, it is
+   * the DEFAULT, and pushing the card further away makes it worse rather than
+   * better: in this page's own vocabulary a far layer is one that moves LESS
+   * than the page, which is to say one that hangs in the window.
+   *
+   * All the freedom is in how the rate is DISTRIBUTED. So:
+   *
+   *   the card holds its place on the page while a section is being read,
+   *   and falls a whole section's worth in the seam between two.
+   *
+   * It is the page's own rhythm rather than one imposed on it — the seams are
+   * measured, not assumed, which is what lets the same rule serve a phone where
+   * a section is two or three windows tall and the seam is 96px of padding
+   * rather than 144px of margin. And it produces both halves of every hand-off
+   * from one sentence: a release is the section leaving while the card stays, a
+   * catch is the section arriving while the card stays. Which is heroFold's
+   * closing argument — the four passports fold in and leave the product alone
+   * on the screen — said again at every anchor.
+   */
+  travel: {
+    /**
+     * How far ABOVE the top of the window the card retreats to between two
+     * seams, as a fraction of the window.
+     *
+     * Above the top, not near it, and that is the whole of what keeps this off
+     * the reader's screen while they are reading. Measured with the card
+     * resting a sixteenth of a window DOWN instead: at 1440x900 it sat across
+     * the Intelligence Layer's badge and the first line of its heading for the
+     * length of that section — a grey rectangle over the two things the section
+     * opens with, which is precisely the failure this whole shape exists to
+     * avoid.
+     *
+     * A wish rather than an instruction. The path is clamped so the card can
+     * never move UP the page, and that caps how far it may climb back in the
+     * scroll one hold has. Above the gate the pitch is 1044 against a 900px
+     * window and the clamp binds: the card comes to rest exactly where the seam
+     * before it left it, which is a twelfth of a window above the top edge —
+     * and since what is placed is its centre, and in transit it is barely a
+     * hundred pixels tall, that is the whole card clear of the window. On a
+     * phone, where a section can be three windows, there is scroll to spare and
+     * the wish is granted outright. Both are the same rule taking what the
+     * layout will give it — the bargain `room` already strikes sideways and
+     * `--stage-scale` strikes with the diagrams themselves.
+     *
+     * Where the clamp binds, the card is exactly stationary on the page for the
+     * length of that hold. Worth avoiding if anyone could see it; nobody can,
+     * because the clamp binding is the same fact as the card being off the top
+     * of the window.
+     */
+    lift: 0.1,
+
+    /**
+     * How long the hero holds the card after it has been let go, as a fraction
+     * of the window — the hand-over, and the reason there is one.
+     *
+     * The hero is the one dock where the page's own card starts visible and has
+     * to be taken from it, and the two cannot simply cross-fade: they are the
+     * same card, so the moment the traveller starts falling they are in two
+     * different places, and a cross-fade between two positions is two cards.
+     * Screenshotted at 1440x900 with the fade run against the fall — the hero's
+     * card half gone at the top of the window and the traveller two thirds of
+     * the way down it, both translucent, unmistakably a pair.
+     *
+     * So the fall waits. For this much scroll after the release the traveller
+     * is pinned to the hero's slot, and the whole exchange happens there: the
+     * traveller comes up first, under a card at full strength in exactly the
+     * same pose, and only then does the hero let go. Nothing is in two places
+     * at once because nothing has moved yet.
+     */
+    handover: 0.08,
+
+    /**
+     * The fastest the card may fall, as a multiple of the reader's scroll.
+     *
+     * Not a speed limit on the path — it is the test an appointment has to pass
+     * to be kept. A seam the card cannot both reach and leave at this rate is
+     * one the layout has put too close to a dock, and the dock is the half that
+     * has to be exact; so that seam is dropped and the card simply falls
+     * through it on its way somewhere else.
+     *
+     * At two and a half the card descends the window at one and a half times
+     * the speed the page rises through it, which is the fastest anything on
+     * this page moves and about as fast as a fall can be and still be watched.
+     */
+    dash: 2.5,
+
+    /**
+     * How the falls change character down a leg: the first hangs a moment
+     * before it commits, the last lets go early and glides in.
+     *
+     * A power applied to each fall's own progress before it is eased. Above
+     * one the card leaves the top of the window late and arrives quickly;
+     * below one it leaves promptly and spends the whole descent settling onto
+     * the seam. Ramped from `1 + cadence` at the head of a leg to `1 - cadence`
+     * at its foot, so no two crossings have the same shape and the journey
+     * calms as it goes down the page — the argument `taper` makes about
+     * brightness, made about time.
+     *
+     * It cannot move a knot and cannot break the path's monotonicity: a power
+     * of a number between zero and one is a number between zero and one, and
+     * it is zero at zero and one at one. Every dock stays exact.
+     *
+     * Deliberately small. The falls are already the loudest thing the card
+     * does; this is the difference between four of them and four DIFFERENT
+     * ones, not between one gesture and another.
+     */
+    cadence: 0.15,
+
+    /**
+     * The hand-over at a dock, as a fraction of the window — how long the
+     * section's own card takes to come up over the traveller, and to go back
+     * down before it leaves.
+     *
+     * It is spent INSIDE the dock, which is the whole of what makes the
+     * exchange invisible. A dock is a stretch of scroll over which the card
+     * sits exactly on the slot and does not move; both cards are opaque; so a
+     * ramp of the top one over a bottom one held at full strength composites
+     * to `a * top + (1 - a) * bottom` at every point, which is two appearances
+     * of one object dissolving into each other in place. It is the same
+     * ordering `handover` states at the hero, said at the other two docks.
+     *
+     * Ramping them together across the dock line instead — which is what this
+     * did before, over a fifth of a window either side of it — is two cards.
+     * Measured at 1440x900: the approve slot at 0.36 while the traveller was
+     * at 0.47 and 233 PIXELS short of it, and Early Access's at 0.47 with the
+     * card still 105px out. Both ends of both docks, and both were visible.
+     *
+     * A dock runs from `own.line` to its complement, so it is 0.7 of a window
+     * long and two of these have to fit inside it with room to spare.
+     */
+    grip: 0.18,
+
+    /**
+     * How far away the card is between docks, as a fraction of its authored
+     * face — against 0.73, 0.84 and 1.0 at the three docks.
+     *
+     * A third of the way, which at 1440x900 is a 143x89 card. It is the only
+     * number here that is a look rather than a consequence, and it is set by
+     * what the gap between the two comparison panels will take: 112 stage units
+     * at Alone Vs Together's own scale is a 92px corridor down the middle of
+     * that section, and the card falls down it.
+     */
+    far: 0.34,
+
+    /**
+     * Opacity in the seam between two sections, and over a section's payload.
+     *
+     * The page cannot occlude — every .screen is transparent to the page's own
+     * ground — so what is behind the card has to be authored. What makes it
+     * occlusion rather than a fade is that the schedule comes from the layout
+     * and not from the animation's progress: the card is at `gap` when its
+     * centre is inside a seam and `over` when it is over a section, `sine.inOut`
+     * between, and every term is a function of scroll position rather than of
+     * time. Scroll up and it runs exactly backwards; stop and it stops; reload
+     * half way down the page and it is where it should be.
+     *
+     * `lead` is the first leg's and `long` the second's, and the first is
+     * brighter on purpose. If the reader does not connect the card that leaves
+     * the hero with the card in the approve diagram then nothing that happens
+     * on the long leg means anything — so leg one spends its budget on being
+     * seen, over one section, and leg two spends its on being absent, over
+     * four.
+     */
+    lit: {
+      lead: { seam: 0.34, over: 0.16 },
+      long: { seam: 0.2, over: 0.05 },
+    },
+
+    /**
+     * What the phone gets instead — the same bargain DepthLayer.phone already
+     * strikes, and struck for the same reason.
+     *
+     * Everything down there is full-width. At 1440 the card in transit is 143px
+     * of a 1440px window and the sections are a 1240px column with light on
+     * either side of them; at 390 it is 109px of a 390px window and the column
+     * IS the window, so the card is never anywhere but directly behind
+     * something. Measured at the seam above Squad Approves: the wide tier's
+     * numbers put a card across the section's badge and the first line of its
+     * heading at nearly a third opacity, over half the width of the screen.
+     *
+     * So: further away, dimmer at every point, and no sideways excursion at
+     * all — the reason for the sway up there is that the funnel has a spine on
+     * the centre line and a dim vertical shape on it reads as one of its own
+     * connectors, and in a column there is nowhere to go to avoid that anyway.
+     */
+    phone: {
+      far: 0.28,
+      sway: 0,
+      lit: {
+        lead: { seam: 0.24, over: 0.09 },
+        long: { seam: 0.15, over: 0.04 },
+      },
+    },
+
+    /**
+     * And the same taper the depth system runs, for the same reason: motion
+     * that is exhilarating at the top of a page is exhausting at the bottom.
+     * The transit's brightness is multiplied by a fall from 1 to this across
+     * the page — read off SectionDepth.gain's own endpoints (1.0 at the hero,
+     * 0.55 at Early Access) rather than invented, so the card quietens on the
+     * same curve everything else does.
+     */
+    taper: 0.55,
+
+    /**
+     * One `sine.inOut` excursion sideways and back on the long leg, as a
+     * fraction of the window's WIDTH, peaking over the Intelligence Layer.
+     *
+     * The funnel's spine is the one place on the page where a dim vertical
+     * shape on the exact centre line would be read as one of its own
+     * connectors. Small enough that it cannot reach the edge of the window at
+     * any width — 72px at 1440, against a card 143 wide on a centre line 720
+     * from either edge — so it can never become the scrollable overflow that
+     * .screen's own comment warns about. Zero on a phone, where the column IS
+     * the window and there is nowhere to go: see travel.phone. And leg one has
+     * none either, because there the centre line is a corridor deliberately
+     * left empty between two panels, and falling down it is the best thing the
+     * card could be doing on that screen.
+     *
+     * One excursion across the leg, but spent entirely in the falls — it runs
+     * on the card's travelled page rather than on the reader's scroll, so the
+     * card slides sideways only while it is also coming down. That is what
+     * makes each crossing an arc instead of a vertical line with a fixed
+     * offset on it, and it is where the whole of the effect went before: half
+     * of the excursion used to be spent above the top of the window, where
+     * there is nobody to see it.
+     */
+    sway: 0.05,
+
+    /**
+     * The last of a leg — measured in the card's own travelled page — over
+     * which its excursions are folded away.
+     *
+     * `sway` and `bank` both resolve to nothing at a dock anyway, but only
+     * exactly AT it, and a card still correcting its lean in the last few
+     * pixels reads as being placed rather than as settling. Folded away over a
+     * sixth of the leg, the destination has hold of the card before it gets
+     * there: it comes down the last stretch plumb and on the slot's own centre
+     * line, and the only thing still happening at the moment it lands is the
+     * quarter turn finishing.
+     */
+    approach: 0.16,
+
+    /**
+     * A few degrees off plumb while it falls, resolving to nothing at each
+     * dock.
+     *
+     * The cheapest thing on the list and the one that turns a translate into a
+     * fall: it is the same property the quarter turn already uses, so it costs
+     * one number of arithmetic and no extra channel. Deliberately small — a
+     * card that tumbles is a card nobody can read, and this one is legible at
+     * both ends of every leg.
+     */
+    bank: 5,
+
+    /**
+     * Where in the leg's travelled page the quarter turn starts.
+     *
+     * Held back to the final approach on purpose: the turn is the page's
+     * closing gesture and the mirror of the hero's opening one, so it wants to
+     * be the last thing the card does rather than something it has been doing
+     * all the way down.
+     *
+     * In travelled page rather than in scroll, and that is what makes it
+     * visible. On the scroll clock a third of the rotation was spent while the
+     * card was parked above the top of the window between two seams, and the
+     * card reappeared at the next crossing already turned — a quarter turn
+     * nobody watched, delivered in instalments behind the sections.
+     */
+    turn: 0.62,
+
+    /**
+     * The scrub's catch-up, in seconds — MOTION.hero.fold.lag's own number, and
+     * the same argument: a rigid scrub ties the card to the scrollbar and reads
+     * as a scrollbar, and a fraction of a second behind reads as an object with
+     * weight being carried down a page. It is also what rounds the corners
+     * where the path changes rate, since a sudden change in target velocity is
+     * smoothed over the lag.
+     */
+    lag: 0.6,
+  },
+
   /* --- hero ------------------------------------------------------------- */
 
   hero: {
@@ -793,32 +1096,32 @@ export const MOTION = {
   /* --- early access ----------------------------------------------------- */
 
   early: {
-    /**
-     * The page opened on this card standing upright and turning into place; it
-     * closes on the same card lying flat and turning the other way. +90 reads
-     * as a counter-clockwise quarter turn on the way to 0, because CSS rotation
-     * is positive-clockwise — same convention as the hero.
-     */
-    turn: 90,
     /*
-     * The card lifts `enter.lift` like every other payload. It used to start
-     * 440px down — a little over a third of a viewport, far enough to be off the
-     * bottom edge when it set out — which is exactly the kind of journey the
-     * shared gesture replaced.
+     * The section's clock, which is still the card's even though the card is no
+     * longer this beat's to move.
+     *
+     * The page opened on this card standing upright out of landscape and it
+     * closes on the same card lying flat again — and now it IS the same card,
+     * carried down the page by the reader rather than played at them (see
+     * squadTravel). So the turn and the 300px rise this used to state are gone
+     * with it: the arrival covers no distance at all, because the thing has
+     * been visibly on its way for four thousand pixels.
+     *
+     * What is left here is the duration everything BESIDE the card runs on, and
+     * the length of the beat that WITH_CARD queues the form behind. Both still
+     * mean exactly what they did.
      */
     card: { duration: 3, ease: "power3.out" },
 
     /**
      * How far below its place each part of the section starts.
      *
-     * Four different distances on purpose: the card travels furthest because it
-     * is the thing being watched, and everything else travels less the closer it
-     * sits to where it ends up. They all take the SAME time to do it — see
-     * `card` above, which every one of them now runs on — so the four move at
-     * four different speeds and arrive on one frame, which is what makes them
-     * read as one panel rising rather than four things racing.
+     * Three different distances on purpose: everything travels less the closer
+     * it sits to where it ends up. They all take the SAME time to do it — see
+     * `card` above, which every one of them runs on — so they move at three
+     * different speeds and arrive on one frame, which is what makes them read
+     * as one panel rising rather than three things racing.
      */
-    cardRise: 300,
     copyRise: 200,
     fieldRise: 200,
     ctaRise: 100,
