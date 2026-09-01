@@ -370,31 +370,61 @@ export default function HowSquadWorks() {
                   className="w-full shrink-0 sm:w-[392px]"
                   data-reveal="step"
                 >
-                  <StepCard
-                    figure={<Step1Figure />}
-                    title="Form your squad"
-                    description="Invite up to 3 trusted people — friends, family, or anyone you trust financially. Each member connects their bank and authorizes a credit check."
-                  />
+                  {/*
+                   * The card the travelling Squad card lies over in this
+                   * section — its own element rather than the [data-reveal]
+                   * wrapper above it, because the reveal owns that wrapper's
+                   * transform and opacity for the whole section and the
+                   * hand-off writes its own transform, clip-path and opacity
+                   * here.
+                   */}
+                  <div data-card-step="">
+                    <StepCard
+                      figure={<Step1Figure />}
+                      title="Form your squad"
+                      description="Invite up to 3 trusted people — friends, family, or anyone you trust financially. Each member connects their bank and authorizes a credit check."
+                    />
+                  </div>
                 </div>
                 <div
                   className="w-full shrink-0 sm:w-[392px]"
                   data-reveal="step"
                 >
-                  <StepCard
-                    figure={<Step2Figure />}
-                    title="Get scored as a group"
-                    description="Banrox's patented group risk engine combines every member's profile into a single group assessment. Combined behavior is more stable — which is why the group qualifies for more."
-                  />
+                  {/*
+                   * The card the travelling Squad card lies over in this
+                   * section — its own element rather than the [data-reveal]
+                   * wrapper above it, because the reveal owns that wrapper's
+                   * transform and opacity for the whole section and the
+                   * hand-off writes its own transform, clip-path and opacity
+                   * here.
+                   */}
+                  <div data-card-step="">
+                    <StepCard
+                      figure={<Step2Figure />}
+                      title="Get scored as a group"
+                      description="Banrox's patented group risk engine combines every member's profile into a single group assessment. Combined behavior is more stable — which is why the group qualifies for more."
+                    />
+                  </div>
                 </div>
                 <div
                   className="w-full shrink-0 sm:w-[392px]"
                   data-reveal="step"
                 >
-                  <StepCard
-                    figure={<Step3Figure />}
-                    title="Spend in your lane, back each other"
-                    description="Each member has a private spending lane. Need more — the squad votes and the reserve releases. Cover each other to keep the account current. The group total never changes."
-                  />
+                  {/*
+                   * The card the travelling Squad card lies over in this
+                   * section — its own element rather than the [data-reveal]
+                   * wrapper above it, because the reveal owns that wrapper's
+                   * transform and opacity for the whole section and the
+                   * hand-off writes its own transform, clip-path and opacity
+                   * here.
+                   */}
+                  <div data-card-step="">
+                    <StepCard
+                      figure={<Step3Figure />}
+                      title="Spend in your lane, back each other"
+                      description="Each member has a private spending lane. Need more — the squad votes and the reserve releases. Cover each other to keep the account current. The group total never changes."
+                    />
+                  </div>
                 </div>
               </div>
             </div>

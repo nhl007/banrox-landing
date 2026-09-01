@@ -348,7 +348,8 @@ body {
 }
 
 /* Held at nothing unconditionally, outside the query below. */
-.squad-trail-frame {
+.squad-trail-frame,
+.squad-trail-face {
   opacity: 0;
 }
 
@@ -367,6 +368,12 @@ body {
      */
     inset: 0 0 auto 0;
     height: 0;
+    /*
+     * Above the section content it crosses. The card is the one object the
+     * page hands from section to section, so it is never occluded by the
+     * thing it is on its way to.
+     */
+    z-index: 20;
     overflow-x: clip;
     overflow-y: visible;
     pointer-events: none;
@@ -385,6 +392,93 @@ body {
     width: 420px;
     height: 260px;
     transform-origin: 50% 50%;
+  }
+
+  /*
+   * Two nested turn stages and one perspective, on the outer of the two: the
+   * controller writes rotationZ here and rotationX/rotationY on the swing
+   * inside, so this is the perspective those are seen through. 900px is
+   * shallow enough that the card's thickness reads at the size it is drawn,
+   * and deep enough that a quarter turn is not a fold.
+   */
+  [data-card-turn] {
+    perspective: 900px;
+    transform-origin: 50% 50%;
+  }
+
+  [data-card-swing] {
+    transform-origin: 50% 50%;
+  }
+
+  /* The un-sliced card, filling the frame. */
+  .squad-trail-whole {
+    position: absolute;
+    inset: 0;
+  }
+
+  /*
+   * One third of the card, as a window. Held at nothing until the Works
+   * section pulls the card apart, and turning and scaling about its own
+   * centre from there.
+   *
+   * 86.667px written out rather than calc(260px / 3): the component's inline
+   * offsets carry the full 86.66666666666667, and a 0.0003px disagreement
+   * inside an overflow:hidden window is nothing.
+   */
+  .squad-trail-slice {
+    position: absolute;
+    left: 0;
+    width: 420px;
+    height: 86.667px;
+    overflow: hidden;
+    opacity: 0;
+    transform-origin: 50% 50%;
+  }
+
+  /*
+   * A whole card inside that window, pulled back up by the window's own offset
+   * so that the three stacked are pixel-identical to the one card. `top` is
+   * set per slice by the component.
+   */
+  .squad-trail-slice-art {
+    position: absolute;
+    left: 0;
+    width: 420px;
+    height: 260px;
+  }
+
+  /*
+   * A face is a point rather than a box: nothing about what it holds should
+   * affect where the controller puts it.
+   */
+  .squad-trail-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    transform-origin: 50% 50%;
+  }
+
+  /*
+   * `translate` and not `transform`: the controller writes `transform` on this
+   * element to scale and turn the face, and the two compose rather than one
+   * overwriting the other.
+   */
+  .squad-trail-face > * {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+  }
+
+  /*
+   * On whatever the travelling card is currently standing in for. !important
+   * because the three that are section reveal targets have their opacity owned
+   * by the reveal while their section is on screen.
+   */
+  .card-taken {
+    opacity: 0 !important;
   }
 }
 

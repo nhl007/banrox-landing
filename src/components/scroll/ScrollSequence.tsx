@@ -35,7 +35,12 @@ const WRITTEN = [
    * leaves the gate — see squadTravel and .squad-trail.
    */
   ".squad-trail-frame",
+  ".squad-trail-face",
   "[data-card-turn]",
+  "[data-card-swing]",
+  "[data-card-whole]",
+  "[data-card-slice]",
+  "[data-card-step]",
 ].join(",");
 
 /** Put the page back the way the server rendered it. */
@@ -59,6 +64,17 @@ const unwind = () => {
 
   for (const bar of document.querySelectorAll<HTMLElement>("[data-meter]"))
     if (bar.dataset.meter) bar.style.width = `${bar.dataset.meter}%`;
+
+  /*
+   * And the two the travelling card leaves on the page it crosses: the class
+   * it puts on whatever it is standing in for, and the bookkeeping attribute
+   * it uses to avoid rewriting an opacity that has not changed.
+   */
+  for (const el of document.querySelectorAll(".card-taken"))
+    el.classList.remove("card-taken");
+
+  for (const el of document.querySelectorAll<HTMLElement>("[data-op]"))
+    delete el.dataset.op;
 };
 
 export default function ScrollSequence({ children }: { children: ReactNode }) {
@@ -91,11 +107,16 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         const travel = scene && squadTravel(document.documentElement, tier);
         if (!travel) {
           /*
-           * Nothing to fly the card with, so give the two slots back to their
-           * own sections.
+           * Nothing to fly the card with, so give every slot back to its own
+           * section — the class as well as the opacity, because the card is
+           * what would otherwise take it off again.
            */
+          for (const el of document.querySelectorAll(".card-taken"))
+            el.classList.remove("card-taken");
           for (const sel of [
+            "[data-sequence-section='alone'] [data-reveal='vs']",
             "[data-sequence-section='approve'] [data-reveal='squad']",
+            "[data-sequence-section='intelligence'] [data-reveal='hub']",
             "[data-sequence-section='early'] [data-reveal='card']",
           ])
             for (const el of document.querySelectorAll<HTMLElement>(sel))
@@ -104,10 +125,11 @@ export default function ScrollSequence({ children }: { children: ReactNode }) {
         }
 
         /*
-         * The two slots the traveller stands in for, held at nothing, and this
-         * has to be written rather than left to the stylesheet.
+         * The slots the traveller stands in for, given back and then measured:
+         * both have to happen before the first frame, and in that order.
          */
         travel.park();
+        travel.measure();
 
         const at = { p: 0 };
         const run = gsap.to(at, {

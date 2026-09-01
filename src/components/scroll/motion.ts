@@ -76,123 +76,177 @@ export const MOTION = {
    * go, crosses into a lane beside the page's spine, travels down it, and
    * crosses back and stands up into the pose of the dock ahead.
    */
+  /*
+   * THE TRAVELLING CARD.
+   *
+   * Beats are PIXELS OF SCROLL. Bare fractions under 1 are fractions of the
+   * window — innerWidth for anything lateral, innerHeight for anything
+   * vertical — unless the note says otherwise. Angles are degrees.
+   */
   travel: {
-    /** How far above the top of the window the card wants to retreat to
-        between two seams, as a fraction of the window. A wish — the path is
-        clamped so the card can never move UP the page. */
-    lift: 0.1,
+    /** The card's rhythm, in pixels of scroll. */
+    beat: {
+      /** Head-room demanded ahead of the first dock when choosing where the
+          hero lets go. */
+      lead: 340,
+      /** How long the card sits parked IN a dock, spent on each side of the
+          slot's centre — so a dock is twice this wide. */
+      dwell: 200,
+      /** The ramp either side of a dock, and the half-width of the face
+          cross-fade window. */
+      morph: 150,
+      /** The pause held in the side lane beside the Life board, spent half
+          each side of its centre. */
+      hover: 220,
+      /** The run in from that side lane to the Intelligence dock. */
+      approach: 180,
+    },
 
     /**
-     * How much of that rhythm survives against a steady dock-to-dock glide.
+     * THE WORKS HAND-OVER, in pixels of scroll.
      *
-     * Taken neat the rhythm spends a leg's whole page in its falls, so between
-     * two of them the card is stationary — and since everything else runs on
-     * how far it has travelled, a stationary path is a frozen object. Below
-     * one, the mix is strictly increasing: there is no scroll position where
-     * the card is not moving, by arithmetic rather than by care.
+     * The card comes apart into three over `fan`, holds fully apart for
+     * `hand`, and puts itself together again over `fan`. It trades with the
+     * section's own three cards only DURING the hold, and that is the whole
+     * point of there being one: full spread is the only place the three things
+     * the card is showing are where those three cards are. Trading anywhere
+     * else means handing over from the wrong position, which is seen as the
+     * card jumping — going in, and again coming back.
+     *
+     * Each trade takes `trade`, and two of them plus a beat of daylight have
+     * to fit inside `hand`. `fan + hand / 2` is the beat's half width: the card
+     * is docked on the middle step from that far out either side, and the runs
+     * in and out are timed against it.
      */
-    rhythm: 0.42,
+    works: { fan: 270, hand: 460, trade: 120 },
 
-    /** How much of a leg the steady half spends getting up to speed at either
-        end — a trapezoid, so it leaves and lands at rest but holds a genuinely
-        constant rate in between. `leave` is short because a dock releases the
-        card near the top of the window: any slower and it climbs out of it. */
-    ease: { leave: 0.06, land: 0.22 },
+    /** ScrollTrigger scrub, in seconds. */
+    lag: 0.45,
 
-    /** How long the hero holds the card after letting go, as a fraction of the
-        window. The traveller comes up first, under a card at full strength in
-        the same pose; only then does the hero fade. Nothing moves until both
-        are settled, which is what keeps it from reading as two cards. */
+    /**
+     * The least page a transit wants, as a fraction of window HEIGHT, before
+     * a HOLD next to it starts giving up its own scroll to pay for it. Sections
+     * do not always leave the card room: pack two of them close enough and a
+     * leg can end up a few dozen pixels of scroll long, which is not a journey,
+     * it is a cut. A beat spent waiting is one the card can afford to lose;
+     * a beat spent moving is not.
+     */
+    room: 0.3,
+
+    /**
+     * The hero hand-over, as a fraction of the window: the traveller comes up
+     * over the first 35% of it and the hero's own anchor goes out over the
+     * rest, both on `soft`.
+     */
     handover: 0.08,
-
-    /** The fastest a fall may be, as a multiple of scroll — the test a seam
-        appointment has to pass to be kept, not a clamp on the path. */
-    dash: 2.5,
-
-    /** Per-fall power warp, ramped `1 + cadence` to `1 - cadence` down a leg,
-        so the first fall hangs before it commits and the last glides in. */
-    cadence: 0.15,
-
-    /** The hand-over at a dock, as a fraction of the window. Spent INSIDE the
-        dock, where the traveller is stationary and exactly on the slot — so it
-        is one object changing its light rather than two trading places. */
+    /** Extra window ahead of that, so the whole trade is done before the card
+        is asked to move. */
     grip: 0.18,
 
-    /** How small the card is between docks, as a fraction of its authored
-        face, against 0.73 / 0.84 / 1.0 at the three docks. */
-    far: 0.34,
+    /** The yaw swung through while two faces trade places, and the pitch
+        carried with it as a fraction of that yaw. Applied negative, and as a
+        there-and-back rather than a swing through. */
+    turn: { yaw: 54, pitch: 0.3 },
 
-    /** Opacity in a seam and over a section's payload. The schedule comes from
-        the layout rather than from the journey's progress, which is what makes
-        it read as occlusion — the page cannot occlude anything itself. Leg one
-        spends its budget on being seen, leg two on being absent. */
-    lit: {
-      lead: { seam: 0.34, over: 0.16 },
-      long: { seam: 0.2, over: 0.05 },
+    /** Half-width of the cross-fade band, in units of swap progress. */
+    band: 0.08,
+    /** A face comes in from this fraction of its final scale. */
+    grow: 0.85,
+
+    /** The side lane the card travels down between docks. */
+    margin: {
+      scale: 0.58,
+      /** y down the window. */
+      line: 0.46,
+      /** x from centre as a fraction of window WIDTH, signed by side — the
+          WIDE tier only. The phone puts the card's centre on the window edge
+          and ignores this. */
+      side: 0.37,
+      /** Added to the -90 base roll, signed by side. */
+      tilt: 9,
+      /** Pitch, unsigned. */
+      rx: 12,
+      /** Yaw, signed against the side. */
+      ry: 20,
     },
-
-    /** What the phone gets instead: further away, dimmer, narrower lanes. The
-        column IS the window down there, so the card is behind something
-        wherever it goes. */
-    phone: {
-      far: 0.28,
-      sway: {
-        lead: { first: 0.1, second: -0.1 },
-        long: { first: 0.1, second: -0.1 },
-      },
-      lit: {
-        lead: { seam: 0.24, over: 0.09 },
-        long: { seam: 0.15, over: 0.04 },
-      },
-    },
-
-    /** Transit brightness falls to this across the page, on SectionDepth.gain's
-        own endpoints — the card quietens on the curve everything else does. */
-    taper: 0.55,
 
     /**
-     * The lanes each leg travels down, signed, as fractions of window WIDTH.
-     * Positive is right of the slots' centre line, zero is straight down it.
-     *
-     * Two per leg: out into `first`, down it, across to `second`, down that,
-     * home. Equal values make it one lane. The long leg is four sections and
-     * needs the middle; the short one is a single section and does not.
-     *
-     * Nothing here can push the card off screen — the pair is fitted to the
-     * window at measure time and scaled down together if the wider one would
-     * reach an edge. `form` below decides WHEN each part happens.
+     * How much of the card must stay on screen, as a fraction of its own size
+     * — applied UNLESS both ends of the segment are docks, so it is live on
+     * every approach and departure and off only while parked between two.
      */
-    sway: {
-      lead: { first: 0.4, second: 0.4 },
-      long: { first: -0.4, second: 0.4 },
-    },
-
-    /** Degrees off plumb, carried on the RATE of the lane rather than its
-        value — so the card leans into a crossing and rides level down a lane. */
-    bank: 5,
+    keep: { full: 0.38, phone: 0.5 },
 
     /**
-     * When each part of a crossing happens, in fractions of a leg's travelled
-     * page: `flat` ends the way out, `cross` +/- `over`/2 is the lane change,
-     * `back` starts the way home.
-     *
-     * The two legs are not the same size — 1152px of scroll against 4230,
-     * covering page half again as fast — so the same fraction buys a third of
-     * the time on the short one. Its numbers are pushed out until the two move
-     * at something like the same speed, which costs it most of its cruise and
-     * is the right trade on a leg one section long.
-     *
-     * The long leg's `back` is late because it ends with a seam just above its
-     * dock, and that is the brightest stretch of its crossing.
+     * The bowed arc between two docks: two control points at a third and two
+     * thirds of the leg, alternating side each time a leg is built. Legs
+     * shorter than 3px of scroll are not bowed at all.
      */
-    form: {
-      lead: { flat: 0.42, back: 0.55, cross: 0.5, over: 0.34 },
-      long: { flat: 0.22, back: 0.8, cross: 0.5, over: 0.46 },
+    bow: {
+      /** Leg length is normalised by innerWidth times this to get the bow's
+          strength — after the vertical is scroll-compensated, so a leg that
+          merely keeps pace with the page counts as short. */
+      reach: 0.33,
+      /** The floor that strength is lifted off on the wide tier. The phone
+          uses 1 flat, and a `hug` leg uses 0.15 and overrides both. */
+      floor: 0.22,
+      /** Lateral throw as a fraction of window WIDTH. The phone's is large on
+          purpose: with `keep.phone` bounding the centre to the window exactly,
+          the phone arc rides its edges. */
+      lat: { full: 0.07, phone: 0.5 },
+      /** Vertical throw as a fraction of window HEIGHT. */
+      drop: 0.045,
+      /** How much the scale dips at mid-arc. */
+      dip: 0.07,
+      /** Roll, jittered once per leg, signed one way at the first control
+          point and the other at the second. */
+      roll: 12,
+      /** Pitch at the control points. */
+      tip: { full: 15, phone: 38 },
+      /** Yaw at the control points — the sign does NOT flip between them. */
+      yaw: { full: 19, phone: 29 },
+      /** The second control point's share of roll and yaw. */
+      trail: 0.45,
     },
 
-    /** The scrub's catch-up, in seconds. Also what rounds the corners where
-        the path changes rate. */
-    lag: 0.6,
+    /** The three hops the card makes crossing from Life to Early Access:
+        left, right, left. */
+    flight: {
+      /** Lateral spread as a fraction of window WIDTH, jittered. */
+      spread: 0.27,
+      /** y as a fraction of window HEIGHT. */
+      high: 0.15,
+      /** Added to `high` on the middle hop only. */
+      dip: 0.38,
+      /** Pitch: this on the middle hop, a third of it the other way on the
+          other two. */
+      flat: 55,
+      /** Roll off the -90 base, jittered, signed by side. */
+      tilt: 20,
+      /** Yaw, signed by side. */
+      yaw: 29,
+    },
+
+    /** scaleY while the card lies edge-on over the Works steps. */
+    squash: 0.03,
+
+    /**
+     * The flat lay-down over the three Works steps, which happens only where
+     * they are STACKED — the test is on their authored centres.
+     */
+    flat: {
+      /** Pixels above the first step's authored top edge that it parks. */
+      above: 46,
+      /** Pixels of scroll before the lay-down in which it turns flat. */
+      turn: 240,
+      /** A step's reveal starts this fraction of a window above its top
+          edge... */
+      open: 0.92,
+      /** ...and finishes this fraction above it. */
+      shut: 0.5,
+      /** Pixels of scroll after the last step's reveal for the slide-out. */
+      slide: 260,
+    },
   },
 
   /* --- hero -------------------------------------------------------------- */

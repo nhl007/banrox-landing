@@ -1,6 +1,6 @@
 import gsap from "gsap";
 import { SQUAD_CARD } from "@/components/ui/SquadCard";
-import { asAuthored, authoredRect } from "./measure";
+import { asAuthored, asDrawn, drawnRect } from "./measure";
 import { MOTION } from "./motion";
 
 /*
@@ -231,588 +231,1015 @@ export function traceLoop(el: HTMLElement) {
 
 /* -------------------------------------------------------------------------- */
 
-/**
- * One dock: where a slot rests, how big the card is there, and how it is
- * turned.
- */
-const dockAt = (el: HTMLElement, up: boolean) => {
-  const r = authoredRect(el);
-  /*
-   * The slot, and everything between it and its section that depth might be
-   * moving — with the size each of those is a percentage OF, taken now.
-   */
-  const chain: { el: HTMLElement; w: number; h: number }[] = [
-    { el, w: r.width, h: r.height },
-  ];
-  for (
-    let n = el.parentElement;
-    n && !n.dataset.sequenceSection;
-    n = n.parentElement
-  )
-    chain.push({ el: n, w: n.offsetWidth, h: n.offsetHeight });
+/** A number in, a number out — every knot carries one. */
+type Ease = (t: number) => number;
 
-  return {
-    el,
-    chain,
-    x: r.left + window.scrollX + r.width / 2,
-    y: r.top + window.scrollY + r.height / 2,
-    scale: (up ? r.height : r.width) / SQUAD_CARD.width,
-    turn: up ? -90 : 0,
-  };
+const clamp01: Ease = (t) => Math.min(1, Math.max(0, t));
+/** `sine.inOut`, as a number rather than an ease. */
+const soft: Ease = (t) => 0.5 - Math.cos(Math.PI * clamp01(t)) / 2;
+/** `3t^2 - 2t^3`. */
+const smooth: Ease = (t) => {
+  const u = clamp01(t);
+  return u * u * (3 - 2 * u);
+};
+/** `6t^5 - 15t^4 + 10t^3`, zero in both derivatives at either end. */
+const smoother: Ease = (t) => {
+  const u = clamp01(t);
+  return u * u * u * (u * (u * 6 - 15) + 10);
 };
 
+/** One link of the chain between a slot and its section. */
+type ChainLink = { el: HTMLElement; w: number; h: number; k: number };
+
 /**
- * How far the depth system currently has a slot displaced from where it rests.
+ * How far the depth system currently has a chain displaced from where it
+ * rests, in px. `k` is each link's own layout scale, so a percentage written
+ * by GSAP resolves in the same units the rest of this works in.
  */
-const driftOf = (d: { chain: { el: HTMLElement; w: number; h: number }[] }) => {
+const chainDrift = (d: { chain: ChainLink[] }) => {
   let x = 0;
   let y = 0;
-  for (const link of d.chain) {
-    x += ((Number(gsap.getProperty(link.el, "xPercent")) || 0) / 100) * link.w;
-    y += ((Number(gsap.getProperty(link.el, "yPercent")) || 0) / 100) * link.h;
+  for (const n of d.chain) {
+    x += ((Number(gsap.getProperty(n.el, "xPercent")) || 0) / 100) * n.w * n.k;
+    y += ((Number(gsap.getProperty(n.el, "yPercent")) || 0) / 100) * n.h * n.k;
   }
   return { x, y };
 };
 
-/** `sine.inOut`, as a number rather than an ease. */
-const soft = (t: number) =>
-  0.5 - Math.cos(Math.PI * Math.min(1, Math.max(0, t))) / 2;
+/** One place the card stands in for something, as the page draws it. */
+type Dock = {
+  el: HTMLElement;
+  chain: ChainLink[];
+  /** What the chain was already displaced by when this was measured. */
+  drift0: { x: number; y: number };
+  /** Centre, in DOCUMENT space. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** The scroll position at which the element is centred in the window. */
+  centre: number;
+};
+
+const measureDock = (el: HTMLElement): Dock => {
+  const chain: ChainLink[] = [];
+  const { r, drift0 } = asDrawn([el], () => {
+    /* A link's layout scale: what its box measures against what it declares. */
+    const k = (n: HTMLElement) => {
+      const b = n.getBoundingClientRect();
+      return b.width / (n.offsetWidth || b.width) || 1;
+    };
+    chain.length = 0;
+    chain.push({ el, w: el.offsetWidth, h: el.offsetHeight, k: k(el) });
+    for (
+      let p = el.parentElement;
+      p && !p.dataset.sequenceSection;
+      p = p.parentElement
+    )
+      chain.push({ el: p, w: p.offsetWidth, h: p.offsetHeight, k: k(p) });
+
+    return { r: el.getBoundingClientRect(), drift0: chainDrift({ chain }) };
+  });
+
+  return {
+    el,
+    chain,
+    drift0,
+    x: r.left + window.scrollX + r.width / 2,
+    y: r.top + window.scrollY + r.height / 2,
+    w: r.width,
+    h: r.height,
+    centre: Math.max(
+      0,
+      r.top + window.scrollY + r.height / 2 - window.innerHeight / 2,
+    ),
+  };
+};
 
 /**
- * `6t^5 - 15t^4 + 10t^3`, and a quintic rather than a cosine for exactly one
- * reason: its FIRST and SECOND derivatives are both zero at either end.
+ * One point on the card's path. Between two of them the card is on a cubic
+ * that passes through both AND matches the speed recorded at both, so the
+ * whole journey is one curve rather than a run of straight legs with corners
+ * where they meet. See `slopes` for where those speeds come from.
  */
-const glide = (t: number) => {
-  const u = Math.min(1, Math.max(0, t));
-  return u * u * u * (u * (u * 6 - 15) + 10);
+type Knot = {
+  /** Scroll position. Forced strictly increasing as the path is built. */
+  s: number;
+  /** Document space when `win` is 0, window space when it is 1. */
+  x: number;
+  y: number;
+  win: number;
+  scale: number;
+  /** rotationZ. -90 is the card lying on its side, which is most of the trip. */
+  rot: number;
+  /** rotationX / rotationY, on the swing inside the turn. */
+  rx: number;
+  ry: number;
+  /** scaleY multiplier: 1 normally, near nothing when the card is edge-on. */
+  squash: number;
+  /** Set when this knot sits on a slot, so its live drift is tracked. */
+  dock: Dock | null;
+  /**
+   * How fast each of CHANNELS is changing AT this knot, per pixel of scroll,
+   * filled in once the whole path is known. A knot is somewhere the card
+   * passes through at a known speed, not a corner it turns.
+   */
+  v: number[];
 };
 
-/** `glide`'s own rate: `30t^2(1-t)^2`, clamped flat outside [0,1]. */
-const glideRate = (t: number) => {
-  const u = Math.min(1, Math.max(0, t));
-  return 30 * u * u * (1 - u) * (1 - u);
-};
+/** Everything the path carries, in the order slopes are stored. */
+const CHANNELS = [
+  "x",
+  "y",
+  "win",
+  "scale",
+  "rot",
+  "rx",
+  "ry",
+  "squash",
+] as const;
+type Channel = (typeof CHANNELS)[number];
+const CH = Object.fromEntries(CHANNELS.map((c, i) => [c, i])) as Record<
+  Channel,
+  number
+>;
 
-/** `glide`'s own integral, `t^6 - 3t^5 + 2.5t^4` — half of a unit at t = 1. */
-const glideArea = (t: number) => {
-  const u = Math.min(1, Math.max(0, t));
-  return u * u * u * u * (u * (u - 3) + 2.5);
+const KNOT: Omit<Knot, "s"> = {
+  x: 0,
+  y: 0,
+  win: 0,
+  scale: 1,
+  rot: -90,
+  rx: 0,
+  ry: 0,
+  squash: 1,
+  dock: null,
+  v: [],
 };
 
 /**
- * A ramp from 0 to 1 that leaves at rest, arrives at rest, and runs at a
- * CONSTANT rate in between — `ease` of it spent getting up to speed at either
- * end.
+ * The slope at every knot, by the Fritsch-Carlson rule: the weighted harmonic
+ * mean of the two secants either side, and FLAT wherever they disagree in sign
+ * or either of them is zero.
+ *
+ * That last clause is what does the work. Every dock has a dwell, so it is two
+ * knots holding the same position — a zero secant on one side, so the card
+ * arrives at rest and leaves from rest with no corner at either end. The apex
+ * of an arc has secants of opposite sign, so the card rounds it rather than
+ * bulging past it. Everywhere else the slope is picked so that the segment
+ * before a knot and the segment after it AGREE about how fast the card is
+ * going. That agreement is the whole point: a jolt is not a wrong position,
+ * it is two neighbouring segments disagreeing about speed.
  */
-const cruise = (u: number, leave: number, land: number) => {
-  const t = Math.min(1, Math.max(0, u));
-  const a = Math.min(0.49, Math.max(0.0001, leave));
-  const b = Math.min(0.49, Math.max(0.0001, land));
-  const span = 1 - (a + b) / 2;
-  if (t < a) return (a * glideArea(t / a)) / span;
-  if (t > 1 - b) return (span - b * glideArea((1 - t) / b)) / span;
-  return (t - a / 2) / span;
+const slopes = (ks: Knot[]) => {
+  for (const k of ks) k.v = new Array<number>(CHANNELS.length).fill(0);
+  if (ks.length < 3) return;
+
+  /* Scroll spent on each segment. */
+  const h = ks.slice(0, -1).map((k, i) => ks[i + 1]!.s - k.s);
+
+  for (const c of CHANNELS) {
+    const d = h.map((len, i) => (ks[i + 1]![c] - ks[i]![c]) / len);
+    for (let i = 1; i < ks.length - 1; i++) {
+      const before = d[i - 1]!;
+      const after = d[i]!;
+      if (before * after <= 0) continue;
+      const wb = 2 * h[i]! + h[i - 1]!;
+      const wa = h[i]! + 2 * h[i - 1]!;
+      ks[i]!.v[CH[c]] = (wb + wa) / (wb / before + wa / after);
+    }
+  }
+  /* The two ends stay at zero: the card is parked at both of them. */
 };
 
+/** One channel between two knots, as a cubic that honours both slopes. */
+const ride = (a: Knot, b: Knot, c: Channel, u: number, len: number) => {
+  const i = CH[c];
+  const u2 = u * u;
+  const u3 = u2 * u;
+  return (
+    (2 * u3 - 3 * u2 + 1) * a[c] +
+    (u3 - 2 * u2 + u) * len * a.v[i]! +
+    (3 * u2 - 2 * u3) * b[c] +
+    (u3 - u2) * len * b.v[i]!
+  );
+};
+
+/** Which of the three things the card is currently showing. */
+type Face = "card" | "vs" | "engine" | "cut";
 /**
- * The Squad card's journey: the hero's fan, the approve diagram, Early Access.
+ * One trade between two of them, centred at `at` and `hw` wide either side.
+ *
+ * `melt` picks how it is played. Without it the card turns away, is gone for
+ * an instant at the mid-point and comes back as the other face — a change of
+ * identity, which is what the VS and the engine hub are. With it the two
+ * simply cross-fade, their two weights summing to one the whole way through,
+ * because the card coming apart into the three step cards is not changing
+ * into something else: it is already lying exactly where they are.
+ */
+type Swap = { at: number; hw: number; from: Face; to: Face; melt?: boolean };
+/** A stretch over which a host is stood in for. */
+type Taken = { el: HTMLElement; a: number; b: number };
+/** A Works step, where the steps are stacked and the card rails down them. */
+type Rail = { el: HTMLElement; lift: number; from: number; to: number };
+
+/**
+ * THE SQUAD CARD'S JOURNEY.
+ *
+ * One object crosses the whole page. It leaves the hero's fan, stands in for
+ * the VS in Alone vs Together, becomes the card in the middle of the approve
+ * diagram, lies over the three Works steps, turns into the engine hub in the
+ * Intelligence Layer, passes the Life board down the margin, and stands up as
+ * the Early Access card. It is never faded out in between: at six of those
+ * places it IS the thing the section draws, and the section's own copy is
+ * hidden while it is.
+ *
+ * The path is a list of knots in SCROLL, built once per measure and read on
+ * every frame. Nothing here is expressed as a fraction of the journey — every
+ * position is an absolute scroll value worked out from where the docks
+ * actually are, which is why the beats are in pixels.
  */
 export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
-  const frame = root.querySelector<HTMLElement>("[data-card-travel]");
+  const travel = root.querySelector<HTMLElement>("[data-card-travel]");
   const turn = root.querySelector<HTMLElement>("[data-card-turn]");
-  /*
-   * The hero's is whichever of the two fans this width renders — the wide row
-   * or the phone's deck — which is what `one` is for.
-   */
-  const fan = one(root, "[data-sequence-section='hero'] [data-reveal='fan']");
-  const slots = [
-    one(root, "[data-sequence-section='hero'] [data-fan-anchor]"),
-    one(root, "[data-sequence-section='approve'] [data-reveal='squad']"),
-    one(root, "[data-sequence-section='early'] [data-reveal='card']"),
-  ];
-  if (!frame || !turn || !fan || slots.some((el) => !el)) return null;
-  const [heroSlot, approveSlot, earlySlot] = slots as HTMLElement[];
-
-  /* The eight sections, and NOT the navbar. */
-  const sections = gsap.utils
-    .toArray<HTMLElement>(root.querySelectorAll("[data-sequence-section]"))
-    .filter((el) => el.dataset.sequenceSection !== "navbar");
-
-  /* The tier's own numbers where it has them — see MOTION.travel.phone. */
-  const { far, lit, sway } =
-    tier === "phone"
-      ? { ...MOTION.travel, ...MOTION.travel.phone }
-      : MOTION.travel;
-
-  type Dock = ReturnType<typeof dockAt>;
-  type Knot = { s: number; y: number };
-  type Leg = {
-    from: Dock;
-    to: Dock;
-    knots: Knot[];
-    long: boolean;
-    /**
-     * Where the card came to rest on this leg's HEAD dock — the far end of the
-     * leg before it.
-     */
-    landed: number;
-    /**
-     * Where the card is first allowed to MOVE, which is `knots[0].s` on the
-     * long leg and the far end of the hero's hand-over on the short one.
-     */
-    hold0: number;
+  const swing = root.querySelector<HTMLElement>("[data-card-swing]");
+  const whole = root.querySelector<HTMLElement>("[data-card-whole]");
+  const slices = gsap.utils.toArray<HTMLElement>(
+    root.querySelectorAll("[data-card-slice]"),
+  );
+  const faces = {
+    vs: root.querySelector<HTMLElement>("[data-card-face='vs']"),
+    engine: root.querySelector<HTMLElement>("[data-card-face='engine']"),
   };
 
-  let docks: Dock[] = [];
-  let legs: Leg[] = [];
-  /**
-   * Page lines the card falls through — the middle of each section boundary.
+  const heroEl = root.querySelector<HTMLElement>(
+    "[data-sequence-section='hero']",
+  );
+  const fan = one(root, "[data-sequence-section='hero'] [data-reveal='fan']");
+  const anchor = one(root, "[data-sequence-section='hero'] [data-fan-anchor]");
+  const vsEl = one(root, "[data-sequence-section='alone'] [data-reveal='vs']");
+  const trioEl = one(
+    root,
+    "[data-sequence-section='approve'] [data-reveal='squad']",
+  );
+  const hubEl = one(
+    root,
+    "[data-sequence-section='intelligence'] [data-reveal='hub']",
+  );
+  const boardEl = one(
+    root,
+    "[data-sequence-section='life'] [data-reveal='lane']",
+  );
+  const earlyEl = one(
+    root,
+    "[data-sequence-section='early'] [data-reveal='card']",
+  );
+  const worksEl = root.querySelector<HTMLElement>(
+    "[data-sequence-section='works']",
+  );
+  const stepEls = worksEl ? q(worksEl, "step") : [];
+  /* The card inside each step, which is what the hand-off writes to. */
+  const stepCards = stepEls.map(
+    (el) => el.querySelector<HTMLElement>("[data-card-step]") ?? el,
+  );
+
+  if (
+    !travel ||
+    !turn ||
+    !swing ||
+    !whole ||
+    slices.length !== 3 ||
+    !faces.vs ||
+    !faces.engine ||
+    !fan ||
+    !heroEl ||
+    !anchor ||
+    !vsEl ||
+    !trioEl ||
+    !hubEl ||
+    !boardEl ||
+    !earlyEl ||
+    stepEls.length !== 3
+  )
+    return null;
+
+  const { dwell, morph, hover, approach } = MOTION.travel.beat;
+  const works = MOTION.travel.works;
+  /* Half the hold either side of the middle step, which is centred on it. */
+  const half = works.hand / 2;
+  const phone = tier === "phone";
+  const keep = phone ? MOTION.travel.keep.phone : MOTION.travel.keep.full;
+
+  /* Everything measure() works out and apply() reads. */
+  let knots: Knot[] = [];
+  let swaps: Swap[] = [];
+  let taken: Taken[] = [];
+  /* The stretch over which the card is three slices rather than one card. */
+  let split = { a: 0, b: 0 };
+  let fanOut = {
+    mid: 0,
+    offs: [] as { x: number; y: number }[],
+  };
+  /* Where the card has finished arriving, and where the hero has finished going. */
+  let trade = { rise: 0, fade: 0 };
+  /* Where the real step cards are driven by the card rather than by themselves. */
+  let cutWindow = { a: 0, b: 0 };
+  let rails: Rail[] = [];
+  /* ...and where the card itself is out of the way while they arrive. */
+  let railed = { a: 0, b: 0 };
+  let last = 0;
+  const faceFit = { vs: 1, engine: 1 };
+
+  /*
+   * The only opacity writer on this path, and a plain inline style rather than
+   * gsap: it is quantised and cached, so a value that has not changed does not
+   * cost a write, and nothing here ever fights gsap's transform cache.
    */
-  let seams: number[] = [];
+  const shade = (el: HTMLElement | null, v: number) => {
+    if (!el) return;
+    const s = String(Math.round(1e3 * v) / 1e3);
+    if (el.dataset.op === s) return;
+    el.dataset.op = s;
+    el.style.opacity = s;
+  };
+
+  const stand = (el: HTMLElement, on: boolean) => {
+    if (el.classList.contains("card-taken") !== on)
+      el.classList.toggle("card-taken", on);
+  };
+
+  const park = () => {
+    for (const el of [vsEl, trioEl, hubEl, earlyEl])
+      el.classList.remove("card-taken");
+    gsap.set(slices, { x: 0, y: 0 });
+    gsap.set(stepCards, { clearProps: "y,clipPath,opacity" });
+    for (const el of stepCards) delete el.dataset.op;
+  };
 
   /** Re-derive the whole journey from where the page currently is. */
   const measure = () => {
+    park();
+    build();
+
+    /*
+     * How big each face has to be drawn to sit where the real one does: the
+     * host's own width over the width of what this face holds.
+     */
+    for (const [key, host] of [
+      ["vs", vsEl],
+      ["engine", hubEl],
+    ] as const) {
+      const inner = faces[key]!.firstElementChild as HTMLElement | null;
+      if (!inner) continue;
+      const w = inner.offsetWidth;
+      if (w) faceFit[key] = drawnRect(host).width / w;
+    }
+  };
+
+  function build() {
     const vh = window.innerHeight;
-    survey();
-
-    docks = [
-      dockAt(heroSlot, true),
-      dockAt(approveSlot, true),
-      dockAt(earlySlot, false),
-    ];
+    const vw = window.innerWidth;
 
     /*
-     * The seam between two sections: the page line half way between the bottom
-     * of one and the top of the next.
+     * Seeded, so the wobble on the arcs is the same wobble every time the page
+     * is measured — a resize must not re-roll the choreography.
      */
+    let seed = 23629;
+    const rand = () =>
+      (seed = (1664525 * seed + 0x3c6ef35f) % 0x100000000) / 0x100000000;
+
+    rails = [];
+    railed = { a: 0, b: 0 };
+
+    const dock = {
+      hero: measureDock(anchor!),
+      vs: measureDock(vsEl!),
+      trio: measureDock(trioEl!),
+      steps: stepEls.map((el) => measureDock(el)),
+      engine: measureDock(hubEl!),
+      board: measureDock(boardEl!),
+      early: measureDock(earlyEl!),
+    };
+
+    /* Fit by AREA, so a tall slot and a wide one of the same size agree. */
+    const areaFit = (d: Dock) =>
+      Math.min(
+        3.2,
+        Math.max(
+          0.1,
+          Math.sqrt((d.w * d.h) / (SQUAD_CARD.width * SQUAD_CARD.height)),
+        ),
+      );
     /*
-     * Measured AS AUTHORED, like the docks above and for the same reason: the
-     * page this runs on is not the page the reader will be looking at.
+     * The hero's is taken from the anchor's drawn HEIGHT rather than by area:
+     * the fan is scaled by a class, which `asDrawn` deliberately leaves on, so
+     * this is the size the card is actually being drawn at up there.
      */
-    const boxes = asAuthored([...sections, fan], () => ({
-      edge: sections.map((el) => {
-        const r = el.getBoundingClientRect();
-        return {
-          top: r.top + window.scrollY,
-          bottom: r.bottom + window.scrollY,
-        };
-      }),
-      fanBottom: fan.getBoundingClientRect().bottom + window.scrollY,
+    const heroScale = dock.hero.h / SQUAD_CARD.width;
+    const trioScale = dock.trio.h / SQUAD_CARD.width;
+    const earlyWide = dock.early.w / SQUAD_CARD.width;
+    const vsScale = areaFit(dock.vs);
+    const hubScale = areaFit(dock.engine);
+
+    /* Where the hero is done with the card — measured as the page rests. */
+    const hero = asAuthored([fan!, heroEl!], () => ({
+      top: heroEl!.getBoundingClientRect().top + window.scrollY,
+      fan: fan!.getBoundingClientRect().bottom + window.scrollY,
     }));
-    const { edge } = boxes;
-    seams = edge
-      .slice(1)
-      .map((e, i) => ((edge[i]?.bottom ?? e.top) + e.top) / 2);
-
-    /*
-     * A dock is a stretch of scroll over which the card does not move on the
-     * page at all — which is the only thing "docked" can mean for something in
-     * page coordinates, and the exact opposite of holding a place in the
-     * window.
-     */
-    const arrives = (d: Dock) => d.y - vh * MOTION.own.line;
-    const leaves = (d: Dock) => d.y - vh * (1 - MOTION.own.line);
-
-    /* The hero is the exception, and the fold is what makes it one. */
-    const { fold, foldPhone } = MOTION.hero;
-    const release =
-      tier === "phone"
-        ? boxes.fanBottom - vh * (1 - foldPhone.lead - foldPhone.out)
-        : /*
-           * The hero's own top edge, not the document's: the fold is hung on `top top`
-           * and the hero starts below the navbar, so the fold ends `out` of a window
-           * after the bar has gone rather than after nothing at all. 72px at 1440x900.
-           */
-          (edge[0]?.top ?? 0) + fold.out * vh;
-
-    const { lift, dash } = MOTION.travel;
-
-    legs = [0, 1].map((i) => {
-      const from = docks[i]!;
-      const to = docks[i + 1]!;
-      const s0 = i === 0 ? release : leaves(from);
-      const s1 = arrives(to);
-      const knots: Knot[] = [{ s: s0, y: from.y }];
-      /*
-       * The hero's hand-over, as a stretch of path on which the card does not
-       * move — see MOTION.travel.handover.
-       */
-      if (i === 0)
-        knots.push({ s: s0 + vh * MOTION.travel.handover, y: from.y });
-
-      /*
-       * A crest between one appointment and the next: the card climbs back
-       * towards the top of the window while the section between them is being
-       * read, which is the half of every cycle that keeps it out of the way.
-       */
-      const crestBefore = (next: Knot) => {
-        const prev = knots[knots.length - 1]!;
-        if (next.s - prev.s < vh * 0.6) return;
-        const mid = (prev.s + next.s) / 2;
-        const want = mid - vh * lift;
-        knots.push({ s: mid, y: Math.min(Math.max(want, prev.y), next.y) });
-      };
-
-      /*
-       * One appointment per seam the card crosses: when that seam is centred
-       * in the window, the card wants to be centred in the window too.
-       */
-      for (const seam of seams) {
-        const at = seam - vh / 2;
-        const prev = knots[knots.length - 1]!;
-        if (at <= prev.s + 1 || at >= s1 - 1) continue;
-        if (seam <= prev.y) continue;
-        if ((seam - prev.y) / (at - prev.s) > dash) continue;
-        if ((to.y - seam) / (s1 - at) > dash) continue;
-        crestBefore({ s: at, y: seam });
-        knots.push({ s: at, y: seam });
-      }
-
-      crestBefore({ s: s1, y: to.y });
-      knots.push({ s: s1, y: to.y });
-      return {
-        from,
-        to,
-        knots,
-        long: i === 1,
-        /*
-         * The hero is never "landed" — the card starts there, and its hand-
-         * over is the one that has to run against a card the page drew itself.
-         */
-        landed: i === 0 ? s0 : arrives(from),
-        /* Past the flat head knot where there is one — see the Leg type. */
-        hold0: i === 0 ? knots[1]!.s : s0,
-      };
-    });
-  };
-
-  /**
-   * The SHAPE of the card's descent — where a card obeying the page's rhythm
-   * outright would sit at this scroll.
-   */
-  const pathY = (leg: Leg, s: number) => {
-    const k = leg.knots;
-    let i = 1;
-    while (i < k.length - 1 && k[i]!.s < s) i++;
-    const a = k[i - 1]!;
-    const b = k[i]!;
-    const t = Math.min(1, Math.max(0, (s - a.s) / (b.s - a.s || 1)));
-    /*
-     * Where down the leg this stretch happens, which is what sets its shape.
-     */
-    const at = ((a.y + b.y) / 2 - leg.from.y) / (leg.to.y - leg.from.y || 1);
-    const bias = 1 + MOTION.travel.cadence * (1 - 2 * at);
-    return a.y + (b.y - a.y) * glide(Math.pow(t, bias));
-  };
-
-  /**
-   * And the path the card actually takes: the knots above mixed with a steady
-   * glide from dock to dock.
-   */
-  const pathAt = (leg: Leg, s: number) => {
-    const s1 = leg.knots[leg.knots.length - 1]!.s;
-    const { rhythm, ease } = MOTION.travel;
-    const steady =
-      leg.from.y +
-      (leg.to.y - leg.from.y) *
-        cruise((s - leg.hold0) / (s1 - leg.hold0 || 1), ease.leave, ease.land);
-    const knotted = pathY(leg, s);
-    return steady + (knotted - steady) * rhythm;
-  };
-
-  /** How much of a card the reader is being shown at this page position. */
-  const clearance = (y: number) => {
-    let near = Infinity;
-    for (const seam of seams) near = Math.min(near, Math.abs(seam - y));
-    return 1 - soft(near / (window.innerHeight * 0.5));
-  };
-
-  /*
-   * THE ENVELOPE — the shape of a crossing, and the thing every transit
-   * channel on the card is carried on: OUT over the first of a leg's travelled
-   * page, travelling across the middle, and BACK over the last.
-   */
-  const shape = (long: boolean) =>
-    long ? MOTION.travel.form.long : MOTION.travel.form.lead;
-  const out = (long: boolean, w: number) => glide(w / (shape(long).flat || 1));
-  const home = (long: boolean, w: number) => {
-    const { back } = shape(long);
-    return glide((w - back) / (1 - back || 1));
-  };
-
-  /**
-   * How far from its docks the card is: zero at both of them, one across the
-   * middle.
-   */
-  const awayAt = (long: boolean, w: number) =>
-    out(long, w) * (1 - home(long, w));
-  /**
-   * And its rate — `out` climbing while `home` is still flat, then `home`
-   * falling while `out` is.
-   */
-  const awayRate = (long: boolean, w: number) => {
-    const { flat, back } = shape(long);
-    return (
-      (glideRate(w / (flat || 1)) / (flat || 1)) * (1 - home(long, w)) -
-      out(long, w) * (glideRate((w - back) / (1 - back || 1)) / (1 - back || 1))
-    );
-  };
-
-  /**
-   * WHICH LANE the card is heading for at this point of the leg — see
-   * MOTION.travel.sway, which is the pair, and `form.cross` and `form.over`,
-   * which are where the change happens and how long it takes.
-   */
-  const lanes = (long: boolean) => (long ? sway.long : sway.lead);
-  const laneOf = (long: boolean, w: number) => {
-    const { first, second } = lanes(long);
-    const { cross, over } = shape(long);
-    return (
-      first + (second - first) * glide((w - (cross - over / 2)) / (over || 1))
-    );
-  };
-  const laneRate = (long: boolean, w: number) => {
-    const { first, second } = lanes(long);
-    const { cross, over } = shape(long);
-    return (
-      ((second - first) * glideRate((w - (cross - over / 2)) / (over || 1))) /
-      (over || 1)
-    );
-  };
-
-  /**
-   * Where the card actually is sideways, in fractions of the window's width —
-   * the envelope times the lane, so it is exactly on the slot's own centre
-   * line at both docks whatever the lanes say.
-   */
-  const sideAt = (long: boolean, w: number) =>
-    awayAt(long, w) * laneOf(long, w);
-
-  /**
-   * And how FAST it is going sideways — the product rule on the line above,
-   * which is the whole reason it is written analytically rather than sampled.
-   */
-  const sideRate = (long: boolean, w: number) =>
-    awayRate(long, w) * laneOf(long, w) + awayAt(long, w) * laneRate(long, w);
-
-  /**
-   * The two numbers the lane needs that are facts about the WINDOW rather than
-   * about the choreography, re-derived on every refresh because both are.
-   */
-  const swing = { lead: 1, long: 1 };
-  const fit = { lead: 1, long: 1 };
-  const survey = () => {
-    const turned = (Math.abs(MOTION.travel.bank) * Math.PI) / 180;
-    const halfSpan =
-      (far *
-        (SQUAD_CARD.width * Math.cos(turned) +
-          SQUAD_CARD.height * Math.sin(turned))) /
-      2;
-    const room = Math.max(
+    const leave = Math.max(
       0,
-      window.innerWidth / 2 - halfSpan - window.innerWidth * 0.02,
+      Math.min(
+        phone
+          ? hero.fan -
+              vh * (1 - MOTION.hero.foldPhone.lead - MOTION.hero.foldPhone.out)
+          : hero.top + MOTION.hero.fold.out * vh,
+        /* And never so late that it has no run at the first dock. */
+        dock.vs.centre - morph - dwell - MOTION.travel.beat.lead,
+      ),
     );
-    for (const long of [false, true]) {
-      let peak = 0;
-      let reach = 0;
-      for (let i = 0; i <= 400; i++) {
-        const w = i / 400;
-        peak = Math.max(peak, Math.abs(sideRate(long, w)));
-        reach = Math.max(reach, Math.abs(sideAt(long, w)));
-      }
-      const wants = reach * window.innerWidth;
-      const key = long ? "long" : "lead";
-      swing[key] = peak || 1;
-      fit[key] = wants > room ? room / wants : 1;
-    }
-  };
-
-  /**
-   * The pose: the card lies flat to travel, and stands back up into whatever
-   * the dock ahead of it draws.
-   */
-  const poseAt = (leg: Leg, w: number) =>
-    leg.from.turn * (1 - out(leg.long, w)) + leg.to.turn * home(leg.long, w);
-
-  /** Place the card for a scroll position. */
-  const apply = (s: number) => {
-    if (!legs.length) return;
-
-    const first = legs[0]!;
-    const last = legs[legs.length - 1]!;
-    const leg =
-      s < first.knots[0]!.s
-        ? null
-        : (legs.find((l) => s <= l.knots[l.knots.length - 1]!.s) ??
-          (s > last.knots[last.knots.length - 1]!.s ? null : last));
-
-    const { taper, bank, grip } = MOTION.travel;
-    const vh = window.innerHeight;
-
-    if (!leg) {
-      /*
-       * Docked: at the hero before the release, at Early Access after the last
-       * approach.
-       */
-      const home = s < first.knots[0]!.s;
-      const d = home ? docks[0]! : docks[2]!;
-      const drift = driftOf(d);
-      /*
-       * And past the last dock, the hand-over — which happens HERE rather than
-       * on the way in, and that is the fix for the two cards Early Access used
-       * to show.
-       */
-      const land = home
-        ? 0
-        : soft((s - last.knots[last.knots.length - 1]!.s) / (vh * grip));
-      gsap.set(frame, {
-        x: d.x + drift.x,
-        y: d.y + drift.y,
-        scale: d.scale,
-        opacity: home || land >= 1 ? 0 : 1,
-      });
-      gsap.set(turn, { rotationZ: d.turn });
-      hold(-1, home ? 1 : 0, 0, home ? 0 : land);
-      return;
-    }
-
-    const s0 = leg.knots[0]!.s;
-    const s1 = leg.knots[leg.knots.length - 1]!.s;
-    const y = pathAt(leg, s);
-
-    /*
-     * THE ODOMETER: how much of this leg's PAGE the card has actually covered,
-     * and the clock every one of its own properties runs on.
-     */
-    const w = Math.min(
-      1,
-      Math.max(0, (y - leg.from.y) / (leg.to.y - leg.from.y || 1)),
+    const enter = Math.max(
+      0,
+      leave - vh * (MOTION.travel.handover + MOTION.travel.grip),
     );
-    /*
-     * Zero at both ends of a leg and one across the middle of it: the shape
-     * every transit property is expressed in, so all of them resolve together
-     * at a dock and none of them has to be told where the docks are.
-     */
-    const away = awayAt(leg.long, w);
-    const key = leg.long ? "long" : "lead";
-
-    const base = leg.from.scale + (leg.to.scale - leg.from.scale) * w;
-    const light = leg.long ? lit.long : lit.lead;
-    /*
-     * The taper the depth system already runs, for the same reason: motion
-     * that is exhilarating at the top of a page is exhausting at the bottom.
-     */
-    const quiet =
-      1 -
-      (1 - taper) *
-        Math.min(1, y / (document.documentElement.scrollHeight || 1));
-    const transit =
-      (light.over + (light.seam - light.over) * clearance(y)) * quiet;
-    /*
-     * Full strength at both ends of every leg, whatever the transit track says
-     * — a dock is the card, not a picture of it.
-     */
-    const into = 1 - soft((s - s0) / (vh * 0.2));
-    const onto = 1 - soft((s1 - s) / (vh * 0.2));
-    const edge = Math.max(into, onto);
-
-    /*
-     * The slots' own depth, blended out as the card leaves them: full at
-     * either end of a leg, nothing in the middle, where the card belongs to no
-     * section and there is nothing for it to be a layer of.
-     */
-    const a = driftOf(leg.from);
-    const b2 = driftOf(leg.to);
-    const drift = {
-      x: (a.x + (b2.x - a.x) * w) * (1 - away),
-      y: (a.y + (b2.y - a.y) * w) * (1 - away),
+    trade = {
+      rise: enter + vh * MOTION.travel.handover * 0.35,
+      fade: enter + vh * MOTION.travel.handover,
     };
 
     /*
-     * The hand-over at the hero, in the order that makes it invisible, and
-     * over the stretch of path where the card is not moving — see
-     * MOTION.travel.handover, and the knot `measure` pushes for it.
+     * Are the Works steps in a row or a column? Measured off the steps
+     * themselves rather than off the tier, because it is a fact about the
+     * layout and it has to be re-decided on every resize.
      */
-    const swap = (s - s0) / (vh * MOTION.travel.handover);
-    const rise = leg.long ? 1 : soft(swap / 0.35);
+    const stacked =
+      Math.max(...dock.steps.map((d) => Math.abs(d.y - dock.steps[1]!.y))) >
+      0.45 * vh;
 
-    gsap.set(frame, {
-      x:
-        leg.from.x +
-        (leg.to.x - leg.from.x) * w +
-        drift.x +
+    const vsIn = dock.vs.centre - morph - dwell;
+    const vsOut = dock.vs.centre + dwell + morph;
+    const trioIn = dock.trio.centre - dwell;
+    const trioOut = dock.trio.centre + dwell;
+    const worksMid = dock.steps[1]!.centre;
+    const hubIn = dock.engine.centre - morph - dwell;
+    const hubOut = dock.engine.centre + dwell + morph;
+    const hubFrom = hubIn - approach - hover;
+    const laneIn = dock.board.centre - hover / 2;
+    const laneOut = dock.board.centre + hover / 2;
+    const earlyIn = dock.early.centre - morph - dwell;
+    last = dock.early.centre;
+
+    knots = [];
+
+    /* Strictly increasing, so a squeezed layout can never fold the path back. */
+    const knot = (at: number, props: Partial<Knot>) => {
+      const prev = knots[knots.length - 1];
+      knots.push({
+        ...KNOT,
+        ...props,
+        s: prev ? Math.max(at, prev.s + 1) : at,
+      });
+    };
+    const on = (d: Dock, scale: number, rot = -90): Partial<Knot> => ({
+      x: d.x,
+      y: d.y,
+      scale,
+      rot,
+      dock: d,
+    });
+    /*
+     * The lane down one side of the window, which is where the card waits
+     * rather than parking on anything. Held clear of the edge by half its own
+     * width — except on a phone, where it rides the edge on purpose.
+     */
+    const lane = (side: 1 | -1): Partial<Knot> => {
+      const { margin } = MOTION.travel;
+      const guard = (SQUAD_CARD.width * margin.scale) / 2 + 14;
+      return {
+        x: phone
+          ? vw / 2 + (side * vw) / 2
+          : Math.min(
+              vw - guard,
+              Math.max(guard, vw / 2 + side * vw * margin.side),
+            ),
+        y: vh * margin.line,
+        win: 1,
+        scale: margin.scale,
+        rot: -90 + side * margin.tilt,
+        rx: margin.rx,
+        ry: -side * margin.ry,
+      };
+    };
+
+    /* Alternating, so consecutive arcs bow opposite ways. */
+    let sign: 1 | -1 = 1;
+    /**
+     * Travel to a pose along a bowed arc: two free knots at a third and two
+     * thirds of the way, then the landing. The bow is what stops a long move
+     * reading as a slide.
+     */
+    const bow = (
+      from: number,
+      to: number,
+      props: Partial<Knot>,
+      opts: { hug?: boolean } = {},
+    ) => {
+      const a = knots[knots.length - 1]!;
+      const b = { ...KNOT, ...props, s: to };
+      /* Too short to bow through — land it and do not spend a side. */
+      if (to - from < 3) {
+        knot(to, props);
+        return;
+      }
+
+      const side = sign;
+      sign = -sign as 1 | -1;
+
+      const { bow: B } = MOTION.travel;
+      /*
+       * How far this move deviates from simply keeping pace with the page —
+       * a leg that only holds still in the window is not a journey.
+       */
+      const reach = Math.min(
+        1,
+        Math.hypot(b.x - a.x, b.y - a.y - (to - from)) / (vw * B.reach),
+      );
+      const amp = opts.hug ? 0.15 : phone ? 1 : B.floor + (1 - B.floor) * reach;
+      const lat = phone ? B.lat.phone : B.lat.full;
+      const tip = phone ? B.tip.phone : B.tip.full;
+      const yaw = phone ? B.yaw.phone : B.yaw.full;
+      /* One roll for the whole arc, so it reads as one gesture. */
+      const roll = B.roll * (0.7 + 0.6 * rand());
+      const third = (to - from) / 3;
+
+      const shape = [1, 2].map((i) => {
+        const f = i / 3;
+        const trail = i === 1 ? 1 : B.trail;
+        const out = Math.sin(f * Math.PI) * side * (i === 1 ? 1 : 0.55) * amp;
+        return {
+          x: a.x + (b.x - a.x) * f + out * vw * lat,
+          y: a.y + (b.y - a.y) * f + out * vh * B.drop,
+          win: a.win + (b.win - a.win) * f,
+          scale:
+            (a.scale + (b.scale - a.scale) * f) *
+            (1 - B.dip * Math.sin(f * Math.PI)),
+          /* The roll turns over half way, so the card banks and comes back. */
+          rot: -90 + (i === 1 ? side : -side) * roll * trail * amp,
+          rx: (i === 1 ? -1 : 1) * tip * (i === 1 ? 1 : 0.4) * amp,
+          ry: side * yaw * trail * amp,
+        };
+      });
+
+      /*
+       * The arc is three sub-legs and they are not the same length, so an even
+       * third of the scroll each would have the card hurry the long ones and
+       * dawdle the short one — a leg that reads as two gestures rather than
+       * one. Each gets the share its own length earns instead.
+       *
+       * Length as the EYE measures it, which is against a page that is itself
+       * moving: the same scroll-compensated distance `reach` is taken on. That
+       * needs the answer to know the answer, so it is run twice — even thirds
+       * to get a first measure, then again on what that gave.
+       */
+      const path = [a, ...shape, b];
+      let mark = [third, 2 * third];
+      for (let pass = 0; pass < 2; pass++) {
+        const at = [from, from + mark[0]!, from + mark[1]!, to];
+        const len = [0, 1, 2].map((i) => {
+          /* Only the part of a sub-leg still in page coordinates scrolls. */
+          const rides = 1 - (path[i]!.win + path[i + 1]!.win) / 2;
+          return Math.hypot(
+            path[i + 1]!.x - path[i]!.x,
+            path[i + 1]!.y - path[i]!.y - rides * (at[i + 1]! - at[i]!),
+          );
+        });
+        const all = len[0]! + len[1]! + len[2]!;
+        if (!all) break;
+        const span = to - from;
+        /* ...but never so lopsided that a sub-leg has no room to move in. */
+        const one = Math.min(0.55, Math.max(0.15, len[0]! / all));
+        const two = Math.min(
+          0.85,
+          Math.max(one + 0.15, (len[0]! + len[1]!) / all),
+        );
+        mark = [one * span, two * span];
+      }
+
+      shape.forEach((k, i) => knot(from + mark[i]!, k));
+      knot(to, props);
+    };
+
+    /* --- the hero, and the first two docks ------------------------------ */
+    knot(enter, on(dock.hero, heroScale));
+    knot(leave, on(dock.hero, heroScale));
+    bow(leave, vsIn, on(dock.vs, vsScale));
+    knot(vsOut, on(dock.vs, vsScale));
+    bow(vsOut, trioIn, on(dock.trio, trioScale));
+    knot(trioOut, on(dock.trio, trioScale));
+
+    let worksIn: number;
+    let worksOut: number;
+
+    if (stacked) {
+      /* --- Works in a column: the card goes edge-on and rails down them --- */
+      const topOf = (i: number) => dock.steps[i]!.y - dock.steps[i]!.h / 2;
+      const footOf = (i: number) => dock.steps[i]!.y + dock.steps[i]!.h / 2;
+      const rail = topOf(0) - MOTION.travel.flat.above;
+      const down = Math.max(0, rail - vh * (MOTION.travel.flat.open + 0.08));
+      let cursor = down + 60;
+
+      rails = dock.steps.map((_d, i) => {
+        const from = Math.max(cursor, topOf(i) - vh * MOTION.travel.flat.open);
+        const to = Math.max(
+          from + 120,
+          topOf(i) - vh * MOTION.travel.flat.shut,
+        );
+        cursor = to;
+        return {
+          el: stepCards[i]!,
+          /* Each step starts where the card is: the rail, then the one above. */
+          lift: (i === 0 ? rail : footOf(i - 1)) - topOf(i),
+          from,
+          to,
+        };
+      });
+      railed = { a: rails[0]!.to, b: rails[2]!.to };
+
+      worksIn = down - MOTION.travel.flat.turn;
+      worksOut = railed.b + MOTION.travel.flat.slide;
+      split = { a: 0, b: 0 };
+      fanOut = { mid: worksMid, offs: [] };
+
+      bow(
+        trioOut,
+        worksIn,
+        { x: vw / 2, y: rail, scale: heroScale },
+        { hug: true },
+      );
+      knot(down, {
+        x: vw / 2,
+        y: rail,
+        scale: heroScale,
+        squash: MOTION.travel.squash,
+      });
+      knot(railed.a, {
+        x: vw / 2,
+        y: rail,
+        scale: heroScale,
+        squash: MOTION.travel.squash,
+      });
+      knot(railed.b, {
+        x: vw / 2,
+        y: footOf(2),
+        scale: heroScale,
+        squash: MOTION.travel.squash,
+      });
+      knot(worksOut, {
+        x: vw / 2 + 0.3 * vw,
+        y: 0.62 * vh,
+        win: 1,
+        scale: MOTION.travel.margin.scale,
+        rot: -82,
+      });
+    } else {
+      /* --- Works in a row: the card cuts into three and becomes them ----- */
+      worksIn = worksMid - works.fan - half;
+      worksOut = worksMid + half + works.fan;
+      bow(trioOut, worksIn, on(dock.steps[1]!, heroScale));
+      knot(worksOut, on(dock.steps[1]!, heroScale));
+
+      const r = heroScale || 1;
+      const third = SQUAD_CARD.height / 3;
+      fanOut = {
+        mid: worksMid,
         /*
-         * The lanes, signed and measured in the window's WIDTH — which is what
-         * the arithmetic about reaching the edge of the screen is done in, and
-         * why `fit` is a fraction of it.
+         * Where each third has to go to be centred on its own step. Nothing
+         * here resizes it: the card comes APART into three, it does not also
+         * grow into three, so a third stays the size it is in the card and the
+         * three of them together are still exactly the card.
+         *
+         * Everything under the turn lives in a frame rotated a quarter, which
+         * is why a step's y is the slice's x and its x is the slice's y.
          */
-        sideAt(leg.long, w) * window.innerWidth * fit[key],
-      y: y + drift.y,
-      scale: base + (far - base) * away,
-      opacity: (transit + (1 - transit) * edge) * rise,
+        offs: dock.steps.map((d, i) => ({
+          x: -((d.y - dock.steps[1]!.y) / r),
+          /* ...less the offset the slice already carries in the markup. */
+          y:
+            (d.x - dock.steps[1]!.x) / r +
+            SQUAD_CARD.height / 2 -
+            (i + 0.5) * third,
+        })),
+      };
+      split = { a: worksIn, b: worksOut };
+    }
+
+    /* --- the engine hub, the life board, and the flight to the form ----- */
+    /*
+     * The run out to the lane can have almost no page to happen over — where
+     * the Intelligence Layer follows Works closely there are a few dozen
+     * pixels of scroll between the card leaving one and being wanted at the
+     * other, and the card arrives by cutting rather than by travelling. The
+     * wait the lane holds afterwards is what pays for it: the card reaches the
+     * lane later and carries straight on, which is a longer move and one beat
+     * instead of two.
+     */
+    const laneAt =
+      hubFrom +
+      Math.max(
+        0,
+        Math.min(hover, MOTION.travel.room * vh - (hubFrom - worksOut)),
+      );
+    bow(worksOut, laneAt, lane(1), { hug: phone });
+    knot(hubIn - approach, lane(1));
+    knot(hubIn, on(dock.engine, hubScale));
+    knot(hubOut, on(dock.engine, hubScale));
+
+    bow(hubOut, laneIn, lane(-1));
+    knot(laneOut, lane(-1));
+
+    const earlyFrom = earlyIn - dwell;
+    const gap = Math.max(0.15 * vh, (earlyFrom - laneOut) / 4);
+    const { flight } = MOTION.travel;
+    for (let i = 0; i < 3; i++) {
+      const side = i % 2 ? 1 : -1;
+      knot(laneOut + (i + 1) * gap, {
+        x: vw / 2 + side * vw * flight.spread * (0.75 + 0.5 * rand()),
+        y: vh * (flight.high + (i === 1 ? flight.dip : 0)),
+        win: 1,
+        scale: heroScale * (0.6 + 0.24 * rand()),
+        rot: -90 + side * flight.tilt * (0.5 + rand()),
+        rx: i === 1 ? flight.flat : -(0.35 * flight.flat),
+        ry: side * flight.yaw,
+      });
+    }
+    knot(earlyFrom, on(dock.early, heroScale));
+    knot(earlyIn, on(dock.early, heroScale));
+    /* And the last quarter turn, up onto its edge as the form's own card. */
+    knot(last, on(dock.early, earlyWide, 0));
+
+    /* The path is complete; now work out how fast it is moving at every knot. */
+    slopes(knots);
+
+    const hw = morph / 2;
+    swaps = [
+      { at: dock.vs.centre - hw, hw, from: "card", to: "vs" },
+      { at: dock.vs.centre + dwell + hw, hw, from: "vs", to: "card" },
+      ...(stacked
+        ? []
+        : ([
+            /*
+             * Both inside the hold and hard against its two ends, so the card
+             * is at full spread for each of them and there is a beat of the
+             * section's own three cards, alone, in between.
+             */
+            {
+              at: worksMid - half + works.trade / 2,
+              hw: works.trade / 2,
+              from: "card",
+              to: "cut",
+              melt: true,
+            },
+            {
+              at: worksMid + half - works.trade / 2,
+              hw: works.trade / 2,
+              from: "cut",
+              to: "card",
+              melt: true,
+            },
+          ] as Swap[])),
+      { at: dock.engine.centre - hw, hw, from: "card", to: "engine" },
+      { at: dock.engine.centre + dwell + hw, hw, from: "engine", to: "card" },
+    ];
+
+    /*
+     * Where the section gets its own three cards back. Not where the card has
+     * finished with them, which is `worksOut` — where they have left the
+     * window, which is later. Give them back while any of them is still on
+     * screen and they are seen coming back on UNDER the card that is still
+     * standing in for them, which is the one thing this is meant to prevent.
+     */
+    cutWindow = {
+      a: trioOut,
+      b: Math.max(
+        worksOut,
+        /* Measured where they REST, so the margin covers however far the
+           depth system currently has them from there. */
+        ...dock.steps.map((d) => d.y + d.h / 2 + 0.08 * vh),
+      ),
+    };
+    /* Where the card rails them in, the steps' own reveal is not wanted. */
+    if (rails.length) gsap.set(stepEls, { opacity: 1, y: 0 });
+
+    taken = [
+      { el: vsEl!, a: vsIn - 1, b: vsOut + 1 },
+      /* Held all the way to Works: the trio has nothing else to show. */
+      { el: trioEl!, a: vsOut, b: worksIn },
+      { el: hubEl!, a: hubIn - 1, b: hubOut + 1 },
+    ];
+  }
+
+  /** Place the card for a scroll position. */
+  const apply = (pos: number) => {
+    if (knots.length < 2) return;
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const sy = window.scrollY;
+
+    let i = 1;
+    while (i < knots.length - 1 && knots[i]!.s < pos) i++;
+    const a = knots[i - 1]!;
+    const b = knots[i]!;
+
+    const len = b.s - a.s || 1;
+    /* Past either end of the path the cubic would run away. It does not get to. */
+    const u = Math.min(1, Math.max(0, (pos - a.s) / len));
+    /* Every channel on the same cubic, so they can never disagree. */
+    const on = (c: Channel) => ride(a, b, c, u, len);
+    /* ...and one weight for the things that are a fade rather than a path. */
+    const t = smooth(u);
+
+    const scale = on("scale");
+    const win = on("win");
+
+    /* A docked knot follows its slot if the depth system has since moved it. */
+    const driftOf = (d: Dock | null) => {
+      if (!d) return { x: 0, y: 0 };
+      const now = chainDrift(d);
+      return { x: now.x - d.drift0.x, y: now.y - d.drift0.y };
+    };
+    const da = driftOf(a.dock);
+    const db = driftOf(b.dock);
+    const lead = (from: number, to: number) => from + (to - from) * t;
+
+    let x = on("x") + lead(da.x, db.x);
+    /* `win` is what blends page coordinates into window ones. */
+    let y = on("y") + lead(da.y, db.y) + win * sy;
+
+    /*
+     * Off a dock, the card is kept on screen — but only off a dock: a slot is
+     * where it is, and a clamp there would drag it off its mark.
+     *
+     * So the grip EASES OFF across the segment that lands on a dock rather
+     * than switching off when it gets there. Switching is what put a jump in
+     * it: a clamp that is holding the card the frame before it stops being
+     * applied hands back however far it was holding it, all at once.
+     */
+    const grip = (a.dock ? 0 : 1) + t * ((b.dock ? 0 : 1) - (a.dock ? 0 : 1));
+    if (grip > 0) {
+      const w = SQUAD_CARD.width * scale;
+      const h = SQUAD_CARD.height * scale;
+      const held = (v: number, lo: number, hi: number) =>
+        Math.max(lo, Math.min(hi, v));
+      x += grip * (held(x, keep * w - w / 2, vw - keep * w + w / 2) - x);
+      y +=
+        grip * (sy + held(y - sy, keep * h - h / 2, vh - keep * h + h / 2) - y);
+    }
+
+    /* Which face, and how far through trading for the next one. */
+    const seg = (() => {
+      let cur: Face = "card";
+      for (const s of swaps) {
+        const lo = s.at - s.hw;
+        const hi = s.at + s.hw;
+        if (pos >= hi) {
+          cur = s.to;
+          continue;
+        }
+        if (pos > lo)
+          return {
+            from: s.from,
+            to: s.to,
+            u: (pos - lo) / (hi - lo),
+            melt: s.melt === true,
+          };
+        break;
+      }
+      return { from: cur, to: cur, u: 1, melt: false };
+    })();
+
+    /* The card turns to trade a FACE; it does not turn to fall apart. */
+    const flip = seg.from !== seg.to && seg.from !== "cut" && seg.to !== "cut";
+
+    const { band, turn: T, grow } = MOTION.travel;
+    const lit: Partial<Record<Face, number>> = {};
+    if (seg.from === seg.to) lit[seg.from] = 1;
+    else if (seg.melt) {
+      /* One weight, spent between the two: never both bright, never neither. */
+      const w = smooth(seg.u);
+      lit[seg.from] = 1 - w;
+      lit[seg.to] = w;
+    } else {
+      lit[seg.from] = 1 - smooth((seg.u - (0.5 - band)) / band);
+      lit[seg.to] = smooth((seg.u - 0.5) / band);
+    }
+
+    /* Out and back rather than through: it turns away and returns changed. */
+    const yaw = flip
+      ? -T.yaw * smooth(seg.u < 0.5 ? 2 * seg.u : (1 - seg.u) * 2)
+      : 0;
+    const pitch = yaw * T.pitch;
+
+    const rise = soft((pos - knots[0]!.s) / (trade.rise - knots[0]!.s || 1));
+    /*
+     * A relay rather than a cross-fade: the hero's anchor only starts going
+     * once the traveller has finished arriving.
+     */
+    shade(
+      anchor,
+      1 - soft((pos - trade.rise) / (trade.fade - trade.rise || 1)),
+    );
+
+    const done = pos >= last;
+    /*
+     * Where the card rails the steps in, it is out of the way while they
+     * arrive — it is standing in for all three at once and cannot be seen
+     * doing it.
+     */
+    const hide =
+      railed.b > railed.a
+        ? Math.min(
+            soft((pos - (railed.a - 0.06 * vh)) / (0.06 * vh)),
+            1 - soft((pos - railed.b) / (0.06 * vh)),
+          )
+        : 0;
+    const alpha = done ? 0 : rise * (1 - hide);
+
+    shade(earlyEl, done ? 1 : 0);
+    shade(travel, alpha);
+
+    gsap.set(travel, {
+      x,
+      y,
+      scaleX: scale,
+      scaleY: scale * on("squash"),
       force3D: true,
     });
-    gsap.set(turn, {
-      /*
-       * The flip out of the dock's pose and back into the next one, plus the
-       * lean — banked in proportion to how fast the card is crossing into its
-       * lane rather than to how far across it has got, so it leans INTO the
-       * crossing and comes back to plumb as the crossing.
-       */
-      rotationZ: poseAt(leg, w) + (bank * sideRate(leg.long, w)) / swing[key],
+    gsap.set(turn, { rotationZ: on("rot") });
+    gsap.set(swing, {
+      rotationY: yaw + on("ry"),
+      rotationX: pitch + on("rx"),
     });
 
-    /*
-     * And the hero's own card goes out under the traveller as it takes over.
-     */
-    /* And the slots, which take the card back at every dock. */
-    /*
-     * How much of the approve slot's own card is showing — and it is a
-     * function of the DOCK, not of the approach.
-     */
-    const held = Math.min(
-      soft((s - leg.landed) / (vh * grip)),
-      1 - soft((s - (s0 - vh * grip)) / (vh * grip)),
-    );
+    /* One card, or three of it. */
+    const apart = split.b > split.a && pos > split.a && pos < split.b;
+    shade(whole, apart ? 0 : (lit.card ?? 0));
+    for (const sl of slices) shade(sl, apart ? (lit.card ?? 0) : 0);
 
-    hold(
-      -1,
-      /* The hero lets go a beat AFTER the traveller has come up under it. */
-      leg.long ? 0 : 1 - soft((swap - 0.35) / 0.65),
+    if (apart) {
       /*
-       * The approve slot is docked for the head of the long leg, and not yet
-       * reached for the whole of the short one.
+       * Out, then held wide across the middle step, then back in. `smoother`
+       * clamps, so the hold needs no case of its own: either side of the
+       * middle the other branch is already reading past its own end.
        */
-      leg.long ? held : 0,
-      /*
-       * And Early Access takes its own card back past the last dock rather
-       * than on the way to it — see the branch above.
-       */
-      0,
-    );
+      const spread =
+        pos < fanOut.mid
+          ? smoother((pos - (fanOut.mid - half - works.fan)) / works.fan)
+          : 1 - smoother((pos - (fanOut.mid + half)) / works.fan);
+      slices.forEach((sl, idx) => {
+        const off = fanOut.offs[idx] ?? { x: 0, y: 0 };
+        gsap.set(sl, { x: off.x * spread, y: off.y * spread });
+      });
+    }
+
+    /* The faces take the card's place, so they take its position too. */
+    for (const key of ["vs", "engine"] as const) {
+      const el = faces[key]!;
+      const w = alpha ? (lit[key] ?? 0) : 0;
+      shade(el, w);
+      if (w > 0)
+        gsap.set(el, {
+          x,
+          y,
+          scale: faceFit[key] * (grow + (1 - grow) * w),
+          rotationY: yaw,
+          rotationX: pitch,
+        });
+    }
+
+    /* The real step cards, where the card is standing in for them. */
+    if (split.b > split.a) {
+      const owned = alpha > 0 && pos > cutWindow.a && pos < cutWindow.b;
+      for (const el of stepCards) shade(el, owned ? (lit.cut ?? 0) : 1);
+    }
+
+    /* ...and where it rails them in instead, one at a time. */
+    for (const r of rails) {
+      const u = smooth((pos - r.from) / (r.to - r.from || 1));
+      gsap.set(r.el, {
+        y: r.lift * (1 - u),
+        clipPath: `inset(0px 0px ${(1 - u) * 100}% 0px)`,
+      });
+      shade(r.el, u > 0 ? 1 : 0);
+    }
+
+    for (const w of taken) stand(w.el, pos > w.a && pos < w.b);
   };
 
-  /** What each of the three slots is showing. */
-  const hold = (at: number, ...ramp: number[]) => {
-    [heroSlot, approveSlot, earlySlot].forEach((el, i) =>
-      gsap.set(el, { opacity: ramp[i] ?? (at === i ? 1 : 0) }),
-    );
+  return {
+    measure,
+    apply,
+    park,
+    span: () => ({ from: knots[0]?.s ?? 0, to: last + window.innerHeight }),
   };
-
-  /** The two slots the traveller stands in for, held at nothing. */
-  const park = () => gsap.set([approveSlot, earlySlot], { opacity: 0 });
-
-  /**
-   * The scroll range the whole journey is scrubbed across — and a window past
-   * the last dock, which is the half of this that is load-bearing.
-   */
-  const span = () => ({
-    from: legs[0]?.knots[0]?.s ?? 0,
-    to:
-      (legs[1]?.knots[legs[1]!.knots.length - 1]?.s ?? 0) + window.innerHeight,
-  });
-
-  return { measure, apply, park, span };
 }
 
 /* -------------------------------------------------------------------------- */
