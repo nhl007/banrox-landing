@@ -28,13 +28,6 @@ export default function SquadCardTrail() {
   return (
     <div className="squad-trail" aria-hidden="true">
       <div className="squad-trail-frame" data-card-travel="">
-        {/*
-          The card, and nothing else on this element: the frame above owns x, y,
-          scale and opacity, this owns rotation, and neither ever writes the
-          other's property. SquadCard's own root carries a transform of its own
-          to scale its face, so the rotation goes on a wrapper rather than on
-          the card — the same reason EarlyAccess wraps its instance.
-        */}
         <div className="size-full" data-card-turn="">
           <SquadCard orientation="landscape" size={SQUAD_CARD.width} />
         </div>

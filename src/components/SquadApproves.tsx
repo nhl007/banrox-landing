@@ -25,22 +25,6 @@ import { LEDGER_FRAMING, PEOPLE, VOTE_FRAMING } from "@/data/people";
 const STAGE_W = 1118;
 const STAGE_H = 532;
 
-/**
- * The phone's artboard for the same four pieces, stacked: 302 wide (the mobile
- * frame's 370 content column less 34 either side) by 1675 tall.
- *
- *   request card   286x334 at (8, 0)
- *   a dashed run   64      at 334
- *   Squad card     218x350 at (42, 398)
- *   a dashed run   64      at 748
- *   vote list      302x290 at (0, 812)
- *   ledger         172x509 at (65, 1166)
- *
- * Three of those four are the wide layout's own boxes at their own size — only
- * the ledger is redrawn, from an 827x122 rail into a 172x509 column. The wires
- * change because the arrangement does: a fan running left to right across a
- * 1118px stage becomes two short drops down the middle of a 302px one.
- */
 const PHONE_W = 302;
 const PHONE_H = 1675;
 
@@ -80,13 +64,6 @@ function ApproverRow({ name, status }: { name: string; status: Status }) {
 function RequestCard() {
   return (
     <div
-      /*
-        The same 286x334 card in both tiers, at its own artboard coordinates in
-        each: (8, 0) on the phone's 302-wide column, (0, 8) on the wide stage.
-        `absolute` throughout, so the two glows above always have this box as
-        their containing block and the card's bloom cannot escape to the
-        payload.
-      */
       className="absolute top-0 left-[8px] h-[334px] w-[286px] overflow-hidden rounded-2xl border border-white/10 bg-[rgba(8,8,20,0.5)] sm:top-[8px] sm:left-0"
       data-reveal="request"
     >
@@ -245,24 +222,9 @@ function MemberChip({
 function LedgerBar() {
   return (
     <div
-      /*
-        A 172x509 column on the phone and an 827x122 rail from the gate up — the
-        one part of this diagram the mobile frame redraws rather than re-places.
-        Five lanes will not sit side by side in 302px, so they stand in a
-        column under the total instead of beside it.
-      */
       className="absolute top-[1166px] left-[65px] h-[509px] w-[172px] sm:top-[410px] sm:left-[145.5px] sm:h-[122px] sm:w-[827px]"
       data-reveal="ledger"
     >
-      {/*
-        Figma nests this inside the bar's own overflow-clip, yet it visibly
-        bleeds well above the border in the reference render (a blur-effect
-        vs. clip-order quirk on Figma's side). Rendered as a sibling here so
-        it isn't cut off by the bar's rounded corners, matching what's shown.
-
-        Wide layout only: the phone's frame has no second bloom over the column,
-        only the wash the three layers below carry.
-      */}
       <Image
         src="/approve/ledger-ambient-glow.svg"
         alt=""
@@ -272,13 +234,6 @@ function LedgerBar() {
         style={{ top: -107 }}
       />
 
-      {/*
-        The wash, clipped to the bar in both tiers — the artboard draws the group
-        855px wide and then lets the frame cut it to the column, so what shows is
-        a blue head fading into the card rather than a light around it.
-        Three quarters-ish the size on the phone, which is the ratio between the
-        two frames' copies of it (853 against 1013).
-      */}
       <div className="absolute inset-0 overflow-hidden rounded-2xl border border-white/10 shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]">
         <div className="pointer-events-none absolute inset-x-0 top-0 origin-top scale-85 sm:scale-100">
           <Image
@@ -378,13 +333,6 @@ export default function SquadApproves() {
               className="font-heading type-title w-full pb-px leading-none font-normal"
               data-reveal="copy"
             >
-              {/*
-                One break per tier. The phone's three lines are the artboard's,
-                and they are a hair off what the browser wraps to on its own:
-                measured, "Need more than your" comes to 361px here against the
-                370 the frame allows, so it fits where Figma broke it. Stated
-                rather than left to a 9px margin.
-              */}
               Need more than <br className="sm:hidden" />
               your lane? <br className="hidden sm:inline" />
               <span className="font-display italic">The squad</span> decides.
@@ -400,29 +348,7 @@ export default function SquadApproves() {
           </div>
         </div>
 
-        {/*
-          No data-reveal on the payload wrapper: this section's timeline
-          assembles the diagram piece by piece, so every child below carries its
-          own hook and a group fade on top of them would just flatten the whole
-          thing back into one crossfade.
-        */}
         <div className="screen-payload px-4 sm:px-0">
-          {/*
-            Ambient glow behind the SquadCard — Figma's Ellipse 6146. It is the
-            first child of the section frame, so it sits under everything in the
-            section, and it is centred on the card at stage (559, 176) with its
-            own 100px blur margin baked into the asset — putting the top-left of
-            the 694px export 347px up and left of that.
-
-            Its own stage rather than a sibling of the real one: it has to scale
-            with the diagram it sits behind, and it cannot be *in* the diagram's
-            stage because that one clips on both axes so the request card and
-            vote list can start off screen. See StageBackdrop.
-          */}
-          {/* Wide layout only. On the phone this backdrop shares a box with the
-              1675px column rather than with a 532px stage, so it resolves to a
-              glow several times the size of the card it belongs to — and the
-              artboard puts none there in any case. */}
           <div className="hidden sm:contents">
             <StageBackdrop width={STAGE_W} height={STAGE_H}>
               <Image
@@ -438,12 +364,6 @@ export default function SquadApproves() {
             </StageBackdrop>
           </div>
 
-          {/* stage-viewport-clip: the request card and the vote list start a
-              nudge outboard of where they sit — see MOTION.enter.shift — and
-              the request card is already flush with the stage's left edge, so
-              its start state hangs past it. They no longer come from off the
-              *viewport*, but the clip is still what keeps that overhang from
-              raising a horizontal scrollbar. */}
           <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"
@@ -466,11 +386,6 @@ export default function SquadApproves() {
                     }
                   >
                     <div className="panel-stage">
-                      {/* Out from the request, through the card, back along all
-                          three branches to the votes — so the light runs left to
-                          right. Wide layout only: on a phone the three parts are
-                          in a column and this run would join coordinates that no
-                          longer describe anything. Two short drops replace it. */}
                       <ConnectorTrace
                         className="hidden sm:block"
                         src="/approve/connector-lines.svg"

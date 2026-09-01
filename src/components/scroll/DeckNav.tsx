@@ -11,20 +11,7 @@ import {
 import { MOTION } from "./motion";
 import { SECTIONS } from "./sections";
 
-/*
- * The rail: one dot per section, then the footer, down the right-hand edge.
- *
- * The deck has no scrollbar — the page does not move while you are in it — so
- * there is nothing to tell you how many sections there are, which one you are
- * on, or how far in you have got. The rail is all three: a ring that travels to
- * the section you are on, a line that fills behind it, and a dot per stop that
- * brightens once you have been there.
- *
- * It works whether or not there is a deck. Above the gate it asks the
- * controller for a section; below it, and under reduced motion, the page is an
- * ordinary column and it scrolls to one instead — and watches the column to
- * keep itself in step, since nothing is publishing an index in that mode.
- */
+/* The rail: one dot per section, then the footer, down the right-hand edge. */
 export default function DeckNav() {
   const { index, footer, active } = useSyncExternalStore(
     deckSubscribe,
@@ -41,13 +28,7 @@ export default function DeckNav() {
   const fill = useRef<HTMLSpanElement>(null);
   const dots = useRef<(HTMLButtonElement | null)[]>([]);
 
-  /*
-   * The ring travelling, and the line filling in behind it.
-   *
-   * Both measured off the dots rather than computed from the index, so the
-   * spacing lives in the stylesheet where it belongs and nothing here has to be
-   * kept in step with it.
-   */
+  /* The ring travelling, and the line filling in behind it. */
   useEffect(() => {
     const dot = dots.current[current];
     const first = dots.current[0];
@@ -60,9 +41,11 @@ export default function DeckNav() {
     const from = centre(first);
     const span = centre(last) - from;
     const y = centre(dot);
-    /* The line is laid out at full length once and scaled, which keeps it off
-       the layout path — a height tween on every step would be a reflow of the
-       rail eight times a visit. */
+    /*
+     * The line is laid out at full length once and scaled, which keeps it off
+     * the layout path — a height tween on every step would be a reflow of the
+     * rail eight times a visit.
+     */
     const grown = span ? (y - from) / span : 0;
 
     gsap.set(line, { top: from, height: span });
@@ -89,19 +72,7 @@ export default function DeckNav() {
     };
   }, [current]);
 
-  /*
-   * The dots swelling towards the pointer — see MOTION.rail.magnet.
-   *
-   * This writes ONE NUMBER per dot, into a custom property the stylesheet
-   * reads: --mag, which .deck-bead turns into a scale and eases with a
-   * transition of its own. It does not animate the transform itself, and that
-   * is deliberate rather than incidental — GSAP takes ownership of an element's
-   * whole transform when it touches any part of it, so a tween on `scale` here
-   * and a `transform` in the stylesheet are two owners of one property, and the
-   * one that loses is whichever wrote first. Handing CSS the number and letting
-   * it own the transform outright has no such argument in it, and keeps the
-   * work on the compositor.
-   */
+  /* The dots swelling towards the pointer — see MOTION.rail.magnet. */
   useEffect(() => {
     const el = rail.current;
     if (!el) return;
@@ -109,8 +80,10 @@ export default function DeckNav() {
 
     const { max, reach } = MOTION.rail.magnet;
 
-    /* Measured when the pointer arrives rather than on every move: the rail
-       cannot change shape while it is being hovered. */
+    /*
+     * Measured when the pointer arrives rather than on every move: the rail
+     * cannot change shape while it is being hovered.
+     */
     let centres: number[] = [];
     const measure = () => {
       centres = dots.current.map((dot) => {
@@ -124,8 +97,10 @@ export default function DeckNav() {
         const dot = dots.current[i];
         if (!dot || Number.isNaN(centres[i])) continue;
         const near = Math.max(0, 1 - Math.abs(e.clientY - centres[i]) / reach);
-        /* Squared, so the swell stays tight around the pointer instead of
-           lifting half the rail at once. */
+        /*
+         * Squared, so the swell stays tight around the pointer instead of
+         * lifting half the rail at once.
+         */
         dot.style.setProperty("--mag", `${1 + near * near * (max - 1)}`);
       }
     };
@@ -171,9 +146,11 @@ export default function DeckNav() {
   }, [active]);
 
   const goTo = (i: number) => {
-    /* The controller does the scrolling itself when there is a deck — it has to,
-       because getting to the footer means letting go of the top of the page
-       first, and coming back means taking hold of it again. */
+    /*
+     * The controller does the scrolling itself when there is a deck — it has
+     * to, because getting to the footer means letting go of the top of the
+     * page first, and coming back means taking hold of it again.
+     */
     if (deckGoTo(i)) return;
     const target =
       i < SECTIONS.length
@@ -182,14 +159,7 @@ export default function DeckNav() {
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  /*
-   * The sections, and then the footer.
-   *
-   * The footer is on the rail but is not a section: it is the page underneath
-   * the deck, it scrolls freely, and it has no entrance of its own. It earns a
-   * dot anyway — it is where the contact details are, and without one the only
-   * way to reach it is to go through all seven cards first.
-   */
+  /* The sections, and then the footer. */
   const stops = [...SECTIONS.map((s) => s.label), "Contacts"];
 
   return (
@@ -213,10 +183,10 @@ export default function DeckNav() {
           >
             <span className="deck-bead" aria-hidden="true" />
             {/*
-              The preview. aria-hidden because the button already carries the
-              same words as its label — read out, this would say each section's
-              name twice and its number to nobody's benefit.
-            */}
+             * The preview. aria-hidden because the button already carries the same words
+             * as its label — read out, this would say each section's name twice and its
+             * number to nobody's benefit.
+             */}
             <span className="deck-peek" aria-hidden="true">
               <span className="deck-peek-index">
                 {String(i + 1).padStart(2, "0")}

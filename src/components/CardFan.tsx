@@ -3,15 +3,7 @@ import PassportCard, {
 } from "@/components/ui/PassportCard";
 import SquadCard from "@/components/ui/SquadCard";
 
-/*
- * Five cards fanned across a 1262x516 stage. Positions are the Figma offsets
- * relative to the group origin; z-order follows Figma's layer order, which is
- * why Mika sits over Aram and Lilit sits over David.
- *
- * The four files are exported as well as placed, because the phone fans the
- * same four people in a different arrangement — see HERO_FAN_PHONE in Hero.tsx.
- * The data belongs to the people; only left/top/z belong to a layout.
- */
+/* Five cards fanned across a 1262x516 stage. */
 
 type Placed = PassportCardProps & { left: number; top: number; z: string };
 
@@ -232,42 +224,13 @@ export const cards: Placed[] = [
  */
 export const FAN_STAGE = { width: 1262, height: 516 } as const;
 
-/*
- * The hover, and what it deliberately is not.
- *
- * It does not lift the card. The fan sits inside .stage-viewport, which clips on
- * both axes, and the top row of cards is flush with the stage's own ceiling — so
- * any upward translate takes the card straight into that clip and shears its top
- * edge off. Nothing here moves at all.
- *
- * It does not scale it either. Growing the card re-rasters everything on it —
- * three bureau meters, four metric rows, the avatar — for the length of the
- * transition, and it pushes the card into its neighbours in a fan whose whole
- * point is the overlap.
- *
- * And it draws nothing around the card. The card already carries its own light:
- * three glow layers at its top edge, inside its overflow-hidden box. Hovering
- * brings those up instead, so the response happens on the card rather than in
- * the space around it — see GLOW_HOVER in PassportCard, which is what `group/
- * card` here exists to reach.
- *
- * RAISE is the only thing that changes outside the card, and it earns its keep
- * precisely because the glow lives at the card's top edge: the cards overlap, so
- * without it a neighbour keeps its corner over the very strip that lights up.
- * z-[45] clears every passport card (z-10 to z-40) and stays under the Squad
- * card's z-50, so a hovered card comes forward of its neighbours but never in
- * front of the product in the middle.
- *
- * Tailwind puts `hover:` and `group-hover:` behind `@media (hover: hover)`, so a
- * tap on a phone cannot leave a card stuck lit.
- */
+/* The hover, and what it deliberately is not. */
 const CARD = "group/card cursor-pointer";
 const RAISE = "hover:z-[45]";
 
 /*
  * The Squad card has no TopGlow to bring up — it is a silver face, not a dark
- * one — so its hover is a little more light across the whole card. Same idea,
- * same restraint, still nothing outside its own box, and still no movement.
+ * one — so its hover is a little more light across the whole card.
  */
 const SQUAD =
   "cursor-pointer transition-[filter] duration-500 ease-out hover:brightness-110 motion-reduce:transition-none";
@@ -275,15 +238,7 @@ const SQUAD =
 /*
  * The perspective sits on the stage so the fan's entrance (the hero timeline
  * rotates it up from flat) is measured in stage units and scales along with
- * everything else. The cards then live one level down, on a plane of their own,
- * because that plane is what turns — the stage itself already carries the scale
- * transform.
- *
- * The value is deliberately short. Perspective only bites while the stack is
- * tilted; at rest the plane is parallel to the screen and undistorted at any
- * distance. A nearer camera is what gives the flat stack enough projected depth
- * to read as a stack of cards rather than a smear. Keep it in step with
- * MOTION.flat.perspective.
+ * everything else.
  */
 export default function CardFan() {
   return (
@@ -312,12 +267,12 @@ export default function CardFan() {
                 </div>
               );
             })}
-            {/* Hovers like the rest of them, but it never floats and it never
-                raises: it is [data-fan-anchor], not [data-reveal='card'], so
-                heroFloat skips it — held still on purpose, since it is the
-                product and the other four are files about people — and it is
-                already the front of the fan at z-50, where z-[45] would only
-                push it behind the four it sits in front of. */}
+            {/*
+             * Hovers like the rest of them, but it never floats and it never raises: it is
+             * [data-fan-anchor], not [data-reveal='card'], so heroFloat skips it — held
+             * still on purpose, since it is the product and the other four are files about
+             * people — and it is already the.
+             */}
             <div
               className="absolute z-50"
               style={{ left: 501, top: 96 }}

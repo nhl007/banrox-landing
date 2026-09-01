@@ -36,9 +36,6 @@ export default function SquadInvitation() {
       data-node-id="9304:25728"
       data-sequence-section="invitation"
     >
-      {/* isolate above, z-10 here: between them the ambient ground is pinned
-          behind this section's content and in front of the page, and cannot
-          escape to either side of that. See .screen-glow. */}
       <SectionBloom id="invitation" />
       <div className="screen-body relative z-10">
         <div
@@ -56,27 +53,12 @@ export default function SquadInvitation() {
             data-node-id="9304:25738"
             data-reveal="copy"
           >
-            {/* The wide layout's break. The phone's two lines fall after
-                "your" instead, which is where the frame wraps it on its own. */}
             <span>{`A squad without `}</span>
             <span className="font-display italic">{`your people`}</span>{" "}
             <br className="hidden sm:inline" />
             {`isn't a squad.`}
           </h2>
 
-          {/*
-            text-white/70 rather than text-white + opacity-70, which is what it
-            was. The two paint the same pixels on a plain paragraph — but one of
-            them is the property the sequence tweens: [data-reveal] arrives by
-            being taken from 0.2 to 1, so an element whose resting state was an
-            opacity of its own had that opacity overwritten, and this paragraph
-            rendered at full white on every tier that animates and at 70% on
-            the ones that do not. Measured, before and after. Alpha on the
-            colour is out of the sequence's way; the VS badge between the
-            comparison panels keeps its opacity and is tweened back to 0.7 by
-            name instead (see alonePanels), because there the fade IS the
-            arrival.
-          */}
           <p
             className="font-sans type-lede type-measure w-full tracking-[-0.32px] text-white/70"
             data-node-id="9304:25739"
@@ -87,13 +69,6 @@ export default function SquadInvitation() {
           </p>
         </div>
 
-        {/* No data-reveal on the wrapper: the card arrives and then fills
-            itself in, and a group fade would flatten that into one crossfade. */}
-        {/* px-6 where the diagrams have none: this one is a card with a border
-            rather than a diagram bled to the edges, and on a phone the stage
-            fits the container exactly — so with no gutter it would touch both
-            sides of the screen. Above 604px the scale is capped at 1 and the
-            padding costs nothing. */}
         <div className="screen-payload px-4 sm:px-6" data-node-id="9304:25740">
           <div className="stage-viewport stage-fluid">
             <div
@@ -130,12 +105,6 @@ export default function SquadInvitation() {
 
                   {/* QR Code Container */}
                   <div
-                    /* The panel bleeds past the card's 16px padding on the
-                       phone and stops at it from the gate up — both the
-                       artboard's. Down there Figma leaves the 572px container
-                       at its full width inside a 370px card and lets the card's
-                       own clip cut it, so the QR sits on a band that runs edge
-                       to edge with its corners taken off. */
                     className="relative -mx-4 h-[260px] w-[calc(100%+32px)] shrink-0 overflow-hidden rounded-[16px] bg-white/[0.04] sm:mx-0 sm:w-full"
                     data-node-id="9304:25744"
                     data-reveal="item"

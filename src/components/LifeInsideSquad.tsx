@@ -19,62 +19,19 @@ import { PEOPLE, VOTE_FRAMING, type Framing } from "@/data/people";
 
 const STAGE_W = 855;
 const STAGE_H = 542;
-
-/**
- * The phone's artboard for the same three: 370x984.76, which is the mobile
- * frame's content column and the cards stacked in it 16 apart.
- *
- *   lane     370x218.6 at y0
- *   cover    370x290.2 at y234.6
- *   health   370x444   at y540.8
- *
- * The first two are the wide layout's own cards at a scale — 0.781 down and
- * 1.036 UP, because the lane card is drawn 474 wide to share a row and the
- * cover card only 357, and on the phone they both get the whole 370 column. The
- * health card is the one that is redrawn: an 855x238 rail has nowhere to put
- * three stats and four scores in a 370px column, so its rows stack and its
- * scores become a 2x2, at the type sizes it already had.
- */
 const PHONE_W = 370;
 const PHONE_H = 984.76;
 const LANE_SCALE = 370 / 474;
 const COVER_SCALE = 370 / 357;
 
-/**
- * The two 64px portraits on the cover card, at the crop Figma gives them at
- * that size.
- *
- * Inline rather than a sixth entry in people.ts, because the sets there are
- * whole-squad records and this is the one placement on the page that shows two
- * of the four. Every framing in that file is a per-size nudge; making a
- * four-person record out of two measured values would mean inventing the other
- * two.
- */
 const COVER_FRAMING: Record<"mika" | "lilit", Framing> = {
   mika: { left: "-8.82%", right: "-14.7%", top: "calc(50% + 1.8px)" },
   lilit: { left: "-5.88%", right: "-5.88%", top: "calc(50% + 0.8px)" },
 };
 
-/**
- * The shell all three cards share: a 16px-radius panel over the page, lit from
- * inside its own top edge.
- *
- * `bg-vignette` is the 4% radial + 2px backdrop blur Figma puts under every one
- * of them, and it is already in the stylesheet because the signal cards and the
- * score badges carry the same pair.
- */
 const CARD =
   "bg-vignette relative overflow-hidden rounded-2xl bg-[rgba(8,8,20,0.5)] ring-[1.5px] ring-white/10 ring-inset shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)]";
 
-/**
- * The three blurred vectors every card on this page is lit by, and the dot
- * texture over them.
- *
- * One component because all three cards carry the same four layers in the same
- * order at three different sizes — glow, glow, glow-with-plus-lighter, texture
- * — and writing it out three times is three chances for the order to drift.
- * The numbers are each card's own, straight off the frame.
- */
 function CardLight({
   glows,
   texture,
@@ -129,8 +86,7 @@ function LaneStat({
       </span>
       <span className="font-heading flex flex-col items-start gap-1 leading-none font-medium whitespace-nowrap text-white">
         <span className="text-[12px] opacity-50">{label}</span>
-        {/* data-count: the sequence counts this up on arrival, and the printed
-            value stays the element's own text — see countUp. */}
+
         <span data-count="" className="text-[24px]">
           {value}
         </span>
@@ -139,13 +95,6 @@ function LaneStat({
   );
 }
 
-/**
- * Card one: Lilit's lane, spent down.
- *
- * 474x280 with 24 of padding and 16 between its four rows, which is what the
- * frame measures — the row of two readouts at the bottom is the only part of it
- * that is not simply a line of type.
- */
 function LaneCard() {
   return (
     <div className={`${CARD} h-[280px] w-[474px]`}>
@@ -175,12 +124,6 @@ function LaneCard() {
         ]}
         texture={
           <>
-            {/*
-              The topography under the lower half of the card, and the soft blob
-              over its top right corner. Both are flattened exports: Figma builds
-              each out of a dozen masked ellipses, and the mask stack does not
-              survive being re-expressed as CSS — what it draws does.
-            */}
             <Image
               src="/life/lane-texture.png"
               alt=""
@@ -557,16 +500,6 @@ export default function LifeInsideSquad() {
       className="screen relative isolate w-full"
       data-sequence-section="life"
     >
-      {/*
-        Ellipse 6147 — the phone's frame lights this section the way it lights
-        the funnel above it, from a single 389px circle off the left edge, and
-        at exactly the same offset. Above the gate the light is the 245px aura
-        inside the diagram instead; a 389px circle has no relationship to a
-        stage that scales.
-
-        isolate above, z-10 below: between them the layer is pinned behind this
-        section's content and in front of the page. See .screen-glow.
-      */}
       <div className="screen-glow sm:hidden" aria-hidden="true">
         <Image
           src="/intel/bg-glow.svg"
@@ -575,10 +508,6 @@ export default function LifeInsideSquad() {
           height={1189}
           className="absolute max-w-none"
           style={{ left: -616, top: 51.6 }}
-          /* The role the wide layout gives its aura, so copyIn brings this in
-             underneath the heading (see glowIn) and glowDrift keeps it moving
-             afterwards. It arrives from the left and below, which is the corner
-             it sits in. */
           data-reveal="glow"
           data-glow-from="-0.6 0.8"
         />
@@ -598,15 +527,7 @@ export default function LifeInsideSquad() {
           </h2>
         </div>
 
-        {/* No data-reveal on the wrapper: the three cards arrive as three
-            statements — see lifeLanes and lifeHealth — and a group fade over the
-            top would flatten that back into one crossfade. */}
         <div className="screen-payload px-4 sm:px-0">
-          {/* stage-viewport-clip: the cards rise from below their places and the
-              two on the top row are swayed apart as the section crosses (see
-              depth.ts), so both ends of the stage are briefly overhung. A
-              rightward overhang is scrollable overflow, and a horizontal
-              scrollbar on this page resizes every container query under it. */}
           <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"
@@ -629,45 +550,17 @@ export default function LifeInsideSquad() {
                     }
                   >
                     <div className="panel-stage">
-                      {/*
-                        Ellipse 6148, centred on the diagram — the light the
-                        three cards sit in rather than one behind the section.
-                        Wide layout only; the phone's is the section-wide circle
-                        at the top of this file.
-                      */}
                       <Image
                         src="/life/aura.svg"
                         alt=""
                         width={845}
                         height={845}
                         className="pointer-events-none absolute hidden max-w-none sm:block"
-                        /*
-                          Its top-left in stage units, not `left-1/2` and a
-                          -50% translate — and that is not a style preference.
-                          depth writes `yPercent` to this element (see the aura
-                          layer in depth.ts) and gsap folds any CSS `translate`
-                          into the same cache, so a -50% stated there is the
-                          first thing overwritten. Measured before this was
-                          moved: the glow sat 422px low, centred under the
-                          section rather than under the cards.
-
-                          245px circle centred on the stage at (427.5, 270.5);
-                          the export is 845 across because Figma bakes the
-                          150px blur into it, so the top-left is that centre
-                          less 422.5.
-                        */
                         style={{ left: 5, top: -152 }}
                         data-reveal="aura"
                         data-glow-from="-0.6 0.8"
                       />
 
-                      {/*
-                        Three absolute placements per card, one per frame. The
-                        phone's first two are the wide cards at a scale about
-                        their own top-left corner, which is what makes 474 and
-                        357 both come out at 370 without either being re-laid
-                        out. See PHONE_W.
-                      */}
                       <div
                         className="absolute top-0 left-0 origin-top-left scale-[var(--s)] sm:scale-100"
                         style={{ "--s": LANE_SCALE } as React.CSSProperties}

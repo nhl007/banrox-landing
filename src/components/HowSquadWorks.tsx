@@ -10,24 +10,13 @@ import SectionBloom from "@/components/ui/SectionBloom";
 import { PEOPLE, VOTE_FRAMING } from "@/data/people";
 
 /*
- * "How Squad Works" — three 392x508 step cards in a row, 32px apart
- * (3x392 + 2x32 = 1240, the standard content width).
+ * "How Squad Works" — three 392x508 step cards in a row, 32px apart (3x392 +
+ * 2x32 = 1240, the standard content width).
  */
 
 /*
  * Step 3's arc, and the room left around it for the endpoint dots and for the
  * light's bloom to fall off before the wipe clips it.
- *
- * Everything decorating the arc is authored in panel coordinates — which is how
- * Figma gives them and the only way to check them against the artwork — and
- * `onArc` rebases them onto the trace's own padded box, where they have to live
- * so the wipe reveals them along with the line they belong to.
- *
- * Figma frames the bracket at (113.5, 16) 199.5x90 and the asset overhangs that
- * by half a stroke on three sides, which is the box below. The two numbers to
- * check it against are the dots: the path's ends land on (113.5, 74.5) and
- * (313, 106), and the dots Figma places independently sit at (113, 75) and
- * (313, 106).
  */
 const ARC = { left: 113, top: 15.5, width: 200.5, height: 90.5 };
 const TRACE_PAD = 18;
@@ -47,17 +36,14 @@ function RingedAvatar({
   left: number;
   top: number;
   verified?: boolean;
-  /**
-   * A name tag riding just under the avatar. Only "You" uses it, and it has to
-   * belong to the avatar rather than to the panel: the four of them go round
-   * (see the orbit note below), and a tag left at the bottom of the panel would
-   * spend three quarters of every lap labelling somebody else.
-   */
+  /** A name tag riding just under the avatar. */
   label?: string;
 }) {
   return (
-    /* data-orbit-rider: turned back by exactly what the ring turns, so this
-       travels the circle upright. See worksOrbit. */
+    /*
+     * data-orbit-rider: turned back by exactly what the ring turns, so this
+     * travels the circle upright.
+     */
     <div className="absolute" style={{ left, top }} data-orbit-rider>
       <AvatarRing
         size={40}
@@ -70,9 +56,11 @@ function RingedAvatar({
         </span>
       ) : null}
       {label ? (
-        /* Figma centres this half a pixel right of the avatar's own centre, at
-           the panel's 179.5 against its 179 — kept rather than rounded away, so
-           the tag sits where the artboard puts it. */
+        /*
+         * Figma centres this half a pixel right of the avatar's own centre, at
+         * the panel's 179.5 against its 179 — kept rather than rounded away,
+         * so the tag sits where the artboard puts it.
+         */
         <span className="absolute top-[33px] left-[calc(50%+0.5px)] flex h-3.5 -translate-x-1/2 items-center justify-center rounded-[10px] bg-white px-1 drop-shadow-[0px_6px_4px_rgba(38,75,255,0.6)]">
           <span className="font-heading text-brand-deep text-[10px] leading-none whitespace-nowrap">
             {label}
@@ -86,8 +74,10 @@ function RingedAvatar({
 function Step1Figure() {
   return (
     <FigurePanel texture="/works/step1-texture.svg">
-      {/* Three concentric rings, centred in the panel. data-glow: these never
-          settle — see worksAmbient. */}
+      {/*
+       * Three concentric rings, centred in the panel. data-glow: these never settle
+       * — see worksAmbient.
+       */}
       <Image
         src="/works/step1-ring-outer.svg"
         alt=""
@@ -114,26 +104,9 @@ function Step1Figure() {
       />
 
       {/*
-        The squad, on a circle around the hub — and the box that turns them
-        along it. See worksOrbit.
-
-        The four keep the coordinates Figma gives them, and those coordinates
-        are already a circle: a 40px avatar at (160,14) has its centre at
-        (180,34), which is 96px straight up from the panel's own centre at
-        (180,130), and the other three are 96px right, left and down from the
-        same point. David is a pixel to the left of it rather than on it, which
-        is how the artboard places him and what he is left at — it puts him
-        0.6deg out of phase with the other three and nothing else.
-
-        So the wrapper is the panel box, inset-0, and rotating it about its own
-        centre rotates the circle about its centre. Nothing computes an angle,
-        nothing is authored in polar coordinates, and with no rotation on it —
-        below the motion gate, or under reduced motion — this is the artboard
-        exactly as it was drawn.
-
-        pointer-events-none because it now covers the whole panel and everything
-        in it is decorative; the avatars keep their alt text either way.
-      */}
+       * The squad, on a circle around the hub — and the box that turns them along
+       * it.
+       */}
       <div className="pointer-events-none absolute inset-0" data-orbit>
         <RingedAvatar personKey="lilit" left={160} top={14} />
         <RingedAvatar personKey="mika" left={256} top={110} />
@@ -269,19 +242,9 @@ function Step3Figure() {
   return (
     <FigurePanel texture="/works/step3-texture.svg" textureHeight={260}>
       {/*
-        The bracket joining the Lilit and Reserve bars, with an endpoint dot on
-        each and a bright tick riding each run.
-
-        Everything is positioned against the trace's own padded box rather than
-        the panel, so the wipe reveals the dots and ticks along with the line
-        they belong to — the origin is the arc's top-left less TRACE_PAD.
-
-        flipX because the asset is exported with its long leg on the left and
-        Figma mirrors it in place. Unmirrored it descends to y=106 over Lilit —
-        27px into the bar it is supposed to stop on top of — and stops 35px
-        short of the Reserve bar on the other side, which is the tell if this
-        ever gets re-exported and the flip is dropped.
-      */}
+       * The bracket joining the Lilit and Reserve bars, with an endpoint dot on each
+       * and a bright tick riding each run.
+       */}
       <ConnectorTrace
         src={"/works/step3-arc.svg"}
         {...ARC}
@@ -289,12 +252,12 @@ function Step3Figure() {
         pad={TRACE_PAD}
         flipX
       >
-        {/* Centred rather than corner-positioned: the asset's own rotation
-            (matching Figma's wrapper) makes its post-rotation bounding box
-            awkward to derive by hand, but its centre point is exact. y=16 is
-            the arc's own horizontal run — the top of ARC plus its half-stroke
-            overhang. Mirrored with the artwork so its gradient still runs
-            bright-end-first into the corner it points at. */}
+        {/*
+         * Centred rather than corner-positioned: the asset's own rotation (matching
+         * Figma's wrapper) makes its post-rotation bounding box awkward to derive by
+         * hand, but its centre point is exact. y=16 is the arc's own horizontal run —
+         * the top of ARC plus its.
+         */}
         <Image
           src="/works/step3-tick-h.svg"
           alt=""
@@ -303,8 +266,10 @@ function Step3Figure() {
           className="pointer-events-none absolute max-w-none -translate-x-1/2 -translate-y-1/2 -scale-x-100"
           style={onArc(161.37, 16)}
         />
-        {/* Clear of the 8px corner radius, so it sits on the straight part of
-            the right-hand run rather than where the path is still bending. */}
+        {/*
+         * Clear of the 8px corner radius, so it sits on the straight part of the
+         * right-hand run rather than where the path is still bending.
+         */}
         <Image
           src="/works/step3-tick-v.svg"
           alt=""
@@ -339,11 +304,10 @@ function Step3Figure() {
             className="flex flex-1 flex-col items-center justify-center gap-1"
           >
             {/*
-              Figma builds this as a horizontal capsule rotated -90deg (an
-              auto-layout workaround on their end) — a plain vertical bar is
-              simpler and identical on screen since nothing here is
-              constrained to their DOM shape.
-            */}
+             * Figma builds this as a horizontal capsule rotated -90deg (an auto-layout
+             * workaround on their end) — a plain vertical bar is simpler and identical on
+             * screen since nothing here is constrained to their DOM shape.
+             */}
             <div
               className="w-[3px] rounded-[2px]"
               style={{ height: bar.height, backgroundColor: bar.color }}
@@ -365,9 +329,11 @@ export default function HowSquadWorks() {
       className="screen relative isolate w-full"
       data-sequence-section="works"
     >
-      {/* isolate above, z-10 here: between them the ambient ground is pinned
-          behind this section's content and in front of the page, and cannot
-          escape to either side of that. See .screen-glow. */}
+      {/*
+       * isolate above, z-10 here: between them the ambient ground is pinned behind
+       * this section's content and in front of the page, and cannot escape to either
+       * side of that.
+       */}
       <SectionBloom id="works" />
       <div className="screen-body relative z-10">
         <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
@@ -384,8 +350,10 @@ export default function HowSquadWorks() {
           </h2>
         </div>
 
-        {/* No data-reveal on the wrapper: each card grows in on its own, and a
-            group fade over the top would flatten that back into one crossfade. */}
+        {/*
+         * No data-reveal on the wrapper: each card grows in on its own, and a group
+         * fade over the top would flatten that back into one crossfade.
+         */}
         <div className="screen-payload px-4 sm:px-0">
           <div className="stage-viewport stage-fluid">
             <div

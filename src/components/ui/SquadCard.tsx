@@ -1,20 +1,13 @@
 import Image from "next/image";
 
-/*
- * The physical Squad card. Figma always authors the face as a 420x260
- * landscape card; the card fan and the comparison panels then rotate it -90deg
- * to stand it upright at 260x420. That is why the layout below is written in
- * landscape and only the wrapper turns.
- */
+/* The physical Squad card. */
 
 const CARD_W = 420;
 const CARD_H = 260;
 
 /**
  * That authored face, exported for the same reason PASSPORT_CARD is: a
- * container placing the card upright has to know what it comes to. Landscape,
- * as Figma draws it — on its end the two swap, which is what `upright` below
- * does. See HeroFanPhone, whose whole deck is built out from this height.
+ * container placing the card upright has to know what it comes to.
  */
 export const SQUAD_CARD = { width: CARD_W, height: CARD_H } as const;
 
@@ -28,10 +21,7 @@ export type SquadCardProps = {
   label?: string;
   cardNumber?: string;
   className?: string;
-  /**
-   * Rendered width in px. The face stays authored at 420x260 and scales
-   * uniformly. Defaults to the orientation's natural width.
-   */
+  /** Rendered width in px. */
   size?: number;
   orientation?: "portrait" | "landscape";
 };
@@ -139,9 +129,9 @@ export default function SquadCard({
           </span>
 
           {/*
-          Figma sets this in a "Credit Card" face that ships with the design
-          file, not the project; monospace is the closest available stand-in.
-        */}
+           * Figma sets this in a "Credit Card" face that ships with the design file, not
+           * the project; monospace is the closest available stand-in.
+           */}
           <span
             className="absolute bottom-10 left-[208px] translate-y-full font-mono text-[16px] leading-none tracking-[0.06em] opacity-80"
             style={engravedText}

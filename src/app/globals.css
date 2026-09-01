@@ -25,20 +25,18 @@
   --color-negative: #df1c41;
   /* Distinct from --color-positive: the approval green is its own value. */
   --color-success: #22c55e;
-  /* Distinct from --color-warning (#f2ae40, used on the passport cards):
-     the vote/pending amber is its own value too. */
+  /*
+   * Distinct from --color-warning (#f2ae40, used on the passport cards): the
+   * vote/pending amber is its own value too.
+   */
   --color-pending: #f59e0b;
-  /* Distinct from --color-negative (#df1c41): Figma labels this one "danger"
-     and uses it only for the "Poor" credit-score rating. */
+  /*
+   * Distinct from --color-negative (#df1c41): Figma labels this one "danger"
+   * and uses it only for the "Poor" credit-score rating.
+   */
   --color-danger: #ff4242;
 
-  /*
-   * The navbar's slot in flow — its own pt-4 plus the pill's h-14.
-   *
-   * It is not a section of its own. It is the top of the hero, and the hero is
-   * one screen *including* it, so this is what comes off the hero's height.
-   * Keep in step with NavBar.
-   */
+  /* The navbar's slot in flow — its own pt-4 plus the pill's h-14. */
   --nav-h: 72px;
 
   /* Shared by .bg-brand-radial and .bg-brand-cta — see the note on each. */
@@ -72,15 +70,14 @@
   --color-pending: var(--color-pending);
   --color-danger: var(--color-danger);
 
-  /* Tailwind's default radius scale already matches the design (lg 8, xl 12,
-     2xl 16, 4xl 32), so it is left untouched. */
+  /*
+   * Tailwind's default radius scale already matches the design (lg 8, xl 12,
+   * 2xl 16, 4xl 32), so it is left untouched.
+   */
 
   /*
    * The breakpoints, moved onto the three the design is actually drawn for:
-   * phone up to 640, tablet 641-1024, desktop above. Tailwind's own `sm` is
-   * 640px, which would have put a 640px phone — the exact top of the phone
-   * range — into tablet styles while the motion gate at 641 left it a phone.
-   * One pixel, but it is the pixel the whole layout turns on.
+   * phone up to 640, tablet 641-1024, desktop above.
    */
   --breakpoint-sm: 641px;
   --breakpoint-lg: 1025px;
@@ -96,45 +93,19 @@ body {
   font-family: var(--font-sans);
 }
 
-/*
- * CTA gradient. Figma paints this as a radial fill whose ellipse is centred on
- * the button with semi-axes of ~1.05x the half-width and ~3.5x the half-height,
- * so the left/right edges land on the darkest stop while the top/bottom edges
- * barely leave the lightest one. Expressed as fractions of the box, that is
- * 52.5%/175% — size-independent, so one rule serves every button size.
- */
+/* CTA gradient. */
 .bg-brand-radial {
   background-image: var(--gradient-brand-radial);
 }
 
-/*
- * The CTA's ring. Figma's export reports a flat white stroke, but the artboard
- * renders a white *gradient*: measured off a 4x export it sits at ~40% along
- * the top edge and fades to ~9% at the bottom, with a highlight blooming from
- * the top centre to full white and falling off linearly over roughly a quarter
- * of the button's width. Both are percentage-based, so one rule serves every
- * button size.
- *
- * Painting it takes five layers because the ring is translucent and has to
- * composite over the fill, not over the page: the bottom layer lays the fill
- * across the whole border box, the two ring layers tint it, the sheen sweeps
- * over them, and the top layer repaints the fill clipped to the padding box so
- * only the 1.5px border keeps any of it. The border itself is transparent —
- * see Button's primary variant.
- *
- * That clip is what makes the sheen a *border* effect rather than a shine
- * across the whole button: the band is painted over the full border box like
- * the ring layers, and the padding-box fill on top erases everything but the
- * ring. So the light enters at one cap, runs the top and bottom edges together,
- * and leaves at the other — no mask, no pseudo-element, no extra DOM.
- */
+/* The CTA's ring. */
 @property --cta-sheen {
   syntax: "<percentage>";
   inherits: false;
   /*
-   * Off the near end of the gradient line: at rest — and for anyone on
-   * reduced motion, who never gets the keyframes — the band is fully
-   * outside the box and the ring paints exactly as it did before.
+   * Off the near end of the gradient line: at rest — and for anyone on reduced
+   * motion, who never gets the keyframes — the band is fully outside the box
+   * and the ring paints exactly as it did before.
    */
   initial-value: -30%;
 }
@@ -142,13 +113,7 @@ body {
 .bg-brand-cta {
   background-image:
     var(--gradient-brand-radial),
-    /*
-     * A plateau, not a spike. The ring already carries up to 0.4 white of its
-     * own, so a band that only touches full white at a single point barely
-     * separates from it along the top edge — the head of the pass has to hold
-     * solid #fff across a few percent of the gradient line to read as light
-     * rather than as a slightly brighter stretch of ring.
-     */
+    /* A plateau, not a spike. */
     linear-gradient(
         100deg,
         transparent calc(var(--cta-sheen) - 26%),
@@ -175,24 +140,9 @@ body {
 
 @media (prefers-reduced-motion: no-preference) {
   /*
-   * Registered above rather than left as a plain custom property because only a
-   * registered one interpolates — unregistered, this would jump between
+   * Registered above rather than left as a plain custom property because only
+   * a registered one interpolates — unregistered, this would jump between
    * keyframes instead of travelling.
-   *
-   * The velocity profile lives in the keyframe *spacing*, not in an easing
-   * function, which is why the animation runs `linear`: the default `ease`
-   * applies per segment and would slow the band to a stop at every waypoint
-   * below. Equal 20% steps of travel are given unequal slices of time —
-   *
-   *   whip 40 units in 6%  →  drift 20 in 8%  →  20 in 14%  →  20 in 14%
-   *                        →  20 in 8%  →  whip 40 in 6%  →  hold
-   *
-   * — so the light snaps around each rounded cap at roughly 4.5x the speed it
-   * crosses the long edges at, and hangs in the middle where there is most of
-   * it to see. The first and last waypoints (-30%, 130%) sit clear of the
-   * gradient line by more than the band's 26% half-width, so the band is fully
-   * off the box at both ends: the whips start and finish out of frame, and the
-   * hold before the loop restarts has nothing visible in it to seam.
    */
   @keyframes cta-sheen {
     0% {
@@ -241,9 +191,6 @@ body {
 /*
  * The step cards and score badges each carry a near-invisible vignette (a
  * radial fill at 4% opacity, darkest at the edges) plus a background blur.
- * Figma re-exports the exact radial-gradient matrix per instance size, but at
- * this opacity the size-independent approximation below is indistinguishable
- * and works at every box size these appear at.
  */
 .bg-vignette {
   background-image: radial-gradient(
@@ -293,93 +240,28 @@ body {
   background-image: linear-gradient(13.35deg, #2b58fa 10.84%, #89a3ff 84.75%);
 }
 
-/* ---------------------------------------------------------------------------
- * One section, one screen.
- *
- * Every animated section plays on a single trigger of its own, which only means
- * anything if the whole section is in front of the reader when it fires: a
- * section taller than the window animates its lower half below the fold, and
- * the reader arrives to find it already over. So from `md` up a section is
- * exactly as tall as the window and its contents are fitted into that box,
- * rather than the box growing to hold them.
- *
- * Below `md` none of this applies, and deliberately. The sequence is switched
- * off there (see MOTION.enabled), so there is no transition to miss — and
- * nothing is gained by folding a 1240px diagram into a phone. The sections
- * stack and scroll, which is what a phone does.
- *
+/*
  * ---------------------------------------------------------------------------
- * THE GATE — (min-width: 641px) and (min-height: 480px) — is repeated on every
- * block below and on MOTION.enabled and the [data-reveal] rule. They must all
- * say the same thing. A window on one side of it for the layout and the other
- * side for the controller is a section that is not a screen being animated as
- * though it were, and a stage told to size itself against a container whose
- * height nothing has fixed.
- *
- * The height half is not decoration. A phone held sideways is 932x430 — it
- * passes the width test and fails the premise completely: the heading alone is
- * most of 430px, so the card fan underneath it was fitted to what was left and
- * came out at 0.076 scale. Measured. 480 clears every landscape phone and no
- * tablet, iPad landscape being 768 tall. Under it the page does what a phone
- * does, which is the one thing that still works at that height.
+ * One section, one screen.
  */
 
 .screen {
   display: flex;
   flex-direction: column;
-  /*
-   * Nothing a section contains may reach past its left or right edge.
-   *
-   * Three of the eight already said this for themselves, as a utility on the
-   * element, because their arrivals travel sideways. Depth gave the rest
-   * the same problem: an ambient layer that swells or sways is a transformed
-   * box wider than the section it sits in, and a transform that overhangs to
-   * the right is *scrollable* overflow — which on this page does more than
-   * raise a scrollbar. A horizontal scrollbar resizes the container queries
-   * every stage derives its scale from, so every diagram below it changes size
-   * and every section below it moves. Stated once here, it cannot be forgotten
-   * on the next section anybody adds.
-   *
-   * `clip` rather than `hidden`: it does not make the element a scroll
-   * container, and it is the one value that may be paired with a `visible`
-   * other axis — which the ambient layers depend on, since their whole job
-   * across a section boundary is to bleed vertically into the gap. See
-   * .screen-glow.
-   */
+  /* Nothing a section contains may reach past its left or right edge. */
   overflow-x: clip;
   /*
-   * On a phone this padding is the space *between* sections, and it is the only
-   * thing that says one has ended: they are a column of full-width cards and
-   * diagrams on the same dark ground, with no rule or band between them, so a
-   * thin gap reads as one long section rather than seven.
-   *
-   * 48px, which is the artboard's. Every section on the mobile frame opens its
-   * badge 48px below its own top edge and closes 48px under the last thing in
-   * it, so the run between any two of them is 96px — measured off the frame,
-   * not chosen: the eight sections butt edge to edge there and all the air
-   * between them is this padding.
-   *
-   * --screen-gap is the other half of the same measurement: the distance from
-   * the foot of a heading block to the head of the diagram under it. 60px on
-   * every one of the six sections that has both.
-   *
-   * Not height-relative down here. A phone's section is as tall as its contents
-   * — often two or three windows — so svh would be measuring the gap against
-   * something the section has no relationship to.
+   * On a phone this padding is the space *between* sections, and it is the
+   * only thing that says one has ended: they are a column of full-width cards
+   * and diagrams on the same dark ground, with no rule or band between them,
+   * so a thin gap reads as one long section.
    */
   --screen-pad: 3rem;
   --screen-gap: 3.75rem;
   padding-block: var(--screen-pad);
 }
 
-/*
- * From the gate up the same two numbers mean something else entirely. A section
- * is exactly one window there, so this is not space between sections — there is
- * no between — it is what the section spends on its own margins instead of on
- * the diagram. Hence the answer to the window's *height*: at 900px these land
- * on roughly what the artboard specifies; at 720 they hand about 60px back to
- * the diagram, which is where it buys the most.
- */
+/* From the gate up the same two numbers mean something else entirely. */
 @media (min-width: 641px) {
   .screen {
     --screen-pad: clamp(1.25rem, 4svh, 4rem);
@@ -388,25 +270,15 @@ body {
 }
 
 /*
- * The hero is the one section that does not take the 60px, and it is drawn that
- * way: 40px from the waitlist line to the top of the card fan. It is also the
- * one whose copy block ends in a footnote rather than in a paragraph, and a
- * footnote wants less air under it than a lede does.
- *
- * Stated here rather than as a utility on the section, because .screen is
- * unlayered and unlayered rules beat every @layer utilities one whatever their
- * specificity — a `max-sm:[--screen-gap:2.5rem]` on the element would simply
- * lose to the declaration above.
+ * The hero is the one section that does not take the 60px, and it is drawn
+ * that way: 40px from the waitlist line to the top of the card fan.
  */
 @media (max-width: 640px) {
   .screen[data-sequence-section="hero"] {
     --screen-gap: 2.5rem;
     /*
      * And 41 under the fan rather than 48, which is the one place the phone's
-     * frame breaks its own rhythm in the other direction. The hero closes on the
-     * foot of a card rather than on a line of type, and a card's edge is a
-     * harder stop than a baseline is — 7px less reads the same. Measured off the
-     * frame: 1319 with the Squad card's foot at 1278.
+     * frame breaks its own rhythm in the other direction.
      */
     padding-bottom: 41px;
   }
@@ -433,14 +305,7 @@ body {
   width: 100%;
 }
 
-/**
- * Everything under the heading, and the only thing that gives.
- *
- * A column on a phone and a row from the gate up. That is what lets a diagram
- * drop its stage (see .stage-fluid) and have its parts simply stack — the parts
- * are the same elements either way, and only their container's direction says
- * whether they are a diagram or a list.
- */
+/** Everything under the heading, and the only thing that gives. */
 .screen-payload {
   position: relative;
   display: flex;
@@ -449,8 +314,10 @@ body {
   width: 100%;
   flex-direction: column;
   align-items: center;
-  /* 24px, which is what the mobile frame puts between the three step cards —
-     the only payload on the page that is a column of more than one thing. */
+  /*
+   * 24px, which is what the mobile frame puts between the three step cards —
+   * the only payload on the page that is a column of more than one thing.
+   */
   gap: 1.5rem;
 }
 
@@ -462,21 +329,9 @@ body {
   }
 }
 
-/* ---------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------
  * The sections, as a column.
- *
- * Which is all they are: seven blocks one after another, and the reader scrolls
- * them. There is nothing here that holds the page, snaps it, pins it or takes a
- * gesture from it — scrolling moves the document by exactly as much as was
- * asked for and stops wherever it is let go.
- *
- * That was not always true. Above the gate these used to be a deck: all seven
- * stacked in one windowful at `position: absolute`, six of them held at
- * `opacity: 0; visibility: hidden`, and a controller intercepting every wheel,
- * touch and key event so that one gesture handed the window from one section to
- * the next. The wrappers below are what is left of it, and they are now doing
- * nothing but existing — kept because the markup names them and a page that
- * scrolls needs no wrapper at all to do it.
  */
 .scene-track {
   position: relative;
@@ -484,72 +339,22 @@ body {
 
 /*
  * ---------------------------------------------------------------------------
- * THE TRAVELLING SQUAD CARD
- *
- * The page has three Squad cards in it — the one at the front of the hero's
- * fan, the one the approve diagram gathers around, and the one Early Access
- * leads with. They are the same object: it is the product, and it is what all
- * three of those sections are about. Until now they were three pictures of it
- * and scrolling between them said nothing.
- *
- * This is the card that does the travelling. It picks up exactly where the
- * hero's sits once the fan has folded into it, falls down the page as the
- * reader scrolls, is set down in the approve diagram's slot, falls again, and
- * lies down flat in Early Access — one card, four thousand pixels, no cuts.
- *
- * WHY IT IS A FOURTH CARD RATHER THAN ONE OF THE THREE. None of them can
- * leave. All three live inside a .stage — a scaled artboard with a container
- * query on it — and the hero's is inside .stage-viewport, which clips on both
- * axes precisely so the fan's entrance can start off the edge. A card animated
- * out of that box is a card cut in half by it. Measured. So the three stay
- * where they are, holding the layout and the space, and this one is what moves.
- *
- * WHERE IT PAINTS. First child of <main>, before .scene-track, and that is
- * load-bearing: both are positioned elements with no z-index of their own, so
- * they paint in document order and everything in every section lands on top of
- * this. Verified rather than assumed — a probe element placed here is behind
- * every card, every diagram and every glyph on the page, and shows only in the
- * gaps between them. It is the only place on the page a large object can cross
- * five screens without being in the way of any of them.
- *
- * WHY IT IS ABSOLUTE AND NOT FIXED. Nothing above it is positioned, so its
- * containing block is the initial one and its x/y are page coordinates. The
- * three slots are fixed points on the page; the card is somewhere on the line
- * between them; scrolling does the rest. A fixed element would have to be
- * re-derived against the window on every frame instead.
- *
- * WHY IT IS TWO ELEMENTS. The frame owns x, y, scale and opacity; the card
- * inside it owns rotation. Two owners on one transform collide — the page
- * learned that on the comparison panels' orbit rings and again on the hero
- * deck's centring — so the split is the existing fix rather than a new idea.
- * The frame is offset by half the authored face so that its x/y ARE the card's
- * centre, which is what makes a dock a single measured point rather than a
- * corner plus a size.
+ * THE TRAVELLING SQUAD CARD The page has three Squad cards in it — the one at
+ * the front of the hero's fan, the one the approve diagram gathers around, and
+ * the one Early Access leads.
  */
 .squad-trail {
   display: none;
 }
 
-/*
- * Held at nothing unconditionally, outside the query below.
- *
- * Two reasons, and the second is the one that matters. The page is
- * server-rendered and paints before any of this exists, so an unplaced card
- * would flash at the document's top-left corner for a frame. And below the gate
- * the only thing keeping this off the page is its parent's `display: none` —
- * which is one edit away from not being true, and the failure it would hide is
- * a second full-strength Squad card sitting in the corner of a page that has
- * no controller to move it.
- */
+/* Held at nothing unconditionally, outside the query below. */
 .squad-trail-frame {
   opacity: 0;
 }
 
 /*
  * Only where the sequence runs, which is the union of the two motion tiers and
- * exactly the guard the [data-reveal] start state uses. Below it the page is
- * delivered finished by the server, all three real cards are visible, and a
- * fourth one would be a second Squad card sitting on the hero for ever.
+ * exactly the guard the [data-reveal] start state uses.
  */
 @media (min-height: 480px) and (prefers-reduced-motion: no-preference) {
   .squad-trail {
@@ -559,24 +364,6 @@ body {
      * As wide as the page and no taller than a line, which is a clip and not a
      * layout: the frame inside is absolutely positioned against this box's
      * top-left corner, so the coordinate system is the page's either way.
-     *
-     * Clipped sideways and open top and bottom, exactly as .screen-glow is and
-     * for the same pair of reasons. Sideways, because this is the one moving
-     * thing on the page that no section clips — every .screen carries
-     * `overflow-x: clip` and cuts its own contents off at the window's edge,
-     * and the traveller is outside all of them by construction. Measured at
-     * 320x720, where the Early Access stage bottoms out on its own minimum
-     * scale: the card is 312px wide in a 320px window and hangs 8px past the
-     * right edge, which on this page is not a cosmetic overflow but a
-     * horizontal scrollbar that resizes every container query the stages derive
-     * --stage-scale from. Open vertically, because travelling the length of the
-     * page is the entire point.
-     *
-     * The sideways half earns its keep now that the card has a lane to the
-     * right of the slots to travel down — MOTION.travel.sway, which is bounded
-     * so that this never has to fire, and measured at 1440, 1280, 768, 390 and
-     * 320 where it does not. It is the backstop for the widths nobody thought
-     * of, not the mechanism.
      */
     inset: 0 0 auto 0;
     height: 0;
@@ -589,8 +376,7 @@ body {
    * The box is the authored face, offset by half of itself, so the frame's
    * origin is the card's centre — see above. transform-origin is that centre
    * too, so the scale the controller gives it is measured from the same point
-   * its x and y are, and the two compose into one placement instead of fighting
-   * over where the middle is.
+   * its x and y are, and the two compose into.
    */
   .squad-trail-frame {
     position: absolute;
@@ -602,37 +388,12 @@ body {
   }
 }
 
-/*
- * The break above the footer, in both tiers, from one rule.
- *
- * A between on this page is never just the margin: it is the section above's
- * own bottom padding, then the margin, then the section below's top padding.
- * The footer has none of its own — it is a band with its own ground rather than
- * a .screen — so matching the rhythm means the last section has to supply the
- * far side as well as the near one. Hence the sum, and hence one rule for both
- * tiers rather than two.
- *
- * Below the gate --screen-between is not declared at all and the fallback
- * carries the phone's own answer: the artboard runs 80px from the foot of the
- * Early Access button to the top of the footer, where every other pair of
- * sections on it gets 96. Deliberately shorter, and the one place the mobile
- * frame breaks its own rhythm — the last thing the reader is asked to do sits
- * closer to what follows it than the sections do to each other. 32 + the
- * section's own 48 is that 80.
- *
- * Above the gate it is the margin plus the padding, 144 + 36 at 1440x900, which
- * with the last section's own 36 comes to the 216px that separates every other
- * pair up here. Measured both ways rather than asserted — the version of this
- * rule that used the margin alone came out 36px short above the gate and read
- * as the page trailing off rather than ending.
- */
+/* The break above the footer, in both tiers, from one rule. */
 .scene > .screen:last-child {
   /*
    * 32 on a phone, which with the section's own 48 of padding is the 80 the
    * frame runs from the foot of the Early Access button to the top of the
-   * footer. Stated flat rather than through the sum below, because down here
-   * the section's padding is already inside the 80 and adding it again counted
-   * it twice — measured, that put the footer 48px lower than the frame does.
+   * footer.
    */
   margin-bottom: 2rem;
 }
@@ -643,20 +404,7 @@ body {
   }
 }
 
-/*
- * Sections are one window tall wherever the window can hold one.
- *
- * This is the layout the design is drawn for — a heading and a diagram fitted
- * into one screen rather than a screen grown to hold them — and it is a
- * complete layout on its own, which is why it sits on the size gate alone and
- * not on the motion one. It happens to be what the deck was built out of; it
- * does not depend on the deck, and it outlived it.
- *
- * The first section shares its window with the navbar above it, which is in
- * flow and not sticky: without this the hero would be a full window tall with
- * 72px of bar on top of it, and its last 72px would sit below the fold with
- * nothing to say it was there.
- */
+/* Sections are one window tall wherever the window can hold one. */
 @media (min-width: 641px) and (min-height: 480px) {
   .screen {
     height: 100svh;
@@ -666,43 +414,7 @@ body {
     height: calc(100svh - var(--nav-h));
   }
 
-  /*
-   * And a band of nothing between them.
-   *
-   * On the deck there was no between: one section replaced another in a single
-   * frame and the question never arose. Scrolled, seven full-height screens
-   * butted edge to edge run together — the foot of one diagram and the head of
-   * the next heading meet with nothing between them to say which belongs to
-   * which, and the reader is never given a moment where they are looking at
-   * neither.
-   *
-   * A sixth of the window is that moment: enough that the section being left is
-   * off the top before the one being arrived at has anything to say, and not so
-   * much that it reads as the page having ended. It was a fifth, which was a
-   * fraction too generous — the gap started to read as an absence rather than a
-   * breath. It is also where one section's
-   * light goes out and the next one's has not yet come up, so the gap reads as
-   * the dark between two lit rooms rather than as padding.
-   *
-   * ONE rule for every pair, with no section special-cased: `+` puts the same
-   * margin above all six of them, so the rhythm never changes as you scroll.
-   * The page still opens flush under the navbar, which is an edge rather than a
-   * neighbour — it is the top of the hero's own screen, not a thing above it.
-   *
-   * The footer used to be treated as the same kind of edge and it is not. It is
-   * a neighbour: a separate band with its own ground, arriving after the last
-   * section the way every section arrives after the one above it — and butted
-   * straight up against Early Access, the last thing the reader is asked to do
-   * sat directly on top of it. So it gets the same between as everything else,
-   * which is what --screen-between is for: the gap is stated once here and read
-   * by the last-child rule above, so the rhythm at the foot of the page cannot
-   * drift away from the rhythm through it.
-   *
-   * Not below the gate. There a section is as tall as its contents rather than
-   * as tall as the window, so svh would be measuring the gap against something
-   * it has no relationship to — and the phones already have their between, in
-   * the 56px of --screen-pad each section carries top and bottom.
-   */
+  /* And a band of nothing between them. */
   .scene {
     --screen-between: clamp(4rem, 16svh, 11.2rem);
   }
@@ -712,37 +424,7 @@ body {
   }
 }
 
-/*
- * Type, mobile first.
- *
- * The base values are the phone's, and the gate raises them — rather than the
- * other way round, where a desktop size sits in the base and every small screen
- * is an exception to it. On a phone these are absolute sizes with a little room
- * to breathe; from 641px up they answer the window's *height* as well as its
- * width, because that is where a section has to fit one.
- *
- * Body text bottoms out at 1rem. Below 16px iOS zooms the page on focus and
- * everything else is a squint, so the floor is not a matter of taste.
- *
- * ---------------------------------------------------------------------------
- * The three phone sizes are the mobile artboard's, and the vw term is how they
- * stay the artboard's on a phone that is not 402px wide.
- *
- * The frame is drawn at 402. 48px of hero heading is 11.94% of that, 40px of
- * section title is 9.95%, so the middle term of each clamp lands on the exact
- * drawn size at 402 and holds the same proportion of the screen either side of
- * it — a 430px phone gets a slightly larger heading and a 360px one a slightly
- * smaller, which is what keeps a four-line heading four lines at both. Fixing
- * the px instead would re-wrap the hero's heading to five lines at 360.
- *
- * The floors are not decoration: below about 340px the vw term would take the
- * hero under 2rem, at which point the heading stops being a heading. It scrolls
- * a hair wider there instead, which the section's own overflow-x: clip absorbs.
- *
- * Both headings are line-height 1 and letter-spacing 0 on the artboard — the
- * same as they already are from the gate up, so the two tiers now differ in
- * size alone.
- */
+/* Type, mobile first. */
 .type-hero {
   font-size: clamp(2rem, 11.94vw, 3rem);
   line-height: 1;
@@ -758,13 +440,6 @@ body {
 /*
  * -0.32px, stated here rather than left to the `tracking-[-0.32px]` every
  * caller already passes.
- *
- * This file is unlayered and Tailwind's utilities are in @layer utilities, so an
- * unlayered declaration here beats every one of them whatever their specificity
- * — `letter-spacing: normal` on this class was quietly winning against all five
- * ledes on the page. Measured on Squad Approves: 352px of ink for a line the
- * artboard sets in 339, which is exactly the 41 characters times the 0.32 that
- * never applied, and enough to push the paragraph from three lines to four.
  */
 .type-lede {
   font-size: 1rem;
@@ -774,14 +449,7 @@ body {
 
 /*
  * How Squad Works, and only it: the mobile frame sets that heading at the
- * hero's 48px where every other section title on it is 40. Kept because it is
- * what the frame draws — two short lines carrying three cards under them, and
- * the extra 8px is the difference between a label and a title there.
- *
- * A modifier rather than a utility on the element, and declared after
- * .type-title so it wins on equal specificity: this file is unlayered, so a
- * `text-[48px]` in @layer utilities would lose to .type-title whatever it said.
- * Nothing above the gate — up there the heading is .type-title's, unchanged.
+ * hero's 48px where every other section title on it is 40.
  */
 @media (max-width: 640px) {
   .type-title-lg {
@@ -792,26 +460,12 @@ body {
 /*
  * From the gate up, the sizes the desktop was built at — height-aware, because
  * a section is one window there and the heading is competing with the diagram
- * under it for the same pixels. Unchanged from what desktop already had.
+ * under it for the same pixels.
  */
 @media (min-width: 641px) {
   /*
-   * The heading and the card fan under it are dividing one window between them,
-   * and the heading was taking it. Measured before this was retuned: the hero's
-   * copy block came out 355-389px tall at every window from 768 to 1080, so
-   * everything a shorter laptop lost came off the fan alone — 0.49 scale at
-   * 1366x768 and 0.54 at 1280x800, which is the fan at half size with its
-   * labels at four or five pixels.
-   *
-   * Two changes, both here. The svh coefficient came down hardest, because that
-   * is the term that answers a short window: 7.2svh puts the h1 at 55px on a
-   * 768-tall screen where 8.6 put it at 66, and the h1 is two lines at
-   * line-height 1, so every pixel off it is two off the block. And the ceiling
-   * came down from 4.5rem to 4rem, so the tall windows that were sitting on the
-   * cap give some back too rather than only the short ones paying.
-   *
-   * The floor is deliberately still 2rem: below the gate is a different layout
-   * with its own sizes, and this one only has to survive down to 641px.
+   * The heading and the card fan under it are dividing one window between
+   * them, and the heading was taking it.
    */
   .type-hero {
     font-size: clamp(2rem, min(5.4vw, 7.2svh), 4rem);
@@ -826,9 +480,10 @@ body {
   }
 
   /*
-   * The lede is two lines under the heading and pays the same way, but far less
-   * of it: 14px is the bottom, because this is the one paragraph on the screen
-   * and shrinking it is the fastest way to make a hero look like a footnote.
+   * The lede is two lines under the heading and pays the same way, but far
+   * less of it: 14px is the bottom, because this is the one paragraph on the
+   * screen and shrinking it is the fastest way to make a hero look like a
+   * footnote.
    */
   .type-lede {
     font-size: clamp(0.875rem, min(1.05vw, 1.75svh), 0.9375rem);
@@ -836,29 +491,16 @@ body {
   }
 }
 
-/*
- * Measure. A line of text much past 75 characters is hard to come back to on
- * the next line, and on a phone a centred paragraph of three ragged lines reads
- * worse than the same words left-aligned — so long copy squares up below the
- * gate and only centres when there is room for it to be a tidy shape.
- */
+/* Measure. */
 .type-measure {
   max-width: 68ch;
   margin-inline: auto;
   text-align: center;
 }
 
-/* ---------------------------------------------------------------------------
- * Fixed-geometry "stages". Sections whose overlap geometry must survive (the
- * card fan, the comparison panels, every diagram) are authored at their
- * artboard size and scaled to the container rather than reflowed. Callers set
- * --stage-w and --stage-h (unitless px) on the sizer, and nothing else.
- *
- * --stage-scale has to be declared on a descendant of the container, since cq
- * units resolve against the nearest *ancestor* container, never the element's
- * own — hence the split between the viewport (which is the container), the
- * sizer (which does the arithmetic and reserves the scaled box) and the stage
- * (which is the artboard, scaled from its top-left corner to fill that box).
+/*
+ * ---------------------------------------------------------------------------
+ * Fixed-geometry "stages".
  */
 .stage-viewport {
   container-type: inline-size;
@@ -869,48 +511,13 @@ body {
   /*
    * overflow-y: hidden would otherwise crop outward strokes drawn on the top
    * and bottom rows of the stage (the comparison cards ring their outer edge).
-   * The padding gives them room; the negative margin keeps layout unchanged.
-   *
-   * How that works, since the same trick now carries a good deal more weight:
-   * the viewport is a stretched flex item, so it is its MARGIN box that is
-   * sized to the line. A negative margin of P therefore grows the border box by
-   * 2P and leaves the content box exactly where it was — which matters because
-   * above the gate this element is a `size` container and the content box is
-   * what 100cqh resolves against. Bleed as much as you like and no stage
-   * changes scale. Verified by measurement, not by reading: --stage-scale is
-   * identical either side of this change at every window tested.
    */
   padding-block: var(--stage-bleed);
   margin-block: calc(-1 * var(--stage-bleed));
   --stage-bleed: 4px;
 }
 
-/*
- * And a great deal more of it once the diagrams have depth.
- *
- * The parts of a diagram move relative to each other as the reader scrolls past
- * it (see depth.ts), and the artboards are packed: the comparison panels are
- * their stage's full height, the funnel's first row sits at its stage's top
- * edge and its last row at the bottom. Measured at 1440x900 with 4px of bleed,
- * the two panels were sliced by 42px and the funnel's verdict by 30 — a hard
- * horizontal edge across a card, which is very much worse than no parallax.
- *
- * 64px clears the furthest any PART of a diagram travels: the deepest is the
- * approve section's request card and vote list, at 56 stage units before their
- * section's taper and 53 after it, and a stage is never scaled up. That leaves
- * room over for the entrances, which also start their payloads below where they
- * sit.
- *
- * One layer goes much further and is meant to: the intelligence funnel's aura
- * (140 units) is a 1189px bloom on a 948px stage, so it overhangs its artboard
- * on every side and its top and bottom have always been cropped. It has no edge
- * to show a crop with, which is the whole reason it is allowed to.
- *
- * Vertical only, and deliberately: the horizontal clip is doing real work. The
- * request card and the vote list start off the sides of the approve stage, and
- * a rightward overhang is scrollable overflow rather than something quietly
- * cropped. See .stage-viewport-clip.
- */
+/* And a great deal more of it once the diagrams have depth. */
 @media (min-width: 641px) and (min-height: 480px) {
   .stage-viewport {
     --stage-bleed: 64px;
@@ -921,25 +528,22 @@ body {
   /*
    * tan(atan2(a, b)) is how you divide one length by another and get a plain
    * number out. calc() only learned length-over-length division very recently;
-   * a bare `100cqw / var(--stage-w)` still evaluates to a *length*, which makes
-   * the clamp type-invalid and silently drops the scaling entirely.
+   * a bare `100cqw / var(--stage-w)` still evaluates to a *length*, which
+   * makes the clamp type-invalid and silently.
    */
   --fit-w: tan(atan2(100cqw, var(--stage-w) * 1px));
   /*
    * The floor is the scale at which the artboard still fits the narrowest
    * content column worth designing for: a 360px phone less the 24px gutter the
    * card-shaped sections carry either side.
-   *
-   * Written as a width rather than as a per-stage magic number, because that is
-   * what it means. Above that the clamp is a no-op and the stage simply fits
-   * its container; below it the viewport scrolls sideways rather than shrinking
-   * the diagram any further.
    */
   --stage-min: tan(atan2(312px, var(--stage-w) * 1px));
   --stage-scale: clamp(var(--stage-min), var(--fit-w), 1);
   position: relative;
-  /* The scaled box, reserved in layout — the stage inside it is transformed and
-     so takes up its unscaled size no matter what it looks like. */
+  /*
+   * The scaled box, reserved in layout — the stage inside it is transformed
+   * and so takes up its unscaled size no matter what it looks like.
+   */
   width: calc(var(--stage-w) * 1px * var(--stage-scale));
   height: calc(var(--stage-h) * 1px * var(--stage-scale));
   margin-inline: auto;
@@ -956,30 +560,10 @@ body {
 }
 
 /*
- * Opt-out, for a stage whose contents are a fluid card rather than an artboard.
- *
- * Some payloads are only in a stage because the desktop wants them at an exact
- * size — the invite card is a flex column that would lay itself out perfectly
- * well at any width. Scaling it to a phone is the wrong tool twice over: it
- * shrinks the type along with the box, so a 16px paragraph arrives at 8px.
- *
- * `display: contents` on the whole chain removes the viewport, the sizer and
- * the stage from layout entirely, leaving the card a direct child of the
- * payload and free to be fluid. From the gate up the three of them come back
- * and the artboard behaves exactly as it did.
+ * Opt-out, for a stage whose contents are a fluid card rather than an
+ * artboard.
  */
-/*
- * The one rule in this file written as a max-width, and it has to be.
- *
- * Restoring these three at 641px means naming a display value for them, and
- * there is no single right one: the works stage carries Tailwind's `flex` to
- * lay its three step cards out in a row, while the others are plain blocks.
- * An unlayered `display: block` here beat that layered utility and stacked the
- * three cards on desktop — which is exactly the bug it caused.
- *
- * Scoped to the phone instead, nothing above the gate is touched at all and
- * every stage keeps whatever display it was given.
- */
+/* The one rule in this file written as a max-width, and it has to be. */
 @media (max-width: 640px) {
   .stage-fluid,
   .stage-fluid .stage-sizer,
@@ -988,51 +572,13 @@ body {
   }
 }
 
-/* ---------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------
  * The step-card illustrations, which are artboards inside a fluid card.
- *
- * A step card reflows perfectly well on a phone — it is a heading and a
- * paragraph — but the 360x260 panel at the top of it does not. Every ring, the
- * four avatars placed *on* one of them, the score badges, the connector runs
- * between them and the five-column bar chart are all at coordinates measured
- * against those 360 pixels. Stretched to the card's width the panel grew and
- * the coordinates did not: the avatars came off their ring, the wires stopped
- * reaching the badges they join, and the chart's last column ran out past the
- * panel's edge.
- *
- * So the panel is scaled rather than reflowed, and it is the one thing in a
- * step card that is. There is no phone rebuild of "four faces arranged on a
- * circle" — it is a single illustration, and the fit works out at 0.80-0.88
- * across phone widths, which costs nothing that matters. Compare .stage-fluid,
- * which does the opposite for payloads that only *look* like artboards.
- *
- * Three elements of its own rather than the stage ones, for one reason: a
- * .stage-viewport becomes a *size* container at 641px, and inside a step card
- * there is no definite height for 100cqh to resolve against. This only ever
- * needs the width, and above the gate it does nothing at all — the card is 392
- * wide, its content box is exactly 360, and the panel is already the size it
- * was drawn at.
  */
-/* ---------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------
  * The phone's own artboards.
- *
- * Three of the diagrams are not reflowed on a phone: the mobile frame redraws
- * them at 370px wide with everything inside placed against those 370 pixels,
- * exactly the way the wide layouts are drawn against 564 or 1240. A 370px
- * artboard fits a 402px phone with the frame's 16px gutter either side and
- * nothing else, so on anything narrower it has to be scaled rather than
- * squeezed — the same argument .stage-sizer makes, at a different size.
- *
- * Callers set --panel-w and --panel-h (unitless px) on the sizer and nothing
- * else. The split between fit / sizer / stage is the one .stage uses and for the
- * same reason: cq units resolve against the nearest *ancestor* container, never
- * the element's own.
- *
- * Above the gate all three step out of the way entirely. They sit INSIDE the
- * wide layout's .stage (which is itself display:contents below the gate, via
- * .stage-fluid), so exactly one of the two chains is ever doing anything and
- * the diagram inside is a direct child of whichever it is. That is what lets
- * one tree carry both arrangements instead of two trees carrying one each.
  */
 .panel-fit {
   width: 100%;
@@ -1043,8 +589,10 @@ body {
   /* tan(atan2(a, b)) is length-over-length division — see .stage-sizer. */
   --panel-scale: min(tan(atan2(100cqw, var(--panel-w) * 1px)), 1);
   position: relative;
-  /* The scaled box, reserved in layout — the stage inside it is transformed and
-     so takes up its unscaled size no matter what it looks like. */
+  /*
+   * The scaled box, reserved in layout — the stage inside it is transformed
+   * and so takes up its unscaled size no matter what it looks like.
+   */
   width: calc(var(--panel-w) * 1px * var(--panel-scale));
   height: calc(var(--panel-h) * 1px * var(--panel-scale));
   margin-inline: auto;
@@ -1081,8 +629,10 @@ body {
     /* tan(atan2(a, b)) is length-over-length division — see .stage-sizer. */
     --figure-scale: min(tan(atan2(100cqw, 360px)), 1);
     position: relative;
-    /* The scaled box, reserved in layout, and centred once the card is wide
-       enough that the clamp stops biting. */
+    /*
+     * The scaled box, reserved in layout, and centred once the card is wide
+     * enough that the clamp stops biting.
+     */
     width: calc(360px * var(--figure-scale));
     height: calc(260px * var(--figure-scale));
     margin-inline: auto;
@@ -1103,75 +653,31 @@ body {
  * Opt-in clip, for a stage whose contents leave the artboard — pieces that
  * animate in from off screen, and decoration that overhangs the frame it was
  * drawn in.
- *
- * Both axes on purpose: `overflow-x: clip` next to `overflow-y: hidden`
- * computes back to `hidden`, which leaves the element a scroll container and
- * solves nothing. Clip is also the only option that does not reserve a
- * scrollbar — and a scrollbar here resizes the container query the sizer
- * derives its scale from, moving every section below it.
- *
- * A modifier rather than the default, because a stage narrower than its floor
- * has to stay reachable: below 360px the fan and the step cards are wider than
- * the window and the viewport scrolls to them.
  */
 .stage-viewport-clip {
   overflow: clip;
 }
 
-/*
- * The opposite opt-out, for a stage whose contents animate *outside* it.
- *
- * The Early Access card turns a quarter circle on its way in, so its bounding
- * box is briefly taller than the 260px slot the sizer reserves, and it starts a
- * third of a window below that — neither of which survives the default
- * overflow-y: hidden. Nothing here needs clipping in the first place: the
- * artwork is 420px wide, so it fits every window it will ever see, and the
- * section carries its own overflow-x: clip against the travel.
- */
+/* The opposite opt-out, for a stage whose contents animate *outside* it. */
 .stage-viewport-open {
   overflow: visible;
 }
 
 @media (min-width: 641px) and (min-height: 480px) {
-  /*
-   * Height is a constraint too, once the section is a fixed screen. `size`
-   * rather than `inline-size` is what makes 100cqh mean anything — it is only
-   * safe here because the viewport is a stretched flex item of a payload with a
-   * definite height, so its own box no longer depends on what is in it.
-   */
+  /* Height is a constraint too, once the section is a fixed screen. */
   .stage-viewport {
     container-type: size;
   }
 
   .stage-sizer {
     --fit-h: tan(atan2(100cqh, var(--stage-h) * 1px));
-    /*
-     * The floor is a *width* floor and only a width floor. It exists so a
-     * diagram cannot be squeezed into illegibility by a narrow window — the
-     * viewport scrolls sideways instead — but the height fit is the whole point
-     * of the section being one screen, so it caps the result outright. Floored
-     * against height, a short window would simply push the diagram out of the
-     * section again, which is the bug this replaced.
-     */
+    /* The floor is a *width* floor and only a width floor. */
     --stage-scale: min(clamp(var(--stage-min), var(--fit-w), 1), var(--fit-h));
     margin-block: auto;
   }
 }
 
-/*
- * A layer that shares a stage's geometry without living inside it.
- *
- * The ambient glows behind the hero's card fan and the approve diagram's squad
- * card are authored in stage coordinates and have to scale with the stage — but
- * they cannot be children of one. A stage is a container query, a container
- * query is a stacking context, and anything painted "behind" from inside one is
- * still painted in front of the heading above it. Two of the stages also clip,
- * which is the whole reason their contents can start off screen.
- *
- * So a glow gets a stage of its own: same width, same height, same box, so the
- * same scale falls out — sitting at z-index -1, behind the page, exactly where
- * a -z-10 sibling used to.
- */
+/* A layer that shares a stage's geometry without living inside it. */
 .stage-backdrop {
   position: absolute;
   inset: 0;
@@ -1187,112 +693,27 @@ body {
   }
 }
 
-/* ---------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------
  * The layer a section's ambient glow is painted in.
- *
- * Only for the three sections that had no glow of their own — Alone Vs
- * Together, How Squad Works, Invite Your Squad. The other four already carry
- * one: the bloom and band behind the hero's card fan, the halo behind the
- * approve diagram's Squad card, the aura behind the intelligence funnel, the
- * pair behind the Early Access card. Those are artwork in their own stage's
- * coordinates and scale with the thing they belong to, and they are animated
- * where they stand — see glowDrift. This is the same artwork given a place to
- * stand in the sections that have none.
- *
- * The layer owns its place in the paint order rather than borrowing one. An
- * earlier attempt put light straight into a <section> at z-index -1: a section
- * is `relative` with `z-index: auto` and so never established a stacking
- * context, the negative layer escaped it altogether, and it landed behind the
- * page's own background — which showed up as a solid black band across the
- * strip under the navbar. `isolate` on the section is what makes that
- * impossible: it is a stacking context whether or not anything inside it
- * carries a z-index, so this layer is behind the section's content and in front
- * of the page, and there is nowhere else for it to go.
- *
- * .screen-body is then raised over it explicitly, because a positioned element
- * paints over static content whatever the source order says.
- *
- * Clipped, because a section owns one window and no more: light spilling past
- * its edges would paint over the section above it and the one below, and
- * neither of those belongs to it.
  */
 .screen-glow {
   position: absolute;
   inset: 0;
-  /*
-   * Clipped sideways and open top and bottom, which is a deliberate pair.
-   *
-   * Sideways, because a section is as wide as the window and nothing may reach
-   * past it: a bloom hanging off the left or right edge is scrollable overflow
-   * and raises a horizontal scrollbar. (`clip` is the one overflow value that
-   * may be paired with `visible` on the other axis without forcing it to
-   * `auto`, which is the whole reason this can be split.)
-   *
-   * Open vertically, because the light is supposed to carry over. The glows
-   * that belong to a diagram were never clipped — the hero's bloom runs a long
-   * way past the foot of its section, which is what makes the hand-off into the
-   * section below read as one room rather than two. Clipping this one meant the
-   * hero's light fell away across the gap and Alone Vs Together's did not pick
-   * it up until well inside its own heading. Measured, in mean blue across the
-   * boundary: 91 at the hero's last row, 65 by the time the next heading
-   * arrived.
-   */
+  /* Clipped sideways and open top and bottom, which is a deliberate pair. */
   overflow-x: clip;
   overflow-y: visible;
   pointer-events: none;
 }
 
-/*
- * Entrance state for the scroll sequence. GSAP takes these over on hydration,
- * but the markup is server-rendered and paints first, so the hidden state has
- * to start in CSS or the finished page flashes for a frame. ScrollSequence
- * ships a <noscript> override for anyone running without JS.
- *
- * The guard has to cover EXACTLY the windows that get a sequence — anywhere it
- * and the controller disagree the page either flashes or never appears. There
- * are two of those tiers now and this is their union: MOTION.enabled is the
- * wide half and MOTION.phone the narrow one, they differ only in which side of
- * 641px they take, and both require a window at least 480px tall and a reader
- * who has not asked for less motion. So the union is simply the two conditions
- * they share, and it must stay that way — widening either query without
- * widening this one strands a section blank.
- *
- * What is left below it: a window under 480px tall (a phone held sideways,
- * where a section is most of a window of heading and there is no room to
- * animate anything into) and anyone on reduced motion. Both get the finished
- * page straight from the server, unhidden, with no controller at all.
- */
+/* Entrance state for the scroll sequence. */
 @media (min-height: 480px) and (prefers-reduced-motion: no-preference) {
   [data-reveal] {
     opacity: 0;
   }
 }
 
-/*
- * The light that runs round the orbit rings on the comparison panels.
- *
- * A comet, not a moving dot: a tail ramping up over ~38deg of arc to a head
- * that falls away in 5. The steep edge leads, so the ring reads as something
- * being lit along its length rather than a bead dragged round a wire.
- *
- * Kept short and thin deliberately. These circles are 1px at 0.05-0.29 alpha —
- * they are the quietest thing on the card — so a light with a long tail and a
- * wide bloom stops being a highlight on them and becomes the thing you look at
- * instead of the panel it decorates. On the outer ring this is ~145px of arc
- * with about 1.5px of glow either side of the line.
- *
- * The whole thing is static in the element's own space — the conic gradient
- * places the comet round the circle, the radial one narrows it to a band on the
- * ring — and the ONLY animated property is `rotate` on the element itself. That
- * is what keeps this cheap enough to run six of them: nothing repaints, the
- * rasterized element is just re-composited at a new angle every frame. Spinning
- * the gradient instead (by animating a registered angle) would repaint a
- * 400px box per ring per frame.
- *
- * The band sits at 89.3% because the element is inset -6% against a wrapper the
- * circle exactly inscribes: 1/1.12 of its own radius is where the artwork's
- * line falls.
- */
+/* The light that runs round the orbit rings on the comparison panels. */
 .ring-orbit {
   background: conic-gradient(
     from 0deg,
@@ -1320,11 +741,7 @@ body {
     rgba(0, 0, 0, 0.12) 89.9%,
     transparent 90.6%
   );
-  /*
-   * Off unless the keyframes below run. A comet parked at a fixed angle is a
-   * bright smear on one side of the ring, which is worse than the plain circle
-   * anyone on reduced motion would otherwise have seen.
-   */
+  /* Off unless the keyframes below run. */
   opacity: 0;
 }
 
@@ -1341,31 +758,9 @@ body {
   }
 }
 
-/*
- * Footer ambient motion.
- *
- * Deliberately CSS rather than part of the scroll sequence. The footer is not a
- * section in that sequence — it is what the page settles onto — so none of this
- * is tied to scroll at all, and it does not need the controller to
- * be hydrated to run. `alternate` throughout: these are things that breathe, and
- * a loop that snaps back to its start is a loop you can see.
- *
- * Durations are deliberately co-prime-ish. Three elements drifting on 96s, 13s
- * and 11s never line up, so the footer never visibly repeats itself. The
- * stars themselves twinkle on a canvas rather than here — one shared opacity
- * would be the whole sky breathing at once, which is not what a night sky does.
- * See components/footer/Twinkle.tsx.
- *
- * Every animated element is one that carries no transform of its own — the
- * centring lives on a parent, the animation on the child — because a keyframe
- * that writes `transform` clobbers whatever else was in it.
- */
+/* Footer ambient motion. */
 @media (prefers-reduced-motion: no-preference) {
-  /*
-   * Translate only, and in 3D. This layer is a 1823px starfield rasterized
-   * across the full width of the window; a scale on it would re-raster the
-   * whole thing every frame, where a translate just moves the texture.
-   */
+  /* Translate only, and in 3D. */
   @keyframes footer-drift {
     from {
       transform: translate3d(0, 0, 0);
@@ -1377,14 +772,9 @@ body {
   }
 
   /*
-   * Glow and grow, on the one element, so the arc brightens as it swells rather
-   * than doing either on its own — dimming alone is a lamp on a timer, and
-   * swelling alone is a shape being scaled.
-   *
-   * The scale is small on purpose. It is applied about the sphere's centre,
-   * which sits 240px below the bottom of the band, so the only part anyone sees
-   * is the crest — and 1.6% of a 772px radius moves that crest about 12px. Much
-   * more and the arc visibly slides up and down the sky instead of breathing.
+   * Glow and grow, on the one element, so the arc brightens as it swells
+   * rather than doing either on its own — dimming alone is a lamp on a timer,
+   * and swelling alone is a shape being scaled.
    */
   @keyframes footer-horizon {
     from {
@@ -1423,19 +813,10 @@ body {
   }
 }
 
-/* ---------------------------------------------------------------------------
- * The navigation rail — one dot per section, then the footer, down the
- * right-hand edge.
- *
- * The deck has no scrollbar, because the page does not move while you are in
- * it, so nothing else on screen says how many sections there are or which one
- * you are on. The rail says all of it: a ring on the stop you are at, a line
- * lit behind it for the ones you have been through, and a dot for each of the
- * ones you have not.
- *
- * Hidden below md. There is no deck there — the page is a column with a real
- * scrollbar of its own — and a fixed rail on a phone is 40px of the width gone
- * to something the scrollbar already says.
+/*
+ * ---------------------------------------------------------------------------
+ * The navigation rail — one dot per section, then the footer, down the right-
+ * hand edge.
  */
 .deck-nav {
   display: none;
@@ -1458,16 +839,15 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  /* Generous, and doing real work: it is the hit area the pointer has to be
-     inside for the dots to know it is there, and the room the ring needs to
-     stretch into at the ends of its travel without being clipped. */
+  /*
+   * Generous, and doing real work: it is the hit area the pointer has to be
+   * inside for the dots to know it is there, and the room the ring needs to
+   * stretch into at the ends of its travel without being clipped.
+   */
   padding: 22px 14px;
 }
 
-/*
- * The unlit rail. Faded at both ends so it reads as something passing through
- * rather than a bar with two hard stops.
- */
+/* The unlit rail. */
 .deck-rail::before {
   content: "";
   position: absolute;
@@ -1485,11 +865,7 @@ body {
   );
 }
 
-/*
- * The lit part, from the first stop down to the one you are on. Laid out at
- * full length by the component and scaled from its top edge, so moving the
- * marker never touches layout.
- */
+/* The lit part, from the first stop down to the one you are on. */
 .deck-fill {
   position: absolute;
   left: 50%;
@@ -1505,18 +881,7 @@ body {
   pointer-events: none;
 }
 
-/*
- * The ring on the stop you are at.
- *
- * A drawn ring rather than the soft blob this replaces: a circle with an edge
- * is a mark on a map, and a radial gradient is a smudge of light that happens
- * to be near a dot. It is also what makes the stretch legible — an outline
- * pulled into an ellipse reads as one object moving, where a blur pulled into
- * an ellipse just reads as a slightly different blur.
- *
- * Positioned on the y axis by GSAP; everything here is what it looks like
- * standing still. See MOTION.rail.
- */
+/* The ring on the stop you are at. */
 .deck-mark {
   position: absolute;
   top: 0;
@@ -1547,14 +912,7 @@ body {
 
 /*
  * Three states, and they are the point: dim for a stop you have not reached,
- * half-lit for one you have been through, white for the one you are on. Eight
- * identical dots tell you the page has eight sections and nothing else.
- *
- * The swell towards the pointer is the --mag the rail writes per dot. The
- * transform is owned here rather than by GSAP: GSAP takes over an element's
- * entire transform the moment it touches any part of it, so a tween on `scale`
- * and a `transform` in this file are two owners of one property. This way the
- * script supplies a number and the stylesheet decides what it means.
+ * half-lit for one you have been through, white for the one you are on.
  */
 .deck-bead {
   width: 5px;
@@ -1589,11 +947,6 @@ body {
  * The preview, which is the whole reason the rail is worth having: eight
  * identical dots tell you where you are and nothing about where you would be
  * going.
- *
- * It comes in *from* the bead rather than simply appearing — sliding across,
- * scaling up and resolving out of a blur, with a hairline drawing itself back
- * to the dot it belongs to. Three properties, one curve, so it arrives as one
- * object instead of three effects finishing at different times.
  */
 .deck-peek {
   position: absolute;

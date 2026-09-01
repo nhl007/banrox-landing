@@ -2,16 +2,12 @@ import Image from "next/image";
 import AvatarRing from "@/components/ui/AvatarRing";
 import { VerifiedCheck } from "@/components/ui/icons";
 
-/*
- * "Financial Passport" card — 260x379 on the Figma artboard. Every offset below
- * is taken straight from the frame, so the card is laid out at its design size
- * and scaled by the container that places it (see CardFan).
- */
+/* "Financial Passport" card — 260x379 on the Figma artboard. */
 
 /**
  * That design size, stated once and exported, because a container that scales
  * the card has to divide by it: the phone's deck draws the same card at four
- * different widths and needs the ratio each of them comes to. See HeroFanPhone.
+ * different widths and needs the ratio each of them comes to.
  */
 export const PASSPORT_CARD = { width: 260, height: 379 } as const;
 
@@ -49,10 +45,7 @@ export type BureauScore = {
   score: number;
   rating: string;
   range: string;
-  /**
-   * Filled width of the 60px meter. Figma sets this per card by hand rather
-   * than deriving it from the score, so it travels with the data.
-   */
+  /** Filled width of the 60px meter. */
   fill?: number;
 };
 
@@ -79,30 +72,7 @@ export type PassportCardProps = {
   bureaus: [BureauScore, BureauScore, BureauScore];
   metrics: [Metric, Metric, Metric, Metric];
   className?: string;
-  /**
-   * Lay the card out from its right edge instead of its left.
-   *
-   * For a card whose LEFT side is the side nobody sees — the two on the right
-   * of the phone's deck, which are behind the Squad card from their own left
-   * edge inwards (see HeroFanPhone). Unmirrored, the 55px of them that is on
-   * the screen is the tail of the card: the far end of a name, the last bureau
-   * tile, the right-hand column of metrics and an empty strip of the verified
-   * bar. Mirrored, the same 55px is the head of it — the avatar, the name, the
-   * first bureau — so all four cards in the deck lead with a face and the
-   * composition reads outwards from the product in both directions.
-   *
-   * `direction: rtl`, not a scaleX. A flip mirrors the glyphs with everything
-   * else and every label on the card comes out backwards; direction reverses
-   * the LAYOUT and leaves the type alone, which is the whole of what is wanted.
-   * The absolutely-positioned artwork — the three top glows, the fingerprint,
-   * the pieces inside the verified bar, the fill on a bureau meter — follows it
-   * because those are placed on `inset-inline-start` rather than on `left`, so
-   * the mirror is the card's own and not a set of exceptions to it.
-   *
-   * The portrait inside the avatar ring is the one thing that does NOT turn:
-   * AvatarRing frames it on physical left/right, deliberately, because a face
-   * is not a layout.
-   */
+  /** Lay the card out from its right edge instead of its left. */
   mirrored?: boolean;
 };
 
@@ -116,30 +86,13 @@ function meterWidth({ score, fill }: BureauScore) {
  * Every piece of anonymous artwork on this card carries `rtl:` scaleX(-1) as
  * well as a logical inset, and the two are one idea: on a mirrored card (see
  * `mirrored`) the inset moves the artwork to the other side and the flip turns
- * it round, which is what a mirror actually is. Position alone is not enough
- * for anything with a shape — the verified bar's wave is cut flush with one end
- * of the bar and fades out at the other, so moved-but-not-turned it puts its
- * cut edge in the middle of the bar. Visible, and the reason this exists.
- *
- * The bureau logos, the metric icons and the portrait in the avatar ring are
- * NOT in this set. They are marks and a face; the mirror is of the layout.
+ * it round, which is what a mirror.
  */
 
 /** Blurred triangles that bloom out of the top edge; the card clips them. */
 /*
  * The hover response, and the whole of it: the light already at the top of the
  * card comes up.
- *
- * On each image rather than on a wrapper around the three, which is the part
- * that matters. glow-3 carries `mix-blend-plus-lighter`, and it blends against
- * its backdrop *within its parent's stacking context* — so wrapping the set in
- * a div with an opacity or a filter of its own would isolate that group and
- * leave glow-3 blending against its two siblings instead of against the card.
- * A filter on the blended element itself is applied before the blend and
- * changes nothing about what it blends with.
- *
- * group/card is named rather than bare: PassportCard is dropped inside other
- * grouped elements, and an unnamed group would be claimed by the nearest one.
  */
 const GLOW_HOVER =
   "transition-[filter] duration-500 ease-out group-hover/card:brightness-[1.45] motion-reduce:transition-none";
@@ -221,18 +174,7 @@ function MetricTile({ icon, label, value, tone = "default" }: Metric) {
       {/* Figma marks these nowrap; "Identity & privacy" only just fits. */}
       <span className="font-heading flex flex-col gap-1 leading-none font-medium whitespace-nowrap">
         <span className="text-[8px] text-white opacity-50">{label}</span>
-        {/*
-          <bdi>, and only here. On a mirrored card (see `mirrored`) the text
-          direction is rtl, and "$19,500/mo" is not one run to the bidi
-          algorithm: the digits are weak, the slash between them and "mo" is
-          neutral, so it splits into a number and a word and lays the two out
-          right to left — "mo/$19,500". Measured, on the card that is FIRST in
-          the deck's right-hand rank, in the strip of it the reader can see.
-          An isolate takes its direction from its own first strong character
-          and puts the run back together; it changes nothing in the other four
-          cards, where the paragraph was already ltr. The label above it and
-          every other string on the card are whole words and need none.
-        */}
+        {/* <bdi>, and only here. */}
         <span className={`text-[12px] ${TONES[tone]}`}>
           <bdi>{value}</bdi>
         </span>

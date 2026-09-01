@@ -50,11 +50,11 @@ function AloneCard() {
   return (
     <ComparisonCard variant="alone" reveal="card-left">
       {/*
-        The verdict, in the middle of the rings. 216 wide at y148 on the wide
-        panel; the same 216 at three quarters the size, dead centre, at y119.5 on
-        the phone's. origin-top is what keeps the top edge on that 119.5 while
-        the box shrinks around its own centre line.
-      */}
+       * The verdict, in the middle of the rings. 216 wide at y148 on the wide panel;
+       * the same 216 at three quarters the size, dead centre, at y119.5 on the
+       * phone's. origin-top is what keeps the top edge on that 119.5 while the box
+       * shrinks around its own centre line.
+       */}
       <div className="absolute top-[119.5px] left-1/2 flex w-[216px] origin-top -translate-x-1/2 scale-75 flex-col items-center gap-5 sm:top-[148px] sm:scale-100">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
@@ -96,9 +96,11 @@ function AloneCard() {
         </p>
       </div>
 
-      {/* Scattered around the rings on both artboards — the phone's frame is
-          smaller and pulls them in, so each carries the two positions rather
-          than one and a fallback. */}
+      {/*
+       * Scattered around the rings on both artboards — the phone's frame is smaller
+       * and pulls them in, so each carries the two positions rather than one and a
+       * fallback.
+       */}
       <PersonChip
         person="lilit"
         reason="Income too low"
@@ -145,13 +147,17 @@ function AloneCard() {
 function SquadCard() {
   return (
     <ComparisonCard variant="squad" reveal="card-right">
-      {/* 241 wide, a pixel right of centre on the wide panel and 1.25 on the
-          phone's — Figma's own nudge in each frame. See the alone card. */}
+      {/*
+       * 241 wide, a pixel right of centre on the wide panel and 1.25 on the phone's
+       * — Figma's own nudge in each frame.
+       */}
       <div className="absolute top-[108.625px] left-[calc(50%+1.25px)] flex w-[241px] origin-top -translate-x-1/2 scale-75 flex-col items-center gap-5 sm:top-[133.5px] sm:left-[calc(50%+1px)] sm:scale-100">
         <div className="flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-2">
-            {/* AvatarRing is itself `relative`, so placement goes on a wrapper
-                rather than through className — the two would tie and collide. */}
+            {/*
+             * AvatarRing is itself `relative`, so placement goes on a wrapper rather than
+             * through className — the two would tie and collide.
+             */}
             <div className="relative h-[97px] w-[114px]">
               {CLUSTER.map(({ person, size, left, top }) => (
                 <span key={person} className="absolute" style={{ left, top }}>
@@ -241,9 +247,11 @@ export default function AloneVsTogether() {
       className="screen relative isolate w-full"
       data-sequence-section="alone"
     >
-      {/* isolate above, z-10 here: between them the ambient ground is pinned
-          behind this section's content and in front of the page, and cannot
-          escape to either side of that. See .screen-glow. */}
+      {/*
+       * isolate above, z-10 here: between them the ambient ground is pinned behind
+       * this section's content and in front of the page, and cannot escape to either
+       * side of that.
+       */}
       <SectionBloom id="alone" />
       <div className="screen-body relative z-10">
         <div className="screen-copy mx-auto flex max-w-[1240px] flex-col items-center gap-4 px-4 sm:gap-[clamp(0.5rem,1.8svh,1rem)] sm:px-6">
@@ -251,18 +259,15 @@ export default function AloneVsTogether() {
             <Badge icon={<ArrowDataTransfer />}>Alone Vs Together</Badge>
           </div>
           <div className="flex w-full flex-col items-center gap-4 text-center sm:gap-[clamp(0.5rem,1.8svh,1rem)]">
-            {/* pb-px: Figma measures this two-line box at 97px where the
-                browser lays it out at 96, which would pull everything below
-                up by a pixel. The glyphs themselves already align. */}
+            {/*
+             * pb-px: Figma measures this two-line box at 97px where the browser lays it
+             * out at 96, which would pull everything below up by a pixel.
+             */}
             <h2
               className="font-heading type-title w-full pb-px leading-none font-normal"
               data-reveal="copy"
             >
-              {/* Both breaks are the wide layout's. The phone's frame lets the
-                  heading and the lede wrap where they will — three lines and
-                  two — and its breaks fall in different places than these. A
-                  <br> set to display:none makes no break, so one copy of the
-                  words carries both. */}
+              {/* Both breaks are the wide layout's. */}
               Alone, each of you falls short.{" "}
               <br className="hidden sm:inline" />
               <span className="font-display italic">Together,</span> you qualify
@@ -280,18 +285,10 @@ export default function AloneVsTogether() {
         </div>
 
         {/*
-          stage-viewport-clip: the panels start a little below where they sit
-          (MOTION.alone.lift) and shorter than they end up, so both extend past
-          the stage's floor on the way in.
-
-          They used to start off the viewport's left and right edges instead,
-          which is what this class was added for: a rightward translate in an
-          LTR scroll container is *scrollable* overflow, so it raised a
-          horizontal scrollbar and held it for as long as the panel was parked
-          outside. The clip still has to be on both axes — `overflow-x: clip`
-          beside the existing `overflow-y: hidden` computes back to `hidden`,
-          leaving it a scroll container.
-        */}
+         * stage-viewport-clip: the panels start a little below where they sit
+         * (MOTION.alone.lift) and shorter than they end up, so both extend past the
+         * stage's floor on the way in.
+         */}
         <div className="screen-payload px-4 sm:px-0">
           <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
@@ -304,43 +301,11 @@ export default function AloneVsTogether() {
               }
             >
               <div className="stage w-full sm:w-auto">
+                {/* sm:scale-[0.92] — the row, a shade smaller than the artboard draws it. */}
                 {/*
-                  sm:scale-[0.92] — the row, a shade smaller than the artboard
-                  draws it.
-
-                  On the row rather than on either card, and that is the whole
-                  point of putting it here: the two panels, the 112px between
-                  them and the VS in the middle are one composition, and
-                  shrinking a card on its own would widen the gap around it and
-                  leave the VS at full size. Scaled together from the centre,
-                  nothing about the arrangement changes except how much of the
-                  screen it takes.
-
-                  Nothing here has to be reconciled with the sequence: it
-                  writes to the panels, the VS and the copy, and never to this
-                  row — verified by watching every inline style written across
-                  the section's whole crossing. An ancestor's scale composes
-                  with a descendant's transform in any case, which is what .stage
-                  has always done to these same panels.
-
-                  What the property DOES do that matters is establish a
-                  containing block, which re-parents the absolutely-placed VS
-                  from .stage to this row — the two boxes are identical, so it
-                  stays on the same centre, and it is now scaled along with the
-                  cards instead of standing at full size between two smaller
-                  ones.
-
-                  Behind sm: because below the gate the stage chain is
-                  display:contents and this row is a plain column of full-width
-                  cards; there is nothing to scale down there and doing it would
-                  just make a phone's cards smaller than its own margins.
-                */}
-                {/*
-                  The phone's artboard for the pair: 370x1124, which is panel,
-                  24, VS, 24, panel. Above the gate the three .panel-* elements
-                  are display:contents and the row below is a direct child of
-                  .stage exactly as it was.
-                */}
+                 * The phone's artboard for the pair: 370x1124, which is panel, 24, VS, 24,
+                 * panel.
+                 */}
                 <div className="panel-fit">
                   <div
                     className="panel-sizer"
@@ -354,9 +319,10 @@ export default function AloneVsTogether() {
                     <div className="panel-stage">
                       <div className="flex w-full flex-col items-center gap-6 sm:h-full sm:scale-[0.92] sm:flex-row sm:items-start sm:gap-28">
                         <AloneCard />
-                        {/* Between the two panels on a phone, dead centre of the
-                            row from sm: up — the same word doing the same job
-                            either way. 48px in both, in a 48px box. */}
+                        {/*
+                         * Between the two panels on a phone, dead centre of the row from sm: up — the
+                         * same word doing the same job either way. 48px in both, in a 48px box.
+                         */}
                         <span
                           className="font-display flex h-12 items-center text-[48px] leading-none text-white italic opacity-70 sm:absolute sm:top-1/2 sm:left-1/2 sm:h-auto sm:-translate-x-1/2 sm:-translate-y-1/2"
                           data-reveal="vs"

@@ -1,46 +1,6 @@
 import Image from "next/image";
 
-/*
- * The hero's bloom, for the three sections that never had one.
- *
- * Five of the eight screens already carry their own ambient light — the bloom
- * and band behind the card fan, the halo behind the approve diagram's Squad
- * card, the aura behind the intelligence funnel, the one over the three cards of
- * Life Inside Squad, the pair behind the Early Access card. Those are animated
- * where they stand (see glowDrift): they are artwork belonging to a diagram, in
- * that diagram's stage coordinates, and moving them out of it would break the
- * one thing they are for.
- *
- * Alone Vs Together, How Squad Works and Invite Your Squad had none. Rather
- * than draw something new for them, they get the same asset the hero uses,
- * placed in the section instead of in a stage — so the page is lit by one
- * thing throughout rather than by five of one kind and three of another.
- *
- * ---------------------------------------------------------------------------
- * WHY EACH ONE ARRIVES FROM SOMEWHERE ELSE
- *
- * If every section's light simply faded up in place, the largest thing on each
- * screen would be the one thing on it that never moved. So each section's light
- * comes in from somewhere else, and `from` is that direction: a unit-ish
- * vector, scaled by MOTION.glow.travel when the timeline reads it off
- * data-glow-from. Positive y is downwards, so [0, 1] arrives from below and
- * [0, -1] from above.
- *
- * ---------------------------------------------------------------------------
- * WHY ALONE VS TOGETHER IS LIT BEHIND ITS HEADINGS
- *
- * Because the hero is. The hero's brightest ground is the band behind its
- * headline, so that is where the reader's eye is as they scroll off it; putting
- * the next section's light in the same band, arriving downwards from above,
- * carries the light on from where they were already looking rather than
- * starting it again somewhere else.
- *
- * ---------------------------------------------------------------------------
- * The boxes are percentages of the section, so one arrangement serves every
- * window, and each stays inside its section: the layer clips (see .screen-glow)
- * and this asset does not fade to nothing until its own edge, so a bloom hung
- * over the section's edge would be cut through something still lit.
- */
+/* The hero's bloom, for the three sections that never had one. */
 const BLOOM = { src: "/hero/glow-bloom.svg", size: 1828 } as const;
 
 type Placed = {
@@ -52,9 +12,7 @@ type Placed = {
 };
 
 const BLOOMS: Record<string, Placed> = {
-  /* Behind the headings, arriving downwards onto them — see above. Wide and
-     shallow rather than round: the heading here is two long lines and a
-     sub-paragraph, and the light has to be under all of it. */
+  /* Behind the headings, arriving downwards onto them — see above. */
   alone: {
     from: [0, -1],
     left: "2%",
@@ -63,13 +21,7 @@ const BLOOMS: Record<string, Placed> = {
     height: "70%",
   },
 
-  /* Above the cards rather than behind them. The three step cards are the one
-     payload on the page that is opaque and fills its screen edge to edge —
-     measured, they cover everything below 30% of the section — so light placed
-     under them is light spent on nothing. What is left is the band the heading
-     sits in, lit right-heavy rather than centred so that it does not simply
-     repeat the section before it: the light came in from the right and it stays
-     where it landed. */
+  /* Above the cards rather than behind them. */
   works: {
     from: [1, 0.25],
     left: "34%",
@@ -78,9 +30,7 @@ const BLOOMS: Record<string, Placed> = {
     height: "48%",
   },
 
-  /* Down from the top left, onto the largest single card on the page. Offset to
-     one side of it rather than centred on it, so the card is read against the
-     light rather than washed by it. */
+  /* Down from the top left, onto the largest single card on the page. */
   invitation: {
     from: [-0.7, -0.7],
     left: "6%",
@@ -91,14 +41,10 @@ const BLOOMS: Record<string, Placed> = {
 };
 
 /**
- * Drop it in as the FIRST child of a <section>, give that section `isolate` and
- * its .screen-body `relative z-10`, and the layer is pinned behind the
+ * Drop it in as the FIRST child of a <section>, give that section `isolate`
+ * and its .screen-body `relative z-10`, and the layer is pinned behind the
  * section's content and in front of the page — see .screen-glow in globals.css
- * for why both of those are load-bearing.
- *
- * data-reveal is what holds it hidden until its section arrives (the stylesheet
- * does that before hydration) and what copyIn tweens in. data-glow-from is what
- * glowDrift picks up, and carries the direction the arrival travels from.
+ * for why both of those are.
  */
 export default function SectionBloom({ id }: { id: keyof typeof BLOOMS }) {
   const placed = BLOOMS[id];
@@ -107,14 +53,7 @@ export default function SectionBloom({ id }: { id: keyof typeof BLOOMS }) {
   const { from, ...box } = placed;
 
   return (
-    /*
-      Above the gate only. This is a light the wide layouts were given so that
-      every screen is lit by the same thing; the phone's frame lights
-      these three sections with nothing at all, and the hero's own bloom already
-      carries several hundred pixels down into the first of them. Left on, it
-      put a second, brighter core behind each heading — measured at the top of
-      Alone Vs Together, 151 blue against the artboard's 85.
-    */
+    /* Above the gate only. */
     <div className="screen-glow hidden sm:block" aria-hidden="true">
       <div
         className="absolute"

@@ -3,30 +3,9 @@ import Image from "next/image";
 /*
  * A run of connector artwork that draws itself, with a light riding the
  * drawing edge.
- *
- * The light is the same artwork a second time, used as a mask over a
- * travelling gradient, so it can only paint where a line actually is: one
- * sweep lights every branch of a fan at once, each exactly where it bends,
- * with no path data duplicated in JS. Which end it starts from is the
- * section's business — the timeline reads the axis off the DOM.
- *
- * Nothing here animates on its own. The wrapper carries [data-reveal='lines']
- * and the gradient [data-spark]; the section's timeline drives both.
  */
 
-/*
- * Offset copies of the artwork, composited into one dilated mask.
- *
- * Two things make that necessary. Figma draws these runs as 1px strokes at
- * 0.3-0.4 opacity, so a single copy caps the light at a fraction of a hairline
- * and simply does not read; mask layers composite additively by default, so
- * five copies reach ~92% at the core. And the runs are dashed 3-on-3-off,
- * which a sweep would strobe through — spreading the mask past the gaps turns
- * it back into one continuous wire to travel down.
- *
- * The cross rather than a square: it has to thicken horizontal runs and
- * vertical elbows by the same amount.
- */
+/* Offset copies of the artwork, composited into one dilated mask. */
 const SPREAD = 1.5;
 const OFFSETS: [number, number][] = [
   [0, 0],
@@ -49,25 +28,12 @@ const STOPS =
 
 /*
  * The narrowed light is an ellipse rather than a band with a head and a tail.
- *
- * `cross` is only ever set where the mask is effectively solid — a junction dot
- * and its shadow — and a mask that solid paints back whatever silhouette it is
- * given, hard edges included. Soft in both directions is the only shape that
- * cannot show its own outline.
  */
 const SOFT = "#ffffff 0%, rgba(137,163,255,0.7) 38%, rgba(43,88,250,0) 82%";
 
 export type ConnectorTraceProps = {
   src: string;
-  /**
-   * Extra classes on the run's own box.
-   *
-   * What it exists for is `hidden sm:block`, on a run whose two endpoints stop
-   * being in the same place on a phone — the approve diagram stacks into a
-   * column there, so a wire drawn between two of its parts is joining
-   * coordinates that no longer describe anything. A run inside an artboard that
-   * survives intact, scaled, keeps its wire and passes nothing.
-   */
+  /** Extra classes on the run's own box. */
   className?: string;
   /** The artwork's own size, in stage units. */
   width: number;
@@ -79,54 +45,20 @@ export type ConnectorTraceProps = {
   axis?: "x" | "y";
   /** How long the light is along that axis. */
   spark?: number;
-  /**
-   * How wide the light is *across* the run. Defaults to the whole box, which is
-   * what a fan wants — its branches are spread over the full width and the mask
-   * decides where the light lands.
-   *
-   * Set it where the mask cannot be trusted to do that job. A run whose artwork
-   * carries an SVG drop shadow has mask coverage everywhere the shadow reaches,
-   * not just on the stroke, so a full-width light paints the shadow's whole disc
-   * and the run reads as a lit rectangle. Narrowing it to the stroke turns that
-   * back into a light traveling down a wire, flaring as it crosses the junction.
-   */
+  /** How wide the light is *across* the run. */
   cross?: number;
-  /**
-   * Room left around the artwork, and worth setting on every run.
-   *
-   * The wipe clips this box, and it clips the light's bloom with it — so with
-   * the box drawn tight to the artwork the bloom ends on a hard vertical edge
-   * and the whole run reads as a lit rectangle rather than a lit wire. The
-   * padding is what lets the glow fall off to nothing before the clip reaches
-   * it, and it wants to be wider than the bloom's own radius.
-   *
-   * It also gives children somewhere to sit: they are positioned against the
-   * padded box, so an endpoint dot just outside the artwork is not sheared off.
-   */
+  /** Room left around the artwork, and worth setting on every run. */
   pad?: number;
   /**
    * Some assets come out of Figma facing the wrong way, because Figma draws
    * them once and mirrors the wrapper so the bright end leads into whatever
-   * they point at. That mirrors this element's own coordinate system too, which
-   * the timeline has to know about — hence the attribute rather than a bare
-   * transform.
-   *
-   * Set whichever axis the Figma wrapper mirrors, never both: the flip is one
-   * bit on the DOM and the timeline resolves it against `axis`.
+   * they point at.
    */
   flipX?: boolean;
   flipY?: boolean;
   /**
    * What this run is a connection BETWEEN, for the beats that want one
    * particular run rather than all of them.
-   *
-   * The funnel is the only diagram that does — each of its rows draws the wire
-   * that arrives at it — and it used to take them by position in the section.
-   * That was true of one layout: the phone replaces the wide fan with two
-   * dashed drops rather than one run, which slides every index along by one and
-   * wires three rows to the wrong things. A name survives a layout that draws
-   * the same connection with a different number of lines. See `runs` in
-   * timelines.ts, and DashDown, which carries the same attribute.
    */
   run?: string;
   children?: React.ReactNode;
@@ -154,12 +86,6 @@ export default function ConnectorTrace({
   /*
    * Parked entirely off the run's own start edge, so the pass begins with
    * nothing on screen and the light arrives.
-   *
-   * It used to sit half on, straddling that edge, because it ran *with* the
-   * wipe and the wipe clipped its leading half away — what was left read as a
-   * head riding the drawing edge. Now that it runs after the wipe there is
-   * nothing left to clip it, and half a light parked on the near end would
-   * simply be a white smudge that starts there.
    */
   const along = across
     ? { left: -spark, width: spark }
@@ -206,15 +132,7 @@ export default function ConnectorTrace({
 
       <div className="absolute inset-0" style={{ filter: BLOOM }}>
         <div className="absolute inset-0" style={mask}>
-          {/*
-            Deliberately not a [data-reveal]. That hook means "the sequence owns
-            whether this is on screen", and both the CSS start state and the
-            <noscript> override read it as something to hand back at full
-            opacity when nothing will play. This is a moving light: with nothing
-            to move it, the honest resting state is off, not a bright smudge
-            parked over one end of the run. So it holds itself hidden and only
-            the timeline turns it on.
-          */}
+          {/* Deliberately not a [data-reveal]. */}
           <div
             className="absolute opacity-0"
             style={{
@@ -229,19 +147,7 @@ export default function ConnectorTrace({
         </div>
       </div>
 
-      {/*
-        Children stay in the artwork's *unmirrored* coordinates.
-
-        The mirror belongs to the export, not to the run — a caller reading
-        endpoint dots off Figma has them in panel coordinates, and asking it to
-        subtract each one from the box width to place a dot would put the sizing
-        maths in the one place it is hardest to check against the artwork.
-        Undoing the flip on a box the exact size of the mirrored one leaves the
-        box where it was and hands children back their original axes.
-
-        Inside the wipe rather than beside it, so a dot is still revealed with
-        the line it terminates.
-      */}
+      {/* Children stay in the artwork's *unmirrored* coordinates. */}
       {mirror ? (
         <div className="absolute inset-0" style={{ transform: mirror }}>
           {children}

@@ -11,11 +11,6 @@ import { PEOPLE, type PersonKey } from "@/data/people";
  * "Built on intelligence" — a vertical funnel: 4 member score cards feed a
  * connector fan into 4 signal-category cards, which feed a single line into
  * the Banrox Engine hub, which feeds a final "approved" pill.
- *
- * Stage is 1112x948 (Figma's "Group 2147230231" body). Its own metadata
- * reports the hub's y as 350px past the group's declared height — the same
- * artifact hit in SquadApproves' SquadCard — so its position here is
- * screenshot-measured rather than taken from that field.
  */
 
 const STAGE_W = 1112;
@@ -23,21 +18,9 @@ const STAGE_H = 948;
 
 /**
  * The phone's artboard for the same funnel: 370x1050.5, which is the mobile
- * frame's content column and the four rows stacked in it.
- *
- *   member cards   a 2x2 grid, 177x117 each, 16 apart, at y0
- *   two drops      64 each, at y250, under each column
- *   signal box     370x316 at y314, four 173-wide cards inside it 8 apart
- *   one drop       64 at y630
- *   the hub        256.5x252 at (56.75, 694.5)
- *   one drop       64 at y946
- *   the verdict    306x40 at (32, 1010.5)
- *
- * Each part is the wide layout's own component at its own scale, and the three
- * scales are all different because the frame sizes each row to the column
- * rather than to one ratio: 0.681 on a score card, 0.752 on a signal card,
- * 0.75 on the hub, and the verdict pill not scaled at all — 306 wide with its
- * 16px type intact, because it is one line of reading rather than a diagram.
+ * frame's content column and the four rows stacked in it. member cards a 2x2
+ * grid, 177x117 each, 16 apart, at y0 two drops 64 each, at y250, under each
+ * column signal box 370x316 at y314,.
  */
 const PHONE_W = 370;
 const PHONE_H = 1050.5;
@@ -59,12 +42,7 @@ const SIGNAL_AT = [
   { left: 189, top: 162.1565 },
 ];
 
-/**
- * The drops between the rows. Same hairline the wide runs are drawn with — 1px,
- * white at 0.4, dashed 3 on 3 off — and the phone's replacement for them: the
- * wide fan spreads four cards into one box across 853px, which is not a shape
- * a 370px column has anywhere to put.
- */
+/** The drops between the rows. */
 function DashDown({
   left,
   top,
@@ -72,9 +50,11 @@ function DashDown({
 }: {
   left: number;
   top: number;
-  /* Which connection this drop is half of — the phone draws two of them where
-     the wide layout draws one fan, so the beat that wants "the wire into the
-     signal row" has to ask for it by name. See ConnectorTraceProps.run. */
+  /*
+   * Which connection this drop is half of — the phone draws two of them where
+   * the wide layout draws one fan, so the beat that wants "the wire into the
+   * signal row" has to ask for it by name.
+   */
   run: string;
 }) {
   return (
@@ -177,18 +157,9 @@ const SIGNALS: {
   },
 ];
 
-/*
- * Absolutely-positioned decoration inside the stage. Figma exports each of
- * these with the blur/glow baked in, so the asset is larger than the node it
- * belongs to; `left`/`top` are the asset's own top-left in stage coordinates.
- */
+/* Absolutely-positioned decoration inside the stage. */
 /*
  * Decoration placed in stage coordinates — glows, arcs, the convergence dot.
- *
- * Hidden below the gate rather than repositioned: every one of them describes a
- * distance between two things on the artboard, and on a phone those things are
- * stacked in a column instead. An arc drawn between the row that was and the
- * box that was is a line pointing at nothing.
  */
 function StageArt({
   src,
@@ -229,16 +200,10 @@ export default function IntelligenceLayer() {
       data-sequence-section="intelligence"
     >
       {/*
-        Ellipse 6147 — the light the mobile frame gives this section, and the
-        only one it gives it: a 389px circle of brand blue blurred by 200,
-        centred just off the left edge and level with the signal cards. It is
-        literally the same file the wide layout's aura is (bg-glow.svg IS that
-        circle at that blur), placed in the section rather than in a stage.
-
-        isolate above, z-10 on the body: between them the layer is pinned behind
-        this section's content and in front of the page, and cannot escape to
-        either side of that. See .screen-glow.
-      */}
+       * Ellipse 6147 — the light the mobile frame gives this section, and the only
+       * one it gives it: a 389px circle of brand blue blurred by 200, centred just
+       * off the left edge and level with the signal cards.
+       */}
       <div className="screen-glow sm:hidden" aria-hidden="true">
         <Image
           src="/intel/bg-glow.svg"
@@ -247,10 +212,11 @@ export default function IntelligenceLayer() {
           height={1189}
           className="absolute max-w-none"
           style={{ left: -616, top: 51.6 }}
-          /* The role the wide layout gives its aura, so copyIn brings this in
-             underneath the heading (see glowIn) and glowDrift keeps it moving
-             afterwards. It arrives from the left and below, which is the corner
-             it sits in. */
+          /*
+           * The role the wide layout gives its aura, so copyIn brings this in
+           * underneath the heading (see glowIn) and glowDrift keeps it moving
+           * afterwards.
+           */
           data-reveal="glow"
           data-glow-from="-0.6 0.8"
         />
@@ -270,20 +236,16 @@ export default function IntelligenceLayer() {
           </h2>
         </div>
 
-        {/* No data-reveal on the wrapper: the funnel is built a row at a time,
-            each drawing itself into the one below — see sections.ts — and a
-            group fade over the top would flatten that into one crossfade.
-
-            It is also the tallest artboard on the page by a wide margin (948px
-            against the next one's 628), so it is the section that pays most for
-            being fitted into a screen: on a short window this is where the
-            scale bottoms out first. */}
+        {/*
+         * No data-reveal on the wrapper: the funnel is built a row at a time, each
+         * drawing itself into the one below — see sections.ts — and a group fade over
+         * the top would flatten that into one crossfade.
+         */}
         <div className="screen-payload px-4 sm:px-0">
-          {/* stage-viewport-clip: the funnel's ambient glow is a 1189px asset on
-              a 1112px stage, so it overhangs the artboard on every side. The top
-              and bottom of it were always cropped; clipping the sides too keeps
-              a window near the stage's own width from raising a scrollbar for
-              39px of blur. */}
+          {/*
+           * stage-viewport-clip: the funnel's ambient glow is a 1189px asset on a 1112px
+           * stage, so it overhangs the artboard on every side.
+           */}
           <div className="stage-viewport stage-viewport-clip stage-fluid">
             <div
               className="stage-sizer"
@@ -306,11 +268,7 @@ export default function IntelligenceLayer() {
                     }
                   >
                     <div className="panel-stage">
-                      {/* Ambient glow, centred on the stage behind the signal
-                          row. Wide layout only — the phone's frame lights this
-                          section from a single ellipse off its left edge
-                          instead, and a 1189px aura in a 370px column would be
-                          the whole screen. */}
+                      {/* Ambient glow, centred on the stage behind the signal row. */}
                       <StageArt
                         src="/intel/bg-glow.svg"
                         left={-38}
@@ -321,9 +279,7 @@ export default function IntelligenceLayer() {
                         glowFrom="0.7 0.7"
                       />
 
-                      {/* Row 1: four member score cards. A row of four across
-                          the whole stage up here, a 2x2 grid at 0.681 down
-                          there — both absolute, so one element carries both. */}
+                      {/* Row 1: four member score cards. */}
                       {SCORES.map((s, i) => (
                         <div
                           key={s.memberLabel}
@@ -345,10 +301,10 @@ export default function IntelligenceLayer() {
                         </div>
                       ))}
 
-                      {/* The fan from the four cards down into the signal row —
-                          so the light runs down it, the direction the whole
-                          diagram flows. Two straight drops do the same job in
-                          the column; see DashDown. */}
+                      {/*
+                       * The fan from the four cards down into the signal row — so the light runs
+                       * down it, the direction the whole diagram flows.
+                       */}
                       <ConnectorTrace
                         className="hidden sm:block"
                         run="signals"
@@ -365,14 +321,9 @@ export default function IntelligenceLayer() {
                       <DashDown left={282} top={250} run="signals" />
 
                       {/*
-                        Figma nests this arc inside the signal container, where
-                        its own overflow-clip would hide it entirely — yet the
-                        artboard renders it. Same quirk as the other ambient
-                        glows: it has to be a sibling of the clipping box, not a
-                        child. Both frames draw it centred on the column with its
-                        middle about 30px above the box it lights, so the phone's
-                        is the same asset at 447/547 of the size.
-                      */}
+                       * Figma nests this arc inside the signal container, where its own overflow-
+                       * clip would hide it entirely — yet the artboard renders it.
+                       */}
                       <Image
                         src="/intel/signal-arc.svg"
                         alt=""
@@ -382,8 +333,10 @@ export default function IntelligenceLayer() {
                         data-reveal="signals"
                       />
 
-                      {/* Both convergence dots sit *behind* the box they meet, so
-                          the translucent surface dims their lower half. */}
+                      {/*
+                       * Both convergence dots sit *behind* the box they meet, so the translucent
+                       * surface dims their lower half.
+                       */}
                       <StageArt
                         src="/intel/fan-dot.svg"
                         left={533}
@@ -393,17 +346,16 @@ export default function IntelligenceLayer() {
                         reveal="node"
                       />
 
-                      {/* Row 2: the signal container and its four category cards.
-                          The hairline is an inset ring, not a border: Figma draws
-                          the stroke over the 8px padding, and a real border would
-                          eat 2px the four cards need. */}
+                      {/* Row 2: the signal container and its four category cards. */}
                       <div
                         className="bg-vignette absolute top-[314.185px] left-0 h-[316.313px] w-[370px] rounded-2xl bg-[rgba(8,8,20,0.2)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] sm:top-[282px] sm:left-[76.5px] sm:h-[210px] sm:w-[960px]"
                         data-reveal="signals"
                       >
-                        {/* "category", not "signal": the container is already
-                            [data-reveal='signals'], and two roles a letter apart
-                            is one typo away from a card row that never animates. */}
+                        {/*
+                         * "category", not "signal": the container is already [data-reveal='signals'],
+                         * and two roles a letter apart is one typo away from a card row that never
+                         * animates.
+                         */}
                         {SIGNALS.map((s, i) => (
                           <div
                             key={s.title.join(" ")}
@@ -422,12 +374,7 @@ export default function IntelligenceLayer() {
                         ))}
                       </div>
 
-                      {/* Connector: signal row down into the hub. Figma mirrors
-                          the asset so the bright end leads into the dot — and
-                          that dot carries a blurred drop shadow filling the whole
-                          46px box, so the light has to be held to the stroke's
-                          own width or it paints the shadow's disc instead of the
-                          wire. */}
+                      {/* Connector: signal row down into the hub. */}
                       <ConnectorTrace
                         className="hidden sm:block"
                         run="hub"
@@ -452,9 +399,7 @@ export default function IntelligenceLayer() {
                         <BanroxEngineHub />
                       </div>
 
-                      {/* Connector: hub down into the approved pill. Only a pixel
-                          wide, so the padding is what gives its bloom anywhere to
-                          spread. */}
+                      {/* Connector: hub down into the approved pill. */}
                       <ConnectorTrace
                         className="hidden sm:block"
                         run="verdict"
@@ -469,9 +414,9 @@ export default function IntelligenceLayer() {
                       />
                       <DashDown left={185} top={946} run="verdict" />
 
-                      {/* Not scaled on the phone, only narrowed: 306 wide with
-                          its 16px type intact. It is the one line of reading in
-                          the diagram and the sentence the whole funnel is for. */}
+                      {/*
+                       * Not scaled on the phone, only narrowed: 306 wide with its 16px type intact.
+                       */}
                       <div
                         className="bg-vignette absolute top-[1010.5px] left-8 flex h-10 w-[306px] items-center justify-center gap-2 rounded-lg border border-white/10 bg-[rgba(8,8,20,0.2)] px-4 py-3 whitespace-nowrap shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] sm:top-[908px] sm:left-[387px] sm:w-[338px]"
                         data-reveal="verdict"

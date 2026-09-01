@@ -6,19 +6,6 @@ import Twinkle from "@/components/footer/Twinkle";
  * The footer is authored against Figma's 1440 artboard, and its content stays
  * there — the nav columns, the disclaimer and the wordmark are all placed with
  * fixed insets that only mean anything inside that box.
- *
- * Its *backgrounds* are not. Sky, horizon and glow used to be clipped to the
- * same 1440 as the content, so on any wider window the page ended in two hard
- * vertical seams with flat black beyond them. The two bands below are now
- * full-bleed and carry their own background layers, and each wraps its content
- * in a centred 1440 column. Anything that has to follow the window is expressed
- * as a percentage of the band rather than in px, which reproduces the artboard
- * exactly at 1440 and grows from there.
- *
- * Nothing here is scroll-driven. The footer is not a section in the scroll
- * sequence — it is what the page settles onto once the sequence has finished —
- * so its ambient motion is CSS running on its own clock (see globals.css) and
- * its cards answer the pointer rather than the scrollbar.
  */
 
 const productsLinks = [
@@ -83,13 +70,7 @@ const socials = [
   },
 ];
 
-/*
- * One of the three contact cards.
- *
- * Extracted rather than written out three times: the hover state is the only
- * motion in the footer a visitor causes themselves, and three copies of it are
- * three chances for them to drift apart.
- */
+/* One of the three contact cards. */
 function ContactCard({
   title,
   children,
@@ -99,8 +80,7 @@ function ContactCard({
 }) {
   return (
     <div className="group relative flex min-h-[123px] w-full shrink-0 flex-col items-center justify-center gap-8 overflow-hidden rounded-3xl border-[1.5px] border-solid border-white/15 bg-white/[0.03] px-5 py-4 sm:min-h-0 sm:w-[392px] sm:gap-[40px] sm:rounded-[32px] sm:p-[40px] shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.08)] backdrop-blur-[32px] transition-[transform,background-color,border-color,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-white/30 hover:bg-white/[0.06] hover:shadow-[inset_0px_4px_20px_0px_rgba(255,255,255,0.14),0_20px_44px_-14px_rgba(38,75,255,0.5)]">
-      {/* Top Light Highlight Asset (Ellipse 5979). It comes up with the card, so
-          the hover reads as a light switching on rather than a box moving. */}
+      {/* Top Light Highlight Asset (Ellipse 5979). */}
       <div className="pointer-events-none absolute top-[-121.5px] left-[106.84px] h-[121px] w-[356px] opacity-80 transition-opacity duration-300 ease-out group-hover:opacity-100">
         <div className="absolute inset-[-165.29%_-56.18%]">
           <Image
@@ -129,45 +109,24 @@ export default function Footer() {
   return (
     <footer className="flex w-full flex-col items-center overflow-x-clip bg-[#070712]">
       {/* ========================================================================= */}
-      {/* TOP BAND: Starfield, Horizon Glow Arc, BX Vector & Contact Cards           */}
+      {/* TOP BAND: Starfield, Horizon Glow Arc, BX Vector & Contact Cards */}
       {/* ========================================================================= */}
       <div className="relative h-[663px] w-full shrink-0 overflow-hidden bg-[#070712] sm:h-[738px]">
-        {/*
-          The sky. Sized in percentages so it keeps the artboard's own ~13%
-          overhang on either side at any width — the asset is 1823 wide against
-          a 1440 artboard — and cropped rather than stretched, because these are
-          round stars and the SVG declares preserveAspectRatio="none".
-
-          The drift sits on this box so the sky and the stars twinkling in it
-          move together — see Twinkle for why those are two layers.
-        */}
+        {/* The sky. */}
         <div className="footer-drift pointer-events-none absolute top-[-17px] left-[-61.4%] h-[368px] w-[291.8%] sm:top-[-61px] sm:left-[-13.3%] sm:h-[772px] sm:w-[126.6%]">
-          {/* The still field: all 11,290 stars as vectors, so they stay points
-              at any width. Off, which leaves the canvas below as the whole sky —
-              and leaves nothing at all for reduced motion, no-JS, and the frames
-              before it mounts, since it draws none of them. Its asset is no
-              longer in the tree either; scripts/build-starfield.mjs regenerates
-              it. */}
-          {/* <Image
-            src="/footer/starfield.svg"
-            alt=""
-            width={1823}
-            height={572}
-            className="absolute inset-0 block size-full max-w-none object-cover"
-            priority
-          /> */}
+          {/*
+           * The still field: all 11,290 stars as vectors, so they stay points at any
+           * width.
+           */}
+          {/*
+           * <Image src="/footer/starfield.svg" alt="" width={1823} height={572}
+           * className="absolute inset-0 block size-full max-w-none object-cover"
+           * priority />
+           */}
           <Twinkle className="absolute inset-0 block size-full" />
         </div>
 
-        {/*
-          The horizon (Ellipse 22065). Its width follows the window while its
-          height stays put, so the arc flattens as the window widens rather than
-          becoming a circle sitting in the middle of it — which is what a horizon
-          does, and what keeps its crest the same distance above the cards. The
-          asset is authored preserveAspectRatio="none" for exactly this. max()
-          rather than a bare percentage so it cannot collapse into a narrow
-          vertical ellipse on a phone.
-        */}
+        {/* The horizon (Ellipse 22065). */}
         <div className="pointer-events-none absolute top-[210px] left-1/2 h-[447px] w-[447px] -translate-x-1/2 sm:top-[205px] sm:h-[1544px] sm:w-[max(1544px,107.23%)]">
           <div className="footer-horizon absolute inset-[-13.41%]">
             <Image
@@ -191,8 +150,7 @@ export default function Footer() {
           />
         </div>
 
-        {/* Radial Top Glow & Linear Fade Overlay. Both stops are already
-            percentages, so this needed nothing but a full-bleed box. */}
+        {/* Radial Top Glow & Linear Fade Overlay. */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -202,9 +160,7 @@ export default function Footer() {
         />
 
         {/* Contact Cards Row */}
-        {/* Stacked on a phone and a row from the gate up. The absolute centring
-            goes with it: with the band content-height there is nothing to centre
-            against, and the cards are the band. */}
+        {/* Stacked on a phone and a row from the gate up. */}
         <div className="relative z-10 mx-auto grid w-[214px] max-w-[1240px] grid-cols-1 justify-center gap-4 pt-12 sm:absolute sm:top-1/2 sm:left-1/2 sm:w-full sm:grid-cols-3 sm:grid-rows-1 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-[32px] sm:px-4 sm:pt-0">
           <ContactCard title="Email Us">
             <a
@@ -228,20 +184,13 @@ export default function Footer() {
       </div>
 
       {/* ========================================================================= */}
-      {/* BOTTOM BAND: Brand, Socials, Navigation Grid, Disclaimers & Watermark      */}
+      {/* BOTTOM BAND: Brand, Socials, Navigation Grid, Disclaimers & Watermark */}
       {/* ========================================================================= */}
       <div className="relative w-full shrink-0 overflow-hidden bg-[#080814] sm:h-[1140px]">
         {/*
-          Top Gradient Tint Overlay — full bleed, so the band does not change
-          colour at the 1440 mark.
-
-          Full height too, with its final stop at the 955/1140 the artboard puts
-          it at and nothing after: a gradient box that simply ended there left a
-          hard horizontal edge across the whole band where the tint stopped. At
-          1440 the glows below happen to sit under it and hide it; on a wider
-          window they no longer reach that far out and the edge is plain. Holding
-          the last stop to the bottom is the same paint above 955 and no seam.
-        */}
+         * Top Gradient Tint Overlay — full bleed, so the band does not change colour
+         * at the 1440 mark.
+         */}
         <div
           className="pointer-events-none absolute inset-0 opacity-4"
           style={{
@@ -250,8 +199,10 @@ export default function Footer() {
           }}
         />
 
-        {/* Everything below is placed against the artboard, so it lives in the
-            centred 1440 column rather than in the full-bleed band. */}
+        {/*
+         * Everything below is placed against the artboard, so it lives in the centred
+         * 1440 column rather than in the full-bleed band.
+         */}
         <div className="relative mx-auto flex h-full w-[370px] max-w-[1440px] flex-col gap-[44px] pt-12 pb-[127px] sm:block sm:w-full sm:gap-0 sm:py-0">
           {/* Bottom Glow Ellipse Assets */}
           <div className="pointer-events-none absolute bottom-[-65.6px] left-[calc(50%+159.5px)] size-[186.76px] -translate-x-1/2 sm:bottom-[-119px] sm:left-[calc(50%+571.5px)] sm:size-[669px]">
