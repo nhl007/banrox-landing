@@ -624,6 +624,11 @@ body {
    * number out. calc() only learned length-over-length division very recently;
    * a bare `100cqw / var(--stage-w)` still evaluates to a *length*, which
    * makes the clamp type-invalid and silently.
+   *
+   * SAFARI GETS THIS WRONG whenever one of the two lengths is a container or
+   * viewport unit, so every scale below is measured in script and written over
+   * the top of it. See components/ArtboardFit.tsx — and do not rely on these
+   * three declarations alone.
    */
   --fit-w: tan(atan2(100cqw, var(--stage-w) * 1px));
   /*

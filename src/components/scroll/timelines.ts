@@ -547,6 +547,23 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
   let rails: Rail[] = [];
   /* ...and where the card itself is out of the way while they arrive. */
   let railed = { a: 0, b: 0 };
+  /*
+   * The window the path was worked out against — and what places the card, in
+   * preference to whatever the window measures THIS frame.
+   *
+   * On a phone those are not the same number. Safari's address bar slides away
+   * as you scroll down and comes back as you scroll up, and `innerHeight`
+   * changes by about 90px each time it does. ScrollTrigger deliberately does
+   * not re-measure for that — a bar that comes and goes is not a resize, and
+   * re-deriving the whole page every time it moved would be far worse. But it
+   * means a path built against one window and placed against another, and a
+   * card held to the edge of the screen then tracks the bar instead of the
+   * page: it slides 90px down as the bar goes and 90px back as it returns.
+   *
+   * So this is read instead, and a REAL resize still refreshes it, because a
+   * refresh re-runs measure() and measure() sets it.
+   */
+  let view = { vw: 0, vh: 0 };
   let last = 0;
   const faceFit = { vs: 1, engine: 1 };
 
@@ -599,6 +616,7 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
   function build() {
     const vh = window.innerHeight;
     const vw = window.innerWidth;
+    view = { vw, vh };
 
     /*
      * Seeded, so the wobble on the arcs is the same wobble every time the page
@@ -1040,8 +1058,8 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
   /** Place the card for a scroll position. */
   const apply = (pos: number) => {
     if (knots.length < 2) return;
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
+    /* The window as MEASURED, not as it is this instant — see `view`. */
+    const { vw, vh } = view;
     const sy = window.scrollY;
 
     let i = 1;
@@ -1238,7 +1256,7 @@ export function squadTravel(root: HTMLElement, tier: "full" | "phone") {
     measure,
     apply,
     park,
-    span: () => ({ from: knots[0]?.s ?? 0, to: last + window.innerHeight }),
+    span: () => ({ from: knots[0]?.s ?? 0, to: last + view.vh }),
   };
 }
 

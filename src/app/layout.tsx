@@ -3,6 +3,7 @@ import { inter, interTight, ztFormom } from "./fonts";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import DeckNav from "@/components/scroll/DeckNav";
+import ArtboardFit from "@/components/ArtboardFit";
 import ScrollSequence from "@/components/scroll/ScrollSequence";
 import "./globals.css";
 
@@ -37,6 +38,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       */}
       <body className="min-h-full flex flex-col">
         <ScrollSequence>
+          {/*
+            First, so its effect runs before the sequence measures the page:
+            it changes how tall three of the sections are. See the file.
+          */}
+          <ArtboardFit />
           <NavBar />
           {children}
           <Footer />
